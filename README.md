@@ -175,6 +175,7 @@ Every document is a `.md` file on disk. What you see in the editor is markdown w
 
 - **No database.** The filesystem is the index. Move, copy, or `grep` your files however you want.
 - **Open any `.md` file.** Point OpenWriter at existing markdown from any project — it loads instantly.
+- **Git Sync built in.** Push your documents to GitHub directly from the editor. Your markdown files are version-controlled and portable — access them from any machine or future web client.
 - **Frontmatter metadata.** YAML frontmatter for tags, status, or any key-value pairs your workflow needs.
 - **Full markdown fidelity.** Bold, italic, strikethrough, code blocks with syntax highlighting, tables, task lists, images, links, subscript, superscript — all round-trip cleanly to `.md`.
 - **AI-native format.** Every LLM reads and writes markdown natively. No conversion layer, no token waste. The agent edits the same format the file is stored in.
