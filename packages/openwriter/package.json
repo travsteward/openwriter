@@ -1,7 +1,7 @@
 {
   "name": "openwriter",
-  "version": "0.2.0",
-  "description": "Local TipTap editor for human-agent collaboration via MCP",
+  "version": "0.2.1",
+  "description": "The open-source writing surface for AI agents. Markdown-native editor with pending change review — your agent writes, you accept or reject.",
   "type": "module",
   "license": "MIT",
   "author": "Travis Steward",
