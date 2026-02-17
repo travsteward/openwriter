@@ -12,7 +12,7 @@ A markdown-native rich text editor built for human-agent collaboration. Your AI 
 
 Every AI coding tool has a great editor. Writing has nothing.
 
-Google Docs locks you into Gemini. Notion locks you into Notion AI. Obsidian has plugins but no native agent protocol. OpenWriter is different: it's an open editor that any agent can write into, with a review system that keeps you in control.
+Google Docs locks you into Gemini. Notion locks you into Notion AI. Every writing tool is racing to bolt on its own weak agent. They have it backwards. The most powerful AI agents already exist — Claude Code, OpenCode, Codex — and they're designed to work with tools, not be trapped inside one. OpenWriter doesn't ship an agent. It ships an editor that plugs into the agents you already use, giving them a proper writing surface with a review system that keeps you in control.
 
 Markdown is the native language of AI. Every LLM reads it, writes it, and thinks in it. OpenWriter treats `.md` files as first-class citizens — your documents are plain markdown on disk, and the editor adds rich formatting, workspaces, version history, and agent collaboration on top. No proprietary format. No database. Just files.
 
