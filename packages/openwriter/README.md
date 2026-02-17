@@ -4,7 +4,7 @@
 
 A local-first [TipTap](https://tiptap.dev/) rich text editor built for human-agent collaboration. Your AI agent writes, you review. Works with any MCP-compatible agent — Claude Code, Cursor, OpenCode, or your own.
 
-<!-- TODO: Add screenshot or GIF demo here -->
+![OpenWriter — agent writes, you review](https://raw.githubusercontent.com/travsteward/openwriter/main/assets/screenshot.png)
 
 ---
 
