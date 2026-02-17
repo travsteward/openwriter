@@ -1,6 +1,5 @@
 /**
  * Shimmer loading effect for TipTap nodes during API calls.
- * Ported from BreeWriter frontend BlurredLoadingNode.tsx.
  */
 
 import { Extension, type CommandProps } from '@tiptap/core';

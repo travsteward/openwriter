@@ -1,6 +1,6 @@
 /**
  * Apply operations: insert, rewrite, delete with pending decorations.
- * Simplified port from BreeWriter applyOperations.ts — no session storage, document-is-truth.
+ * Document-is-truth — no session storage needed.
  */
 
 import type { Editor, JSONContent } from '@tiptap/core';

@@ -1,6 +1,6 @@
 /**
  * Resolve operations: accept/reject pending changes.
- * Simplified port from BreeWriter resolveOperations.ts — document-is-truth, no session.
+ * Document-is-truth — no session storage needed.
  */
 
 import type { Editor } from '@tiptap/core';

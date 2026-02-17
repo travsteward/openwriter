@@ -1,6 +1,5 @@
 /**
- * ProseMirror plugin: scans pendingStatus node attrs → applies CSS classes
- * Port from BreeWriter AgenticDecorationPlugin.ts, simplified for Pad
+ * ProseMirror plugin: scans pendingStatus node attrs → applies CSS classes.
  */
 
 import { Plugin, PluginKey } from '@tiptap/pm/state';

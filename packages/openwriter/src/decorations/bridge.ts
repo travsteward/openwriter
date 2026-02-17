@@ -1,6 +1,5 @@
 /**
  * Bridge: maps NodeChange objects from server/MCP to apply operations.
- * Simplified port from BreeWriter applyNodeChangeBridge.ts.
  */
 
 import type { Editor } from '@tiptap/core';

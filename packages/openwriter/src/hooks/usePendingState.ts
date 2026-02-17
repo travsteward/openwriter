@@ -1,6 +1,5 @@
 /**
  * Pending state hook: derives all pending change state from document.
- * Port from BreeWriter derivePendingState.ts + useAgenticSession.ts.
  * Document-is-truth — no session storage needed.
  */
 
