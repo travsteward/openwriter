@@ -1,39 +1,53 @@
 ---
 name: openwriter
 description: |
-  OpenWriter — local TipTap editor for human-agent collaboration.
-  Agent reads/edits documents via MCP tools (read_pad, write_to_pad, etc.).
-  Changes appear as pending decorations the user accepts or rejects.
-  Multi-document workspace with sidebar navigation.
+  OpenWriter — the writing surface for AI agents. A markdown-native rich text
+  editor where agents write via MCP tools and users accept or reject changes
+  in-browser. 24 tools for document editing, multi-doc workspaces, and
+  organization. Plain .md files on disk — no database, no lock-in.
 
   Use when user says: "open writer", "openwriter", "write in openwriter",
-  "edit my document", "review my writing", "check the pad".
+  "edit my document", "review my writing", "check the pad", "write me a doc".
 
   Requires: OpenWriter MCP server configured. Browser UI at localhost:5050.
+metadata:
+  author: travsteward
+  version: "0.2.0"
+  repository: https://github.com/travsteward/openwriter
+license: MIT
 ---
 
-# OpenWriter — Public Companion Skill
+# OpenWriter Skill
 
-You are a writing collaborator. The user has a document open in OpenWriter (http://localhost:5050). You read their document and make edits **exclusively via MCP tools**. Edits appear as pending decorations (colored highlights) that the user can accept or reject.
+You are a writing collaborator. You read documents and make edits **exclusively via MCP tools**. Edits appear as pending decorations (colored highlights) in the user's browser that they accept or reject.
 
-**First action when activated:** Always share the browser URL:
-> OpenWriter is at **http://localhost:5050**
+## Setup — Which Path?
 
-## Quick Setup
+Check whether the `open-writer` MCP tools are available (e.g. `read_pad`, `write_to_pad`). This determines setup state:
 
-OpenWriter must be configured as an MCP server before use. Two paths:
+### MCP tools ARE available (ready to use)
 
-### Option A: User runs it from their terminal (outside Claude Code)
+The user already has OpenWriter configured — either they ran `npx openwriter install-skill` (which installed this skill) and added the MCP server, or they set it up manually. You're good to go.
+
+**First action:** Share the browser URL:
+> OpenWriter is at **http://localhost:5050** — open it in your browser to see and review changes.
+
+Skip to [Writing Strategy](#writing-strategy) below.
+
+### MCP tools are NOT available (skill-first install)
+
+The user installed this skill from a directory but hasn't set up the MCP server yet. OpenWriter needs an MCP server to provide the 24 editing tools.
+
+**Step 1:** Tell the user to install the npm package and MCP server:
 
 ```bash
+# Add the OpenWriter MCP server to Claude Code
 claude mcp add -s user open-writer -- npx openwriter --no-open
 ```
 
-Then restart the Claude Code session. The MCP tools become available automatically.
+Then restart the Claude Code session. The MCP tools become available on next launch.
 
-### Option B: Agent configures it (when user asks you to set it up)
-
-Edit `~/.claude.json` and add to the `mcpServers` object:
+**Step 2 (if the user can't run the command above):** Edit `~/.claude.json` directly. Add to the `mcpServers` object:
 
 ```json
 "open-writer": {
@@ -42,7 +56,7 @@ Edit `~/.claude.json` and add to the `mcpServers` object:
 }
 ```
 
-The `mcpServers` key is at the top level of `~/.claude.json`. If it doesn't exist, create it. Example:
+The `mcpServers` key is at the top level of `~/.claude.json`. If it doesn't exist, create it:
 
 ```json
 {
@@ -56,10 +70,10 @@ The `mcpServers` key is at the top level of `~/.claude.json`. If it doesn't exis
 ```
 
 After editing, tell the user:
-1. Restart your Claude Code session (the MCP server loads on startup)
+1. Restart your Claude Code session (MCP servers load on startup)
 2. Open http://localhost:5050 in your browser
 
-**Note:** You cannot run `claude mcp add` from inside a session (nested session error). That's why we edit the JSON directly.
+**Note:** You cannot run `claude mcp add` from inside a session (nested session error). That's why we edit the JSON directly when configuring from within Claude Code.
 
 ## MCP Tools Reference (24 tools)
 
@@ -166,7 +180,7 @@ After editing, tell the user:
 
 ## Troubleshooting
 
-**MCP tools not available** — Run `/mcp` in Claude Code to check connection status. Click reconnect if needed.
+**MCP tools not available** — The OpenWriter MCP server isn't configured yet. Follow the [setup instructions](#mcp-tools-are-not-available-skill-first-install) above. After adding the MCP config, the user must restart their Claude Code session.
 
 **Port 5050 busy** — Another OpenWriter instance owns the port. New sessions auto-enter client mode (proxying via HTTP) — tools still work. No action needed.
 
