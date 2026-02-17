@@ -21,50 +21,55 @@ import { readConfig, saveConfig } from '../server/helpers.js';
 
 const args = process.argv.slice(2);
 
-let port = 5050;
-let noOpen = false;
-let cliApiKey: string | undefined;
-let cliAvUrl: string | undefined;
-let plugins: string[] = [];
+// Subcommands (run and exit, don't start server)
+if (args[0] === 'install-skill') {
+  import('../server/install-skill.js').then(m => m.installSkill());
+} else {
+  let port = 5050;
+  let noOpen = false;
+  let cliApiKey: string | undefined;
+  let cliAvUrl: string | undefined;
+  let plugins: string[] = [];
 
-for (let i = 0; i < args.length; i++) {
-  if (args[i] === '--port' && args[i + 1]) {
-    port = parseInt(args[i + 1], 10);
-    i++;
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === '--port' && args[i + 1]) {
+      port = parseInt(args[i + 1], 10);
+      i++;
+    }
+    if (args[i] === '--no-open') {
+      noOpen = true;
+    }
+    if (args[i] === '--api-key' && args[i + 1]) {
+      cliApiKey = args[i + 1];
+      i++;
+    }
+    if (args[i] === '--av-url' && args[i + 1]) {
+      cliAvUrl = args[i + 1];
+      i++;
+    }
+    if (args[i] === '--plugins' && args[i + 1]) {
+      plugins = args[i + 1].split(',').map((s) => s.trim()).filter(Boolean);
+      i++;
+    }
   }
-  if (args[i] === '--no-open') {
-    noOpen = true;
+
+  // Resolve API key: CLI flag → env var → saved config
+  const config = readConfig();
+  const avApiKey = cliApiKey || process.env.AV_API_KEY || config.avApiKey || '';
+  const avBackendUrl = cliAvUrl || process.env.AV_BACKEND_URL || config.avBackendUrl;
+
+  // Persist new values to config so future starts don't need them
+  const updates: Record<string, string> = {};
+  if (cliApiKey && cliApiKey !== config.avApiKey) updates.avApiKey = cliApiKey;
+  if (cliAvUrl && cliAvUrl !== config.avBackendUrl) updates.avBackendUrl = cliAvUrl;
+  if (Object.keys(updates).length > 0) {
+    saveConfig(updates);
+    console.log('Config saved to ~/.openwriter/config.json');
   }
-  if (args[i] === '--api-key' && args[i + 1]) {
-    cliApiKey = args[i + 1];
-    i++;
-  }
-  if (args[i] === '--av-url' && args[i + 1]) {
-    cliAvUrl = args[i + 1];
-    i++;
-  }
-  if (args[i] === '--plugins' && args[i + 1]) {
-    plugins = args[i + 1].split(',').map((s) => s.trim()).filter(Boolean);
-    i++;
-  }
+
+  // Set env vars for downstream code (plugins read process.env)
+  if (avApiKey) process.env.AV_API_KEY = avApiKey;
+  if (avBackendUrl) process.env.AV_BACKEND_URL = avBackendUrl;
+
+  startServer({ port, noOpen, plugins });
 }
-
-// Resolve API key: CLI flag → env var → saved config
-const config = readConfig();
-const avApiKey = cliApiKey || process.env.AV_API_KEY || config.avApiKey || '';
-const avBackendUrl = cliAvUrl || process.env.AV_BACKEND_URL || config.avBackendUrl;
-
-// Persist new values to config so future starts don't need them
-const updates: Record<string, string> = {};
-if (cliApiKey && cliApiKey !== config.avApiKey) updates.avApiKey = cliApiKey;
-if (cliAvUrl && cliAvUrl !== config.avBackendUrl) updates.avBackendUrl = cliAvUrl;
-if (Object.keys(updates).length > 0) {
-  saveConfig(updates);
-  console.log('Config saved to ~/.openwriter/config.json');
-}
-
-// Set env vars for downstream code (plugins read process.env)
-if (avApiKey) process.env.AV_API_KEY = avApiKey;
-if (avBackendUrl) process.env.AV_BACKEND_URL = avBackendUrl;
-
-startServer({ port, noOpen, plugins });

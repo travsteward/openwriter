@@ -2,7 +2,7 @@
 
 **The open-source writing surface for the agentic era.**
 
-A local-first [TipTap](https://tiptap.dev/) rich text editor built for human-agent collaboration. Your AI agent writes, you review. Works with any MCP-compatible agent — Claude Code, Cursor, OpenCode, or your own.
+A markdown-native rich text editor built for human-agent collaboration. Your AI agent writes, you review. Plain `.md` files on disk — no database, no lock-in. Works with any MCP-compatible agent.
 
 ![OpenWriter — agent writes, you review](assets/screenshot.png)
 
@@ -14,8 +14,11 @@ Every AI coding tool has a great editor. Writing has nothing.
 
 Google Docs locks you into Gemini. Notion locks you into Notion AI. Obsidian has plugins but no native agent protocol. OpenWriter is different: it's an open editor that any agent can write into, with a review system that keeps you in control.
 
+Markdown is the native language of AI. Every LLM reads it, writes it, and thinks in it. OpenWriter treats `.md` files as first-class citizens — your documents are plain markdown on disk, and the editor adds rich formatting, workspaces, version history, and agent collaboration on top. No proprietary format. No database. Just files.
+
 **The agent writes. You accept or reject. That's it.**
 
+- Documents are plain `.md` files — open existing ones or create new ones
 - Agent makes changes → they appear as colored decorations (green for inserts, blue for rewrites, red for deletions)
 - You review with vim-style hotkeys (`j`/`k` navigate, `a` accept, `r` reject)
 - Cross-document navigation when an agent edits multiple files at once
@@ -31,9 +34,21 @@ npx openwriter
 
 That's it. Opens your browser to `localhost:5050` with a ready-to-use editor. Documents save as markdown files in `~/.openwriter/`.
 
+Already have markdown files? Open them directly — the agent can use `open_file` to load any `.md` from disk, or you can drag files into the sidebar.
+
 ### Connect Your Agent
 
-Add to your MCP config (e.g., `.claude/mcp.json`):
+**Claude Code:**
+```bash
+claude mcp add -s user open-writer -- npx openwriter --no-open
+
+# Optional: install the companion skill for better agent behavior
+npx openwriter install-skill
+```
+
+The skill installs a `SKILL.md` to `~/.claude/skills/openwriter/` that teaches Claude Code how to use OpenWriter's 24 tools effectively — writing strategy, review etiquette, and troubleshooting.
+
+**Other MCP agents** (Cursor, OpenCode, etc.) — add to your MCP config:
 
 ```json
 {
@@ -145,6 +160,27 @@ Automatic snapshots with full rollback. Browse previous versions and restore any
 
 ---
 
+## Markdown Native
+
+Every document is a `.md` file on disk. What you see in the editor is markdown with rich rendering — headings, lists, tables, code blocks, images, links — all stored as plain text.
+
+```
+~/.openwriter/
+├── Getting Started.md
+├── Chapter 1 - Origins.md
+├── Research Notes.md
+└── _workspaces/
+    └── My Novel.json
+```
+
+- **No database.** The filesystem is the index. Move, copy, or `grep` your files however you want.
+- **Open any `.md` file.** Point OpenWriter at existing markdown from any project — it loads instantly.
+- **Frontmatter metadata.** YAML frontmatter for tags, status, or any key-value pairs your workflow needs.
+- **Full markdown fidelity.** Bold, italic, strikethrough, code blocks with syntax highlighting, tables, task lists, images, links, subscript, superscript — all round-trip cleanly to `.md`.
+- **AI-native format.** Every LLM reads and writes markdown natively. No conversion layer, no token waste. The agent edits the same format the file is stored in.
+
+---
+
 ## Token-Efficient Wire Format
 
 Agents don't parse JSON. OpenWriter uses a compact tagged-line format that's ~10x more token-efficient:
@@ -220,6 +256,9 @@ Options:
   --api-key <key>       Author's Voice API key
   --av-url <url>        Author's Voice backend URL
   --plugins <names>     Comma-separated plugin names
+
+Subcommands:
+  install-skill         Install Claude Code companion skill to ~/.claude/skills/openwriter/
 ```
 
 Environment variables: `AV_API_KEY`, `AV_BACKEND_URL`
