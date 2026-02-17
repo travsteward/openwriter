@@ -1,0 +1,157 @@
+.tl-scroll {
+  padding: 0;
+}
+
+.tl-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.tl-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-dark);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.tl-group {
+  position: relative;
+  padding-left: 28px;
+}
+
+/* Vertical timeline line */
+.tl-group::before {
+  content: '';
+  position: absolute;
+  left: 17px;
+  top: 28px;
+  bottom: 0;
+  width: 1.5px;
+  background: var(--border);
+}
+
+.tl-group:last-child::before {
+  display: none;
+}
+
+.tl-date {
+  padding: 12px 10px 4px 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-light);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  position: relative;
+}
+
+.tl-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 6px 10px 6px 0;
+  cursor: pointer;
+  position: relative;
+  transition: background 0.1s ease;
+  border-radius: 0 6px 6px 0;
+}
+
+.tl-item:hover {
+  background: var(--bg-hover);
+}
+
+.tl-item.active {
+  background: rgba(37, 99, 235, 0.06);
+}
+
+/* Timeline dot */
+.tl-dot {
+  width: 8px;
+  height: 8px;
+  min-width: 8px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  background: var(--bg-primary);
+  margin-top: 5px;
+  margin-left: -15px;
+  position: relative;
+  z-index: 1;
+}
+
+.tl-item.active .tl-dot {
+  border-color: var(--accent, #5b7a9d);
+  background: var(--accent, #5b7a9d);
+}
+
+.tl-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.tl-item-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-dark);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tl-item-context {
+  font-size: 10px;
+  color: var(--ink-light);
+  font-style: italic;
+  margin-top: 1px;
+}
+
+.tl-item-meta {
+  font-size: 11px;
+  color: var(--ink-light);
+  margin-top: 2px;
+}
+
+.tl-badge {
+  display: inline-block;
+  max-width: 100%;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  font-size: 9px;
+  font-weight: 500;
+  color: var(--ink-light);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 2px;
+}
+
+/* Delete button positioning */
+.tl-item .sidebar-delete-btn {
+  position: relative;
+  top: auto;
+  right: auto;
+  opacity: 0;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.tl-item:hover .sidebar-delete-btn {
+  opacity: 0.5;
+}
+
+.tl-item .sidebar-delete-btn:hover {
+  opacity: 1;
+}
+
+.tl-item .sidebar-confirm-delete {
+  position: relative;
+  top: auto;
+  right: auto;
+}

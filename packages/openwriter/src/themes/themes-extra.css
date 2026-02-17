@@ -1,0 +1,393 @@
+/* themes-extra.css — Themes 6-10 (Calm, Prose, Craft, Literata, Swiss) */
+
+/* ─── 6. Calm Light ─── */
+[data-theme="calm"][data-mode="light"] {
+  --bg-primary: #faf9f7;
+  --bg-sidebar: #f5f3f0;
+  --bg-titlebar: #f4f2ef;
+  --bg-surface: #faf9f7;
+  --bg-hover: #eae7e2;
+  --border: #eae7e2;
+  --border-light: #eae7e2;
+  --ink-dark: #292524;
+  --ink-light: #a8a29e;
+  --editor-font: Inter, -apple-system, BlinkMacSystemFont, sans-serif;
+  --editor-font-size: 16px;
+  --editor-line-height: 1.75;
+  --editor-letter-spacing: -0.011em;
+  --editor-max-width: 680px;
+  --editor-color: #44403c;
+  --h1-size: 30px;
+  --h1-spacing: -0.8px;
+  --h1-color: #1c1917;
+  --h2-size: 22px;
+  --h2-weight: 600;
+  --h2-spacing: -0.5px;
+  --h2-line-height: 1.25;
+  --h2-color: #1c1917;
+  --h3-size: 15px;
+  --h3-spacing: -0.2px;
+  --h3-color: #78716c;
+  --strong-color: #1c1917;
+  --blockquote-border: #d6d3d1;
+  --color-pending-insert-bg: rgba(22, 163, 74, 0.08);
+  --color-pending-rewrite-bg: rgba(37, 99, 235, 0.08);
+  --color-pending-delete-bg: rgba(231, 76, 60, 0.08);
+}
+
+/* ─── 6. Calm Dark ─── */
+[data-theme="calm"][data-mode="dark"] {
+  --bg-primary: #1c1b19;
+  --bg-sidebar: #1e1d1b;
+  --bg-titlebar: #211f1d;
+  --bg-surface: #211f1d;
+  --bg-hover: #2c2a27;
+  --border: #2c2a27;
+  --border-light: #2c2a27;
+  --ink-dark: #e7e5e4;
+  --ink-light: #78716c;
+  --editor-font: Inter, -apple-system, BlinkMacSystemFont, sans-serif;
+  --editor-font-size: 16px;
+  --editor-line-height: 1.75;
+  --editor-letter-spacing: -0.011em;
+  --editor-max-width: 680px;
+  --editor-color: #d6d3d1;
+  --h1-size: 30px;
+  --h1-spacing: -0.8px;
+  --h1-color: #fafaf9;
+  --h2-size: 22px;
+  --h2-weight: 600;
+  --h2-spacing: -0.5px;
+  --h2-line-height: 1.25;
+  --h2-color: #fafaf9;
+  --h3-size: 15px;
+  --h3-spacing: -0.2px;
+  --h3-color: #a8a29e;
+  --strong-color: #fafaf9;
+  --blockquote-border: #44403c;
+  --shimmer-highlight: rgba(255, 255, 255, 0.08);
+  --color-pending-insert: #22c55e;
+  --color-pending-insert-bg: rgba(34, 197, 94, 0.1);
+  --color-pending-insert-border: #22c55e;
+  --color-pending-rewrite: #60a5fa;
+  --color-pending-rewrite-bg: rgba(96, 165, 250, 0.1);
+  --color-pending-rewrite-border: #60a5fa;
+  --color-pending-delete: #f87171;
+  --color-pending-delete-bg: rgba(248, 113, 113, 0.1);
+  --color-pending-delete-border: #f87171;
+  --color-pending-focus: #60a5fa;
+}
+
+/* ─── 7. Prose Light ─── */
+[data-theme="prose"][data-mode="light"] {
+  --bg-titlebar: #f9f9f9;
+  --bg-sidebar: #f9f9f9;
+  --bg-hover: #efefef;
+  --border: #efefef;
+  --border-light: #efefef;
+  --ink-dark: #222;
+  --ink-light: #999;
+  --editor-font: 'Libre Baskerville', 'Hoefler Text', Garamond, serif;
+  --editor-font-size: 17px;
+  --editor-line-height: 1.8;
+  --editor-letter-spacing: 0.01em;
+  --editor-max-width: 660px;
+  --editor-color: #222;
+  --h1-size: 32px;
+  --h1-spacing: -0.8px;
+  --h2-size: 24px;
+  --h2-spacing: -0.5px;
+  --h3-size: 17px;
+  --h3-spacing: -0.2px;
+  --h3-color: #555;
+  --blockquote-border: #ddd;
+  --blockquote-font-size: 18px;
+}
+
+/* ─── 7. Prose Dark ─── */
+[data-theme="prose"][data-mode="dark"] {
+  --bg-primary: #181818;
+  --bg-sidebar: #1a1a1a;
+  --bg-titlebar: #1d1d1d;
+  --bg-surface: #1d1d1d;
+  --bg-hover: #252525;
+  --border: #282828;
+  --border-light: #252525;
+  --ink-dark: #e0e0e0;
+  --ink-light: #666;
+  --editor-font: 'Libre Baskerville', 'Hoefler Text', Garamond, serif;
+  --editor-font-size: 17px;
+  --editor-line-height: 1.8;
+  --editor-letter-spacing: 0.01em;
+  --editor-max-width: 660px;
+  --editor-color: #ccc;
+  --h1-color: #f0f0f0;
+  --h2-color: #f0f0f0;
+  --h3-size: 17px;
+  --h3-spacing: -0.2px;
+  --h3-color: #999;
+  --strong-color: #f0f0f0;
+  --blockquote-border: #444;
+  --blockquote-font-size: 18px;
+  --shimmer-highlight: rgba(255, 255, 255, 0.08);
+  --color-pending-insert: #22c55e;
+  --color-pending-insert-bg: rgba(34, 197, 94, 0.1);
+  --color-pending-insert-border: #22c55e;
+  --color-pending-rewrite: #60a5fa;
+  --color-pending-rewrite-bg: rgba(96, 165, 250, 0.1);
+  --color-pending-rewrite-border: #60a5fa;
+  --color-pending-delete: #f87171;
+  --color-pending-delete-bg: rgba(248, 113, 113, 0.1);
+  --color-pending-delete-border: #f87171;
+  --color-pending-focus: #60a5fa;
+}
+
+/* ─── 8. Craft Light ─── */
+[data-theme="craft"][data-mode="light"] {
+  --bg-sidebar: #f7f7f7;
+  --bg-titlebar: #f5f5f5;
+  --bg-hover: #ebebeb;
+  --border: #e8e8e8;
+  --border-light: #ebebeb;
+  --ink-dark: #111;
+  --ink-light: #999;
+  --font-sidebar: 'Space Grotesk', Inter, sans-serif;
+  --editor-font: 'Space Grotesk', Inter, -apple-system, sans-serif;
+  --editor-font-size: 16.5px;
+  --editor-line-height: 1.75;
+  --editor-letter-spacing: -0.01em;
+  --editor-max-width: 660px;
+  --editor-color: #1a1a1a;
+  --font-heading: 'Space Grotesk', Inter, sans-serif;
+  --h1-size: 32px;
+  --h1-spacing: -1px;
+  --h1-line-height: 1.1;
+  --h1-color: #0a0a0a;
+  --h2-size: 24px;
+  --h2-weight: 600;
+  --h2-spacing: -0.5px;
+  --h2-color: #111;
+  --font-heading-h3: 'Space Mono', 'IBM Plex Mono', monospace;
+  --h3-size: 13px;
+  --h3-weight: 400;
+  --h3-spacing: 2px;
+  --h3-color: #8b5cf6;
+  --h3-transform: uppercase;
+  --strong-color: #0a0a0a;
+  --blockquote-border: #8b5cf6;
+  --blockquote-opacity: 1;
+  --blockquote-border-width: 2px;
+  --color-pending-insert: #10b981;
+  --color-pending-insert-bg: rgba(16, 185, 129, 0.1);
+  --color-pending-insert-border: #10b981;
+  --color-pending-rewrite: #8b5cf6;
+  --color-pending-rewrite-bg: rgba(139, 92, 246, 0.1);
+  --color-pending-rewrite-border: #8b5cf6;
+  --color-pending-delete: #f43f5e;
+  --color-pending-delete-bg: rgba(244, 63, 94, 0.1);
+  --color-pending-delete-border: #f43f5e;
+  --color-pending-focus: #8b5cf6;
+}
+
+/* ─── 8. Craft Dark ─── */
+[data-theme="craft"][data-mode="dark"] {
+  --bg-primary: #121218;
+  --bg-sidebar: #141420;
+  --bg-titlebar: #17171e;
+  --bg-surface: #17171e;
+  --bg-hover: #1e1e2c;
+  --border: #222230;
+  --border-light: #1e1e2c;
+  --ink-dark: #e0e0f0;
+  --ink-light: #666;
+  --font-sidebar: 'Space Grotesk', Inter, sans-serif;
+  --editor-font: 'Space Grotesk', Inter, -apple-system, sans-serif;
+  --editor-font-size: 16.5px;
+  --editor-line-height: 1.75;
+  --editor-letter-spacing: -0.01em;
+  --editor-max-width: 660px;
+  --editor-color: #c8c8d8;
+  --font-heading: 'Space Grotesk', Inter, sans-serif;
+  --h1-size: 32px;
+  --h1-spacing: -1px;
+  --h1-line-height: 1.1;
+  --h1-color: #f0f0f8;
+  --h2-size: 24px;
+  --h2-weight: 600;
+  --h2-spacing: -0.5px;
+  --h2-color: #e8e8f0;
+  --font-heading-h3: 'Space Mono', 'IBM Plex Mono', monospace;
+  --h3-size: 13px;
+  --h3-weight: 400;
+  --h3-spacing: 2px;
+  --h3-color: #a78bfa;
+  --h3-transform: uppercase;
+  --strong-color: #f0f0f8;
+  --blockquote-border: #a78bfa;
+  --blockquote-opacity: 1;
+  --blockquote-border-width: 2px;
+  --shimmer-highlight: rgba(255, 255, 255, 0.08);
+  --color-pending-insert: #34d399;
+  --color-pending-insert-bg: rgba(52, 211, 153, 0.1);
+  --color-pending-insert-border: #34d399;
+  --color-pending-rewrite: #a78bfa;
+  --color-pending-rewrite-bg: rgba(167, 139, 250, 0.1);
+  --color-pending-rewrite-border: #a78bfa;
+  --color-pending-delete: #fb7185;
+  --color-pending-delete-bg: rgba(251, 113, 133, 0.1);
+  --color-pending-delete-border: #fb7185;
+  --color-pending-focus: #a78bfa;
+}
+
+/* ─── 9. Literata Light ─── */
+[data-theme="literata"][data-mode="light"] {
+  --bg-primary: #fcfcfa;
+  --bg-sidebar: #f7f6f3;
+  --bg-titlebar: #f5f5f2;
+  --bg-surface: #fcfcfa;
+  --bg-hover: #eceae6;
+  --border: #eceae6;
+  --border-light: #eceae6;
+  --ink-dark: #222;
+  --ink-light: #999;
+  --editor-font: 'Literata', Georgia, 'Times New Roman', serif;
+  --editor-font-size: 18px;
+  --editor-line-height: 1.8;
+  --editor-letter-spacing: 0.005em;
+  --editor-max-width: 660px;
+  --editor-color: #2a2a2a;
+  --h1-size: 30px;
+  --h1-spacing: -0.8px;
+  --h2-size: 22px;
+  --h2-spacing: -0.5px;
+  --h3-size: 16px;
+  --h3-spacing: -0.2px;
+  --h3-color: #666;
+  --blockquote-border: #d0d0cc;
+}
+
+/* ─── 9. Literata Dark ─── */
+[data-theme="literata"][data-mode="dark"] {
+  --bg-primary: #19191a;
+  --bg-sidebar: #1b1b1c;
+  --bg-titlebar: #1e1e1f;
+  --bg-surface: #1e1e1f;
+  --bg-hover: #272728;
+  --border: #2a2a2b;
+  --border-light: #272728;
+  --ink-dark: #e0e0de;
+  --ink-light: #666;
+  --editor-font: 'Literata', Georgia, 'Times New Roman', serif;
+  --editor-font-size: 18px;
+  --editor-line-height: 1.8;
+  --editor-letter-spacing: 0.005em;
+  --editor-max-width: 660px;
+  --editor-color: #c8c8c4;
+  --h1-size: 30px;
+  --h1-spacing: -0.8px;
+  --h1-color: #f0f0ee;
+  --h2-size: 22px;
+  --h2-spacing: -0.5px;
+  --h2-color: #f0f0ee;
+  --h3-size: 16px;
+  --h3-spacing: -0.2px;
+  --h3-color: #999;
+  --strong-color: #f0f0ee;
+  --blockquote-border: #444;
+  --shimmer-highlight: rgba(255, 255, 255, 0.08);
+  --color-pending-insert: #22c55e;
+  --color-pending-insert-bg: rgba(34, 197, 94, 0.1);
+  --color-pending-insert-border: #22c55e;
+  --color-pending-rewrite: #60a5fa;
+  --color-pending-rewrite-bg: rgba(96, 165, 250, 0.1);
+  --color-pending-rewrite-border: #60a5fa;
+  --color-pending-delete: #f87171;
+  --color-pending-delete-bg: rgba(248, 113, 113, 0.1);
+  --color-pending-delete-border: #f87171;
+  --color-pending-focus: #60a5fa;
+}
+
+/* ─── 10. Swiss Light ─── */
+[data-theme="swiss"][data-mode="light"] {
+  --bg-sidebar: #f8f8f8;
+  --bg-titlebar: #f6f6f6;
+  --bg-hover: #ebebeb;
+  --border: #e8e8e8;
+  --border-light: #ebebeb;
+  --ink-dark: #111;
+  --ink-light: #999;
+  --font-sidebar: 'DM Sans', Inter, sans-serif;
+  --editor-font: 'DM Sans', Inter, -apple-system, sans-serif;
+  --editor-font-size: 16.5px;
+  --editor-line-height: 1.7;
+  --editor-letter-spacing: -0.01em;
+  --editor-max-width: 680px;
+  --editor-color: #1a1a1a;
+  --font-heading: 'DM Serif Display', Georgia, serif;
+  --h1-size: 36px;
+  --h1-weight: 400;
+  --h1-spacing: -0.5px;
+  --h1-line-height: 1.1;
+  --h1-color: #0a0a0a;
+  --h2-size: 26px;
+  --h2-weight: 400;
+  --h2-spacing: -0.3px;
+  --h2-color: #111;
+  --font-heading-h3: 'DM Sans', Inter, sans-serif;
+  --h3-size: 14px;
+  --h3-weight: 600;
+  --h3-spacing: 0.5px;
+  --h3-color: #666;
+  --h3-transform: uppercase;
+  --strong-color: #0a0a0a;
+  --blockquote-border: #ddd;
+}
+
+/* ─── 10. Swiss Dark ─── */
+[data-theme="swiss"][data-mode="dark"] {
+  --bg-primary: #151515;
+  --bg-sidebar: #171717;
+  --bg-titlebar: #1a1a1a;
+  --bg-surface: #1a1a1a;
+  --bg-hover: #222;
+  --border: #252525;
+  --border-light: #222;
+  --ink-dark: #e0e0e0;
+  --ink-light: #666;
+  --font-sidebar: 'DM Sans', Inter, sans-serif;
+  --editor-font: 'DM Sans', Inter, -apple-system, sans-serif;
+  --editor-font-size: 16.5px;
+  --editor-line-height: 1.7;
+  --editor-letter-spacing: -0.01em;
+  --editor-max-width: 680px;
+  --editor-color: #ccc;
+  --font-heading: 'DM Serif Display', Georgia, serif;
+  --h1-size: 36px;
+  --h1-weight: 400;
+  --h1-spacing: -0.5px;
+  --h1-line-height: 1.1;
+  --h1-color: #f0f0f0;
+  --h2-size: 26px;
+  --h2-weight: 400;
+  --h2-spacing: -0.3px;
+  --h2-color: #eee;
+  --font-heading-h3: 'DM Sans', Inter, sans-serif;
+  --h3-size: 14px;
+  --h3-weight: 600;
+  --h3-spacing: 0.5px;
+  --h3-color: #888;
+  --h3-transform: uppercase;
+  --strong-color: #f0f0f0;
+  --blockquote-border: #3a3a3a;
+  --shimmer-highlight: rgba(255, 255, 255, 0.08);
+  --color-pending-insert: #22c55e;
+  --color-pending-insert-bg: rgba(34, 197, 94, 0.1);
+  --color-pending-insert-border: #22c55e;
+  --color-pending-rewrite: #60a5fa;
+  --color-pending-rewrite-bg: rgba(96, 165, 250, 0.1);
+  --color-pending-rewrite-border: #60a5fa;
+  --color-pending-delete: #f87171;
+  --color-pending-delete-bg: rgba(248, 113, 113, 0.1);
+  --color-pending-delete-border: #f87171;
+  --color-pending-focus: #60a5fa;
+}

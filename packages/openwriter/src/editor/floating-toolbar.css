@@ -1,0 +1,49 @@
+/* Floating toolbar (BubbleMenu) */
+.floating-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  padding: 4px;
+}
+
+.floating-toolbar__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--ink-dark);
+  border-radius: 6px;
+  padding: 0;
+  transition: all 0.15s ease;
+}
+
+.floating-toolbar__btn:hover:not(:disabled) {
+  background: var(--bg-hover);
+}
+
+.floating-toolbar__btn.active {
+  background: rgba(37, 99, 235, 0.1);
+  color: var(--accent);
+}
+
+.floating-toolbar__btn.disabled,
+.floating-toolbar__btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.floating-toolbar__divider {
+  width: 1px;
+  height: 20px;
+  background: var(--border);
+  margin: 0 2px;
+  flex-shrink: 0;
+}

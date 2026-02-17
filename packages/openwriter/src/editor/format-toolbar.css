@@ -1,0 +1,69 @@
+/* ─── Format Toolbar (persistent strip below titlebar) ────────────────── */
+
+.format-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 4px 16px;
+  background: var(--bg-titlebar);
+  border-bottom: 1px solid var(--border);
+  height: 36px;
+  flex-shrink: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.format-toolbar::-webkit-scrollbar {
+  display: none;
+}
+
+.format-toolbar__group {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.format-toolbar__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--ink-light);
+  border-radius: 5px;
+  padding: 0;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.format-toolbar__btn:hover:not(:disabled) {
+  background: var(--bg-hover);
+  color: var(--ink-dark);
+}
+
+.format-toolbar__btn.active {
+  background: rgba(37, 99, 235, 0.1);
+  color: var(--accent);
+}
+
+.format-toolbar__btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.format-toolbar__divider {
+  width: 1px;
+  height: 20px;
+  background: var(--border);
+  margin: 0 4px;
+  flex-shrink: 0;
+}
+
+/* Hidden file input for image upload */
+.format-toolbar__file-input {
+  display: none;
+}

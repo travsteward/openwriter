@@ -1,0 +1,198 @@
+.shelf-wrapper {
+  display: flex;
+  flex-direction: row;
+  height: 100%;
+  overflow: hidden;
+}
+
+.shelf-spines {
+  width: 72px;
+  min-width: 72px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 4px;
+  overflow-y: auto;
+  background: var(--bg-sidebar);
+  border-right: 1px solid var(--border);
+}
+
+/* Back button */
+.shelf-back {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  width: 100%;
+  padding: 6px 4px;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  background: none;
+  cursor: pointer;
+  color: var(--ink-light);
+  font-size: 10px;
+  font-family: var(--font-body);
+  margin-bottom: 4px;
+  flex-shrink: 0;
+  transition: color 0.15s;
+}
+
+.shelf-back:hover {
+  color: var(--ink-dark);
+}
+
+.shelf-back-arrow {
+  font-size: 12px;
+  line-height: 1;
+}
+
+.shelf-back-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Section spines (workspaces, containers) */
+.shelf-section-spine {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  width: 100%;
+  min-height: 52px;
+  padding: 8px 4px;
+  border-radius: 4px;
+  background: var(--bg-hover);
+  border-left: 3px solid var(--ink-light);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  flex-shrink: 0;
+}
+
+.shelf-section-spine:hover {
+  background: var(--border);
+  border-left-color: var(--ink-dark);
+}
+
+.shelf-section-container {
+  border-left-color: var(--border);
+  background: transparent;
+  min-height: 44px;
+}
+
+.shelf-section-container:hover {
+  background: var(--bg-hover);
+  border-left-color: var(--ink-light);
+}
+
+.shelf-section-title {
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--ink-dark);
+  text-align: center;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  word-break: break-word;
+}
+
+.shelf-section-count {
+  font-size: 9px;
+  color: var(--ink-light);
+  background: var(--bg-sidebar);
+  border-radius: 8px;
+  padding: 1px 5px;
+  line-height: 1;
+}
+
+/* Doc list panel (right side) */
+.shelf-docs {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.shelf-docs-header {
+  padding: 8px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-dark);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.shelf-docs-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+
+.shelf-doc-item {
+  padding: 8px 10px;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.shelf-doc-item:hover {
+  background: var(--bg-hover);
+}
+
+.shelf-doc-item.active {
+  background: var(--bg-hover);
+  border-left: 2px solid var(--ink-dark);
+}
+
+.shelf-doc-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink-dark);
+  line-height: 1.3;
+}
+
+.shelf-doc-meta {
+  font-size: 10px;
+  color: var(--ink-light);
+  margin-top: 2px;
+}
+
+.shelf-pending-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #22c55e;
+  flex-shrink: 0;
+}
+
+.shelf-docs-empty {
+  padding: 16px 10px;
+  font-size: 11px;
+  color: var(--ink-light);
+  text-align: center;
+}
+
+/* New workspace button */
+.shelf-add {
+  width: 100%;
+  min-height: 36px;
+  border: 2px dashed var(--border);
+  border-radius: 4px;
+  background: none;
+  cursor: pointer;
+  color: var(--ink-light);
+  font-size: 16px;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+
+.shelf-add:hover {
+  border-color: var(--ink-light);
+  background: var(--bg-hover);
+}

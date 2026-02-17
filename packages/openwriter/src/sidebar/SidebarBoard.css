@@ -1,0 +1,182 @@
+/* Board mode: horizontal nav strip at top */
+.sidebar.sidebar-board-mode {
+  width: 100% !important;
+  min-width: 100% !important;
+  max-width: 100% !important;
+  height: auto;
+  max-height: 200px;
+  min-height: 0;
+  border-right: none;
+  border-bottom: 1px solid var(--border);
+  flex-direction: row;
+  overflow: visible !important;
+}
+
+.sidebar.sidebar-board-mode:not(.open) {
+  max-height: 0;
+  border-bottom: none;
+}
+
+.board-scroll {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+  overflow-x: auto;
+  overflow-y: visible;
+  padding: 6px 10px;
+  height: 40px;
+  flex: 1;
+  min-width: 0;
+}
+
+/* Back button */
+.board-back {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: none;
+  cursor: pointer;
+  color: var(--ink-light);
+  font-size: 11px;
+  font-family: var(--font-body);
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+
+.board-back:hover {
+  color: var(--ink-dark);
+  border-color: var(--ink-light);
+}
+
+.board-back--static {
+  cursor: default;
+  color: var(--ink-muted, var(--ink-light));
+  opacity: 0.6;
+}
+
+.board-back--static:hover {
+  color: var(--ink-muted, var(--ink-light));
+  border-color: var(--border);
+}
+
+/* Chip buttons */
+.board-chip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 12px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--bg-surface);
+  cursor: pointer;
+  color: var(--ink-dark);
+  font-size: 11px;
+  font-weight: 500;
+  font-family: var(--font-body);
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+
+.board-chip:hover {
+  background: var(--bg-hover);
+  border-color: var(--ink-light);
+}
+
+.board-chip.open {
+  background: var(--bg-hover);
+  border-color: var(--ink-dark);
+}
+
+.board-chip-count {
+  font-size: 10px;
+  color: var(--ink-light);
+  font-weight: 400;
+}
+
+.board-chip-arrow {
+  font-size: 14px;
+  line-height: 1;
+  color: var(--ink-light);
+  margin-left: -2px;
+}
+
+.board-chip-docs {
+  border-style: dashed;
+}
+
+.board-chip-add {
+  border-style: dashed;
+  color: var(--ink-light);
+  font-size: 14px;
+  padding: 4px 10px;
+}
+
+.board-chip-add:hover {
+  color: var(--ink-dark);
+}
+
+/* Dropdown — rendered with position:fixed inline to escape overflow ancestors */
+.board-dropdown {
+  min-width: 220px;
+  max-width: 300px;
+  max-height: 280px;
+  overflow-y: auto;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  z-index: 100;
+  padding: 4px;
+}
+
+.board-dropdown-item {
+  padding: 6px 8px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.board-dropdown-item:hover {
+  background: var(--bg-hover);
+}
+
+.board-dropdown-item.active {
+  background: var(--bg-hover);
+  border-left: 2px solid var(--ink-dark);
+}
+
+.board-dropdown-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink-dark);
+}
+
+.board-dropdown-meta {
+  display: block;
+  font-size: 10px;
+  color: var(--ink-light);
+  margin-top: 1px;
+}
+
+.board-pending-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #22c55e;
+  flex-shrink: 0;
+}
+
+.board-dropdown-empty {
+  padding: 12px 8px;
+  text-align: center;
+  font-size: 11px;
+  color: var(--ink-light);
+}

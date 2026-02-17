@@ -1,0 +1,444 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  font-family: var(--font-body);
+  background: var(--bg-primary);
+  color: var(--ink-dark);
+  -webkit-font-smoothing: antialiased;
+}
+
+.app {
+  display: flex;
+  flex-direction: row;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.app-main {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  position: relative;
+}
+
+.editor-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 2rem 1rem;
+  min-width: 0;
+}
+
+/* Extra scroll room when review panel is visible so it doesn't obscure the last paragraph */
+.app:has(.review-panel) .editor-container {
+  padding-bottom: 5rem;
+}
+
+/* TipTap editor styles */
+.tiptap {
+  max-width: var(--editor-max-width);
+  margin: 0 auto;
+  padding: 0 1rem;
+  font-family: var(--editor-font);
+  font-size: var(--editor-font-size);
+  line-height: var(--editor-line-height);
+  letter-spacing: var(--editor-letter-spacing);
+  color: var(--editor-color);
+  outline: none;
+}
+
+.tiptap p {
+  margin-bottom: 1em;
+}
+
+.tiptap h1 {
+  font-family: var(--font-heading-h1);
+  font-size: var(--h1-size);
+  font-weight: var(--h1-weight);
+  letter-spacing: var(--h1-spacing);
+  line-height: var(--h1-line-height);
+  color: var(--h1-color);
+  font-style: var(--h1-style);
+  margin-bottom: 0.5em;
+}
+
+.tiptap h2 {
+  font-family: var(--font-heading-h2);
+  font-size: var(--h2-size);
+  font-weight: var(--h2-weight);
+  letter-spacing: var(--h2-spacing);
+  line-height: var(--h2-line-height);
+  color: var(--h2-color);
+  margin-bottom: 0.5em;
+}
+
+.tiptap h3 {
+  font-family: var(--font-heading-h3);
+  font-size: var(--h3-size);
+  font-weight: var(--h3-weight);
+  letter-spacing: var(--h3-spacing);
+  line-height: var(--h3-line-height);
+  color: var(--h3-color);
+  text-transform: var(--h3-transform);
+  border-bottom: var(--h3-border);
+  padding-bottom: var(--h3-pb);
+  display: var(--h3-display);
+  margin-bottom: 0.5em;
+}
+
+.tiptap ul,
+.tiptap ol {
+  padding-left: 1.5em;
+  margin-bottom: 1em;
+}
+
+.tiptap li {
+  margin-bottom: 0.25em;
+}
+
+.tiptap blockquote {
+  border-left: var(--blockquote-border-width) solid var(--blockquote-border);
+  padding-left: 1em;
+  margin-left: 0;
+  margin-bottom: 1em;
+  color: var(--ink-light);
+  font-style: italic;
+  opacity: var(--blockquote-opacity);
+  font-size: var(--blockquote-font-size);
+}
+
+.tiptap code {
+  background: rgba(0, 0, 0, 0.05);
+  padding: 0.15em 0.3em;
+  border-radius: 3px;
+  font-size: 0.9em;
+}
+
+.tiptap pre {
+  background: #1e1e1e;
+  color: #d4d4d4;
+  padding: 1em;
+  border-radius: 6px;
+  margin-bottom: 1em;
+  overflow-x: auto;
+}
+
+.tiptap pre code {
+  background: none;
+  padding: 0;
+  color: inherit;
+}
+
+.tiptap hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 2em 0;
+}
+
+/* Placeholder */
+.tiptap p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: #adb5bd;
+  pointer-events: none;
+  height: 0;
+}
+
+/* Selection */
+.tiptap ::selection {
+  background: rgba(37, 99, 235, 0.15);
+}
+
+/* ─── Sync button states ─────────────────────────────────────────────── */
+
+.sync-btn-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sync-btn-state svg { flex-shrink: 0; }
+
+.sync-unconfigured { background: var(--accent); color: white; border-color: var(--accent); }
+.sync-synced { background: #22c55e; color: white; border-color: #22c55e; }
+.sync-pending { background: var(--accent); color: white; border-color: var(--accent); }
+.sync-syncing { background: var(--accent); color: white; border-color: var(--accent); opacity: 0.8; }
+.sync-error { background: #dc2626; color: white; border-color: #dc2626; }
+
+.sync-btn-state:hover { background: #1d4ed8 !important; border-color: #1d4ed8 !important; }
+.sync-synced:hover { background: #16a34a !important; border-color: #16a34a !important; }
+.sync-error:hover { background: #b91c1c !important; border-color: #b91c1c !important; }
+
+.sync-btn-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: sync-btn-spin 0.8s linear infinite;
+}
+
+@keyframes sync-btn-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ─── Sync details dropdown ────────────────────────────────────────────── */
+
+.sync-btn-group {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+.sync-details-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 28px;
+  border: 1px solid var(--accent);
+  border-left: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 0 6px 6px 0;
+  background: var(--accent);
+  color: white;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  margin-left: -1px;
+}
+
+.sync-details-btn:hover {
+  background: #1d4ed8;
+}
+
+.sync-btn-group .sync-btn-state:has(+ .sync-details-btn) {
+  border-radius: 6px 0 0 6px;
+}
+
+.sync-pending-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  width: 320px;
+  max-height: 400px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  z-index: 100;
+  overflow: hidden;
+}
+
+.sync-pending-header {
+  padding: 10px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--border);
+}
+
+.sync-pending-loading {
+  padding: 20px 14px;
+  text-align: center;
+  color: var(--ink-muted);
+  font-size: 13px;
+}
+
+.sync-pending-list {
+  max-height: 350px;
+  overflow-y: auto;
+}
+
+.sync-pending-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+  font-size: 13px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.sync-pending-item:last-child { border-bottom: none; }
+
+.sync-file-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.sync-file-added .sync-file-badge { background: #dcfce7; color: #16a34a; }
+.sync-file-modified .sync-file-badge { background: #dbeafe; color: #2563eb; }
+.sync-file-deleted .sync-file-badge { background: #fee2e2; color: #dc2626; }
+.sync-file-renamed .sync-file-badge { background: #fef3c7; color: #d97706; }
+
+.sync-file-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ink-dark);
+}
+
+/* ─── Shimmer loading effect ─────────────────────────────────────────────── */
+
+.node-blur-effect {
+  filter: blur(1.5px);
+  opacity: 1;
+  pointer-events: none;
+  transition: filter 0.3s ease, opacity 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.node-blur-effect::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 250%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    transparent 40%,
+    var(--shimmer-highlight) 50%,
+    transparent 60%,
+    transparent 100%
+  );
+  animation: shimmer-paragraph-sweep 2.8s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes shimmer-paragraph-sweep {
+  0% { left: -150%; }
+  100% { left: 100%; }
+}
+
+.node-blur-selection {
+  filter: blur(1.5px);
+  display: inline;
+  background: linear-gradient(
+    90deg,
+    var(--ink-dark) 0%,
+    var(--ink-dark) 45%,
+    var(--shimmer-highlight) 50%,
+    var(--ink-dark) 55%,
+    var(--ink-dark) 100%
+  );
+  background-size: 250% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  animation: shimmer-text-flow 4.2s ease-in-out infinite;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  background-attachment: fixed;
+  pointer-events: none;
+}
+
+@keyframes shimmer-text-flow {
+  0% { background-position: 110% 0; }
+  100% { background-position: -60% 0; }
+}
+
+/* Hide selection within shimmer */
+.node-blur-effect::selection,
+.node-blur-effect *::selection,
+.node-blur-selection::selection,
+.node-blur-selection *::selection {
+  background: transparent !important;
+}
+
+.ProseMirror:has(.node-blur-effect) ::selection,
+.ProseMirror:has(.node-blur-selection) ::selection {
+  background: rgba(0, 0, 0, 0.01) !important;
+}
+
+/* ─── Task list styles ─────────────────────────────────────────────── */
+
+.tiptap ul[data-type="taskList"] {
+  list-style: none;
+  padding-left: 0;
+  margin-bottom: 1em;
+}
+
+.tiptap ul[data-type="taskList"] li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5em;
+  margin-bottom: 0.25em;
+}
+
+.tiptap ul[data-type="taskList"] li > label {
+  flex-shrink: 0;
+  margin-top: 0.2em;
+}
+
+.tiptap ul[data-type="taskList"] li > label input[type="checkbox"] {
+  cursor: pointer;
+  width: 16px;
+  height: 16px;
+}
+
+.tiptap ul[data-type="taskList"] li > div {
+  flex: 1;
+}
+
+.tiptap ul[data-type="taskList"] li[data-checked="true"] > div p {
+  text-decoration: line-through;
+  color: var(--ink-muted);
+}
+
+/* ─── Image styles ─────────────────────────────────────────────── */
+
+.tiptap img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 6px;
+  margin-bottom: 1em;
+  display: block;
+}
+
+.tiptap img.ProseMirror-selectednode {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ─── Syntax highlighting (lowlight) ─────────────────────────────── */
+
+.tiptap pre code .hljs-keyword { color: #569cd6; }
+.tiptap pre code .hljs-string { color: #ce9178; }
+.tiptap pre code .hljs-number { color: #b5cea8; }
+.tiptap pre code .hljs-comment { color: #6a9955; font-style: italic; }
+.tiptap pre code .hljs-function { color: #dcdcaa; }
+.tiptap pre code .hljs-title { color: #dcdcaa; }
+.tiptap pre code .hljs-params { color: #9cdcfe; }
+.tiptap pre code .hljs-built_in { color: #4ec9b0; }
+.tiptap pre code .hljs-type { color: #4ec9b0; }
+.tiptap pre code .hljs-attr { color: #9cdcfe; }
+.tiptap pre code .hljs-variable { color: #9cdcfe; }
+.tiptap pre code .hljs-selector-class { color: #d7ba7d; }
+.tiptap pre code .hljs-selector-tag { color: #569cd6; }
+.tiptap pre code .hljs-tag { color: #569cd6; }
+.tiptap pre code .hljs-name { color: #569cd6; }
+.tiptap pre code .hljs-attribute { color: #9cdcfe; }
+.tiptap pre code .hljs-literal { color: #569cd6; }
+.tiptap pre code .hljs-meta { color: #569cd6; }
+.tiptap pre code .hljs-regexp { color: #d16969; }
+.tiptap pre code .hljs-symbol { color: #b5cea8; }

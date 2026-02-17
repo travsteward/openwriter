@@ -1,0 +1,586 @@
+/* Pending decoration styles — port from BreeWriter AgenticDecorationStyles.css */
+
+/* Insert: green */
+.pending-insert {
+  color: var(--color-pending-insert);
+  background-color: var(--color-pending-insert-bg);
+  border-left: 3px solid var(--color-pending-insert-border);
+  border-radius: 3px;
+  padding: 4px 8px;
+  transition: background-color 0.2s ease;
+}
+
+/* Rewrite: blue */
+.pending-rewrite {
+  color: var(--color-pending-rewrite);
+  background-color: var(--color-pending-rewrite-bg);
+  border-left: 3px solid var(--color-pending-rewrite-border);
+  border-radius: 3px;
+  padding: 4px 8px;
+  transition: background-color 0.2s ease;
+}
+
+/* Delete: red + strikethrough */
+.pending-delete {
+  color: var(--color-pending-delete);
+  background-color: var(--color-pending-delete-bg);
+  border-left: 3px solid var(--color-pending-delete-border);
+  border-radius: 3px;
+  padding: 4px 8px;
+  text-decoration: line-through;
+  text-decoration-color: var(--color-pending-delete);
+  opacity: 0.8;
+  transition: background-color 0.2s ease, opacity 0.2s ease;
+}
+
+.pending-delete * {
+  text-decoration: line-through;
+  text-decoration-color: inherit;
+}
+
+/* Focused navigation highlight */
+.pending-focused,
+.pending-insert.pending-focused,
+.pending-rewrite.pending-focused,
+.pending-delete.pending-focused {
+  outline: 2px solid var(--color-pending-focus);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
+}
+
+/* Hover states */
+.pending-insert:hover { background-color: rgba(22, 163, 74, 0.15); }
+.pending-rewrite:hover { background-color: rgba(37, 99, 235, 0.15); }
+.pending-delete:hover { background-color: rgba(231, 76, 60, 0.15); opacity: 0.9; }
+
+/* Review panel */
+.review-panel {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  padding: 6px 14px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  z-index: 1000;
+  font-family: var(--font-body);
+  font-size: 14px;
+}
+
+.review-panel__nav { display: flex; gap: 3px; align-items: center; }
+
+.review-panel__btn {
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-surface);
+  cursor: pointer;
+  font-family: inherit;
+  color: var(--ink-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+  line-height: 1;
+  padding: 0;
+}
+
+.review-panel__btn:hover {
+  background: var(--bg-hover);
+  color: var(--ink-dark);
+}
+
+.review-panel__btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.review-panel__divider {
+  width: 1px;
+  height: 24px;
+  background: var(--border);
+}
+
+.review-panel__counter {
+  font-size: 13px;
+  color: var(--ink-light);
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 4px;
+}
+
+.review-panel__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.review-panel__dot--insert { background: var(--color-pending-insert); }
+.review-panel__dot--rewrite { background: var(--color-pending-rewrite); }
+.review-panel__dot--delete { background: var(--color-pending-delete); }
+
+.review-panel__status {
+  font-size: 13px;
+  color: var(--ink-light);
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.review-panel__actions { display: flex; gap: 4px; }
+
+.review-panel__accept {
+  width: 30px;
+  height: 30px;
+  background: var(--color-pending-insert);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 0;
+  transition: all 0.15s ease;
+}
+
+.review-panel__accept:hover { filter: brightness(0.85); }
+
+.review-panel__reject {
+  width: 30px;
+  height: 30px;
+  background: var(--bg-surface);
+  color: var(--color-pending-delete);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 0;
+  transition: all 0.15s ease;
+}
+
+.review-panel__reject:hover {
+  background: var(--color-pending-delete-bg);
+  border-color: var(--color-pending-delete-border);
+  color: var(--color-pending-delete);
+}
+
+.review-panel__accept-all {
+  height: 30px;
+  padding: 0 10px;
+  background: var(--color-pending-insert);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-family: inherit;
+  font-weight: 500;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.review-panel__accept-all:hover { filter: brightness(0.85); }
+
+.review-panel__reject-all {
+  height: 30px;
+  padding: 0 10px;
+  background: var(--bg-surface);
+  color: var(--color-pending-delete);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-family: inherit;
+  font-weight: 500;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.review-panel__reject-all:hover {
+  background: var(--color-pending-delete-bg);
+  border-color: var(--color-pending-delete-border);
+  color: var(--color-pending-delete);
+}
+
+/* Dark mode overrides */
+[data-mode="dark"] .review-panel {
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+[data-mode="dark"] .review-panel__btn {
+  border-color: rgba(255, 255, 255, 0.08);
+  background: transparent;
+}
+
+[data-mode="dark"] .review-panel__btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+[data-mode="dark"] .review-panel__divider {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+[data-mode="dark"] .review-panel__reject,
+[data-mode="dark"] .review-panel__reject-all {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-mode="dark"] .review-panel__reject:hover,
+[data-mode="dark"] .review-panel__reject-all:hover {
+  background: var(--color-pending-delete-bg);
+  border-color: var(--color-pending-delete-border);
+}
+
+[data-mode="dark"] .review-panel__accept:hover,
+[data-mode="dark"] .review-panel__accept-all:hover {
+  filter: brightness(1.15);
+}
+
+/* Flash animations */
+@keyframes flash-accept {
+  0% { background-color: rgba(22, 163, 74, 0.3); }
+  100% { background-color: transparent; }
+}
+
+@keyframes flash-reject {
+  0% { background-color: rgba(220, 38, 38, 0.3); }
+  100% { background-color: transparent; }
+}
+
+/* Titlebar styles */
+.titlebar {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-titlebar);
+  height: 48px;
+  flex-shrink: 0;
+}
+
+.titlebar-left { display: flex; align-items: center; gap: 8px; justify-self: start; }
+
+.titlebar-center {
+  justify-self: center;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.titlebar-menu-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--ink-light);
+  border-radius: 6px;
+  transition: all 0.15s ease;
+}
+
+.titlebar-menu-btn:hover {
+  background: var(--bg-hover);
+  color: var(--ink-dark);
+}
+
+.titlebar-nav-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--ink-light);
+  border-radius: 4px;
+  transition: all 0.15s ease;
+  padding: 0;
+}
+
+.titlebar-nav-btn:hover:not(:disabled) {
+  background: var(--bg-hover);
+  color: var(--ink-dark);
+}
+
+.titlebar-nav-btn:disabled {
+  color: var(--border);
+  cursor: default;
+}
+
+.titlebar-nav-btn--active {
+  background: rgba(37, 99, 235, 0.1);
+  color: var(--accent);
+}
+
+.titlebar-divider {
+  width: 1px;
+  height: 18px;
+  background: var(--border);
+  margin: 0 2px;
+}
+
+.titlebar-title {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ink-dark);
+  cursor: pointer;
+}
+
+.titlebar-input {
+  font-size: 15px;
+  font-weight: 500;
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  padding: 2px 6px;
+  outline: none;
+  font-family: var(--font-body);
+}
+
+.titlebar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-self: end;
+}
+
+.titlebar-btn {
+  padding: 5px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-surface);
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--ink-dark);
+  font-family: var(--font-body);
+  transition: all 0.15s ease;
+}
+
+.titlebar-btn:hover {
+  background: var(--bg-hover);
+  border-color: #cbd5e1;
+}
+
+.titlebar-btn.submitted {
+  background: var(--color-pending-insert);
+  color: white;
+  border-color: var(--color-pending-insert);
+  cursor: default;
+}
+
+.titlebar-btn.primary {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+}
+
+.titlebar-btn.primary:hover {
+  background: #1d4ed8;
+}
+
+/* Context menu */
+.context-menu {
+  position: fixed;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  padding: 4px;
+  z-index: 2000;
+  min-width: 180px;
+}
+
+.context-menu-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--ink-dark);
+  border-radius: 4px;
+  text-align: left;
+  font-family: var(--font-body);
+}
+
+.context-menu-item:hover {
+  background: var(--bg-hover);
+}
+
+.context-menu-shortcut {
+  font-size: 11px;
+  color: var(--ink-light);
+  margin-left: 16px;
+}
+
+.context-menu-loading {
+  padding: 12px;
+  text-align: center;
+  color: var(--ink-light);
+  font-size: 13px;
+}
+
+.context-menu-custom {
+  display: flex;
+  gap: 6px;
+  padding: 8px;
+}
+
+.context-menu-custom input {
+  flex: 1;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 13px;
+  outline: none;
+  font-family: var(--font-body);
+}
+
+.context-menu-custom input:focus {
+  border-color: var(--accent);
+}
+
+.context-menu-custom button {
+  padding: 6px 12px;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  font-family: var(--font-body);
+}
+
+.context-menu-link-picker {
+  max-height: 240px;
+  display: flex;
+  flex-direction: column;
+}
+
+.context-menu-link-header {
+  padding: 6px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-light);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.context-menu-link-list {
+  overflow-y: auto;
+  max-height: 240px;
+}
+
+.context-menu-new-link {
+  color: var(--accent) !important;
+  font-weight: 500;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.context-menu-section-header {
+  padding: 6px 12px 4px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--ink-light);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-top: 1px solid var(--border-light);
+  margin-top: 2px;
+}
+
+/* Inline pending: highlight just the changed span */
+.pending-inline-rewrite {
+  background: rgba(37, 99, 235, 0.15);
+  border-bottom: 2px solid var(--color-pending-rewrite);
+  border-radius: 2px;
+  padding: 0 1px;
+}
+
+.pending-inline-insert {
+  background: rgba(22, 163, 74, 0.15);
+  border-bottom: 2px solid var(--color-pending-insert);
+  border-radius: 2px;
+  padding: 0 1px;
+}
+
+/* Parent paragraph gets subtle indicator but not full highlight */
+.pending-inline-parent {
+  border-left: 3px solid var(--color-pending-rewrite-border);
+  border-radius: 3px;
+  padding-left: 8px;
+}
+
+/* Table styles */
+.tiptap table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1em 0;
+}
+
+.tiptap th,
+.tiptap td {
+  border: 1px solid var(--border);
+  padding: 8px 12px;
+  text-align: left;
+}
+
+.tiptap th {
+  background: var(--bg-hover);
+  font-weight: 600;
+}
+
+/* Internal doc links — rendered as <span>, not <a> */
+.tiptap .doc-link {
+  color: var(--accent);
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.15s ease;
+  cursor: pointer;
+}
+
+.tiptap .doc-link:hover {
+  border-bottom-color: var(--accent);
+}
+
+@media (max-width: 640px) {
+  .review-panel {
+    bottom: 16px;
+    padding: 8px 12px;
+    gap: 8px;
+  }
+  .review-panel__status { display: none; }
+}

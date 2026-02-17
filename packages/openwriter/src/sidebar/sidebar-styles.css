@@ -1,0 +1,204 @@
+/* ==========================================================================
+   SIDEBAR VISUAL STYLES — applied via [data-sidebar-style] on <html>
+   These are purely cosmetic overlays on top of any sidebar mode.
+   ========================================================================== */
+
+/* ---------- FROST ---------- */
+[data-sidebar-style="frost"] .sidebar {
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(16px) saturate(1.4);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  border-right-color: rgba(255, 255, 255, 0.3);
+}
+
+[data-sidebar-style="frost"][data-mode="dark"] .sidebar {
+  background: rgba(30, 30, 35, 0.7);
+  border-right-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-sidebar-style="frost"] .sidebar-section-header {
+  background: transparent;
+}
+
+[data-sidebar-style="frost"] .sidebar-item:hover,
+[data-sidebar-style="frost"] .tl-item:hover,
+[data-sidebar-style="frost"] .board-card:hover {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+[data-sidebar-style="frost"][data-mode="dark"] .sidebar-item:hover,
+[data-sidebar-style="frost"][data-mode="dark"] .tl-item:hover,
+[data-sidebar-style="frost"][data-mode="dark"] .board-card:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+[data-sidebar-style="frost"] .sidebar-item.active,
+[data-sidebar-style="frost"] .tl-item.active {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+[data-sidebar-style="frost"][data-mode="dark"] .sidebar-item.active,
+[data-sidebar-style="frost"][data-mode="dark"] .tl-item.active {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* ---------- MINIMAL ---------- */
+[data-sidebar-style="minimal"] .sidebar {
+  background: var(--bg-primary);
+  border-right: none;
+  box-shadow: 1px 0 0 var(--border-light, var(--border));
+}
+
+[data-sidebar-style="minimal"] .sidebar-section-header {
+  border-left: none;
+  padding-left: 14px;
+}
+
+[data-sidebar-style="minimal"] .sidebar-item {
+  border-radius: 0;
+  margin: 0;
+}
+
+[data-sidebar-style="minimal"] .sidebar-item:hover,
+[data-sidebar-style="minimal"] .tl-item:hover {
+  background: transparent;
+}
+
+[data-sidebar-style="minimal"] .sidebar-item:hover .sidebar-item-title-text,
+[data-sidebar-style="minimal"] .tl-item:hover .tl-item-title {
+  text-decoration: underline;
+}
+
+[data-sidebar-style="minimal"] .sidebar-item.active,
+[data-sidebar-style="minimal"] .tl-item.active {
+  background: transparent;
+  border-left: 2px solid var(--accent, #5b7a9d);
+  padding-left: 8px;
+}
+
+[data-sidebar-style="minimal"] .sidebar-container {
+  border-left-width: 1px;
+}
+
+[data-sidebar-style="minimal"] .sidebar-new-workspace button {
+  border-style: solid;
+  border-width: 1px;
+}
+
+/* ---------- TERMINAL ---------- */
+[data-sidebar-style="terminal"] .sidebar {
+  background: #0d1117;
+  border-right: 1px solid #21262d;
+  color: #c9d1d9;
+  font-family: 'IBM Plex Mono', 'Courier New', monospace;
+}
+
+[data-sidebar-style="terminal"] .sidebar-section-header {
+  border-left-color: #3fb950;
+}
+
+[data-sidebar-style="terminal"] .sidebar-label,
+[data-sidebar-style="terminal"] .tl-title {
+  color: #3fb950;
+  font-family: inherit;
+}
+
+[data-sidebar-style="terminal"] .sidebar-item-title-text,
+[data-sidebar-style="terminal"] .tl-item-title,
+[data-sidebar-style="terminal"] .board-card-title,
+[data-sidebar-style="terminal"] .shelf-detail-title {
+  color: #c9d1d9;
+  font-family: inherit;
+}
+
+[data-sidebar-style="terminal"] .sidebar-item-meta,
+[data-sidebar-style="terminal"] .tl-item-meta,
+[data-sidebar-style="terminal"] .board-card-meta,
+[data-sidebar-style="terminal"] .shelf-detail-meta {
+  color: #8b949e;
+  font-family: inherit;
+}
+
+[data-sidebar-style="terminal"] .sidebar-item:hover,
+[data-sidebar-style="terminal"] .tl-item:hover,
+[data-sidebar-style="terminal"] .board-card:hover {
+  background: #161b22;
+}
+
+[data-sidebar-style="terminal"] .sidebar-item.active,
+[data-sidebar-style="terminal"] .tl-item.active {
+  background: #161b22;
+  border-left: 2px solid #3fb950;
+}
+
+[data-sidebar-style="terminal"] .board-card.active {
+  border-color: #3fb950;
+}
+
+[data-sidebar-style="terminal"] .board-lane {
+  background: #161b22;
+}
+
+[data-sidebar-style="terminal"] .board-card {
+  background: #0d1117;
+  border-color: #21262d;
+}
+
+[data-sidebar-style="terminal"] .tl-dot {
+  border-color: #3fb950;
+  background: #0d1117;
+}
+
+[data-sidebar-style="terminal"] .tl-item.active .tl-dot {
+  background: #3fb950;
+}
+
+[data-sidebar-style="terminal"] .tl-group::before {
+  background: #21262d;
+}
+
+[data-sidebar-style="terminal"] .tl-date {
+  color: #3fb950;
+}
+
+[data-sidebar-style="terminal"] .sidebar-workspace-label {
+  color: #58a6ff;
+}
+
+[data-sidebar-style="terminal"] .sidebar-container-name {
+  color: #d2a8ff;
+}
+
+[data-sidebar-style="terminal"] .sidebar-new-workspace button,
+[data-sidebar-style="terminal"] .shelf-add {
+  border-color: #21262d;
+  color: #8b949e;
+}
+
+[data-sidebar-style="terminal"] .sidebar-new-workspace button:hover,
+[data-sidebar-style="terminal"] .shelf-add:hover {
+  border-color: #3fb950;
+  color: #3fb950;
+}
+
+[data-sidebar-style="terminal"] .sidebar-tag {
+  background: #161b22;
+  border-color: #21262d;
+  color: #8b949e;
+}
+
+[data-sidebar-style="terminal"] .shelf-spines {
+  background: #0d1117;
+  border-right-color: #21262d;
+}
+
+[data-sidebar-style="terminal"] .shelf-detail-open {
+  border-color: #21262d;
+  color: #c9d1d9;
+  background: #161b22;
+}
+
+[data-sidebar-style="terminal"] .shelf-detail-open:hover {
+  border-color: #3fb950;
+  color: #3fb950;
+}

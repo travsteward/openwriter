@@ -1,0 +1,68 @@
+{
+  "name": "openwriter",
+  "version": "0.1.0",
+  "description": "Local TipTap editor for human-agent collaboration via MCP",
+  "type": "module",
+  "bin": {
+    "openwriter": "./dist/bin/pad.js"
+  },
+  "scripts": {
+    "dev": "concurrently \"vite\" \"tsx watch server/index.ts\"",
+    "build": "vite build && tsc -p tsconfig.server.json",
+    "preview": "node dist/bin/pad.js",
+    "lint": "eslint src server bin --ext .ts,.tsx"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "@tiptap/core": "^3.0.0",
+    "@tiptap/extension-code-block-lowlight": "^3.19.0",
+    "@tiptap/extension-highlight": "^3.19.0",
+    "@tiptap/extension-image": "^3.19.0",
+    "@tiptap/extension-link": "^3.19.0",
+    "@tiptap/extension-placeholder": "^3.0.0",
+    "@tiptap/extension-subscript": "^3.19.0",
+    "@tiptap/extension-superscript": "^3.19.0",
+    "@tiptap/extension-table": "^3.19.0",
+    "@tiptap/extension-task-item": "^3.19.0",
+    "@tiptap/extension-task-list": "^3.19.0",
+    "@tiptap/extension-text-style": "^3.0.0",
+    "@tiptap/extension-typography": "^3.19.0",
+    "@tiptap/extension-underline": "^3.0.0",
+    "@tiptap/extension-unique-id": "^3.0.0",
+    "@tiptap/pm": "^3.0.0",
+    "@tiptap/react": "^3.0.0",
+    "@tiptap/starter-kit": "^3.0.0",
+    "@turbodocx/html-to-docx": "^1.20.1",
+    "@types/multer": "^2.0.0",
+    "express": "^4.21.0",
+    "gray-matter": "^4.0.3",
+    "lowlight": "^3.3.0",
+    "markdown-it": "^14.1.1",
+    "markdown-it-ins": "^4.0.0",
+    "markdown-it-mark": "^4.0.0",
+    "markdown-it-sub": "^2.0.0",
+    "markdown-it-sup": "^2.0.0",
+    "multer": "^2.0.2",
+    "open": "^10.1.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "ws": "^8.18.0",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/markdown-it": "^14.1.2",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "@types/ws": "^8.5.0",
+    "@vitejs/plugin-react": "^4.3.0",
+    "concurrently": "^9.1.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0",
+    "vite": "^6.0.0"
+  },
+  "files": [
+    "dist/",
+    "package.json"
+  ]
+}
