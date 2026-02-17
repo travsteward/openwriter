@@ -49,8 +49,8 @@ export default function ContextMenu({ editorRef }: ContextMenuProps) {
   const [pluginItems, setPluginItems] = useState<PluginMenuItem[]>([]);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  // Fetch plugin menu items on mount
-  useEffect(() => {
+  // Fetch plugin menu items
+  const fetchPluginItems = useCallback(() => {
     fetch('/api/plugins')
       .then((r) => r.json())
       .then((data) => {
@@ -62,6 +62,16 @@ export default function ContextMenu({ editorRef }: ContextMenuProps) {
       })
       .catch(() => {});
   }, []);
+
+  // Fetch on mount
+  useEffect(() => { fetchPluginItems(); }, [fetchPluginItems]);
+
+  // Re-fetch when plugins are enabled/disabled
+  useEffect(() => {
+    const handler = () => fetchPluginItems();
+    window.addEventListener('ow-plugins-changed', handler);
+    return () => window.removeEventListener('ow-plugins-changed', handler);
+  }, [fetchPluginItems]);
 
   // Close on click outside
   useEffect(() => {
@@ -185,9 +195,12 @@ export default function ContextMenu({ editorRef }: ContextMenuProps) {
         }
       });
 
+      // Strip namespace prefix (e.g. "av:rewrite" → "rewrite") for the backend
+      const backendAction = action.includes(':') ? action.split(':').slice(1).join(':') : action;
+
       const body: any = {
         nodes,
-        action,
+        action: backendAction,
         nodeIds,
         contextBefore: contextBefore.slice(-3).join('\n'),
         contextAfter: contextAfter.slice(0, 3).join('\n'),

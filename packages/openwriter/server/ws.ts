@@ -220,6 +220,13 @@ export function broadcastPendingDocsChanged(): void {
   }, PENDING_DOCS_DEBOUNCE_MS);
 }
 
+export function broadcastPluginsChanged(): void {
+  const msg = JSON.stringify({ type: 'plugins-changed' });
+  for (const ws of clients) {
+    if (ws.readyState === WebSocket.OPEN) ws.send(msg);
+  }
+}
+
 export function broadcastAgentStatus(connected: boolean): void {
   currentAgentConnected = connected;
   const msg = JSON.stringify({ type: 'agent-status', agentConnected: connected });

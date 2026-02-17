@@ -476,6 +476,16 @@ export function registerPluginTools(tools: import('./plugin-types.js').PluginMcp
   }
 }
 
+/** Remove MCP tools by name. Existing MCP stdio sessions won't see removal until reconnect. */
+export function removePluginTools(names: string[]): void {
+  const nameSet = new Set(names);
+  for (let i = TOOL_REGISTRY.length - 1; i >= 0; i--) {
+    if (nameSet.has(TOOL_REGISTRY[i].name)) {
+      TOOL_REGISTRY.splice(i, 1);
+    }
+  }
+}
+
 export async function startMcpServer(): Promise<void> {
   const server = new McpServer({
     name: 'open-writer',

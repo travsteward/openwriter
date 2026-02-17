@@ -1,0 +1,161 @@
+.plugin-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.plugin-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  width: 300px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  z-index: 100;
+  overflow: hidden;
+}
+
+.plugin-dropdown-header {
+  padding: 10px 14px 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-light);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.plugin-empty {
+  padding: 16px 14px;
+  font-size: 12px;
+  color: var(--ink-light);
+  text-align: center;
+}
+
+.plugin-item {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.plugin-item:last-child {
+  border-bottom: none;
+}
+
+.plugin-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.plugin-item-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.plugin-item-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-dark);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.plugin-item-desc {
+  font-size: 11px;
+  color: var(--ink-light);
+  margin-top: 2px;
+}
+
+.plugin-item-version {
+  font-size: 10px;
+  color: var(--ink-light);
+  margin-left: 4px;
+  font-weight: 400;
+}
+
+/* Toggle switch */
+.plugin-toggle {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.plugin-toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.plugin-toggle-track {
+  position: absolute;
+  inset: 0;
+  background: var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.plugin-toggle input:checked + .plugin-toggle-track {
+  background: var(--accent, #2563eb);
+}
+
+.plugin-toggle-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  background: white;
+  border-radius: 50%;
+  transition: transform 0.2s ease;
+  pointer-events: none;
+}
+
+.plugin-toggle input:checked ~ .plugin-toggle-thumb {
+  transform: translateX(16px);
+}
+
+.plugin-toggle.loading .plugin-toggle-track {
+  opacity: 0.5;
+  cursor: wait;
+}
+
+/* Config fields */
+.plugin-config {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.plugin-config-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.plugin-config-label {
+  font-size: 10px;
+  color: var(--ink-light);
+  font-weight: 500;
+}
+
+.plugin-config-input {
+  padding: 4px 8px;
+  font-size: 12px;
+  font-family: inherit;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-main);
+  color: var(--ink-dark);
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.plugin-config-input:focus {
+  border-color: var(--accent, #2563eb);
+}

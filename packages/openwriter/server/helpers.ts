@@ -81,6 +81,11 @@ export const LEAF_BLOCK_TYPES = new Set(['paragraph', 'heading', 'codeBlock', 'h
 
 // ---- Config persistence (API key, preferences) ----
 
+export interface PluginConfig {
+  enabled: boolean;
+  config: Record<string, string>;
+}
+
 interface OpenWriterConfig {
   avApiKey?: string;
   avBackendUrl?: string;
@@ -89,6 +94,7 @@ interface OpenWriterConfig {
   lastSyncTime?: string;
   gitPat?: string;
   repoName?: string;
+  plugins?: Record<string, PluginConfig>;
 }
 
 export function readConfig(): OpenWriterConfig {

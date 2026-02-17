@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Editor } from '@tiptap/react';
 import type { SyncStatus } from '../ws/client';
 import AppearancePanel from '../themes/AppearancePanel';
+import PluginPanel from '../plugins/PluginPanel';
 import VersionPanel from '../versions/VersionPanel';
 import ExportPanel from '../export/ExportPanel';
 
@@ -204,6 +205,7 @@ export default function Titlebar({ title, onTitleChange, syncStatus, onSync, onT
             </svg>
           </button>
         )}
+        <PluginPanel />
         <AppearancePanel />
         <VersionPanel />
         <ExportPanel />

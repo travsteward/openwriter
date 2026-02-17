@@ -3,7 +3,7 @@
  * Plugins extend the editor with routes, MCP tools, and context menu items.
  */
 
-import type { Express } from 'express';
+import type { Router } from 'express';
 
 export interface OpenWriterPlugin {
   name: string;
@@ -23,7 +23,7 @@ export interface PluginConfigField {
 }
 
 export interface PluginRouteContext {
-  app: Express;
+  app: Router;
   config: Record<string, string>;
 }
 

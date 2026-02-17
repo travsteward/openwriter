@@ -131,6 +131,10 @@ export function useWebSocket({ onNodeChanges, onAgentStatus, onDocumentSwitched,
           if (msg.type === 'sync-status') {
             onSyncStatusRef.current?.({ state: msg.state, lastSyncTime: msg.lastSyncTime, pendingFiles: msg.pendingFiles, error: msg.error });
           }
+
+          if (msg.type === 'plugins-changed') {
+            window.dispatchEvent(new CustomEvent('ow-plugins-changed'));
+          }
         } catch {
           // Ignore malformed messages
         }

@@ -9,7 +9,7 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { existsSync } from 'fs';
 import { setupWebSocket, broadcastAgentStatus, broadcastDocumentSwitched, broadcastDocumentsChanged, broadcastWorkspacesChanged, broadcastPendingDocsChanged, broadcastSyncStatus } from './ws.js';
-import { startMcpServer, TOOL_REGISTRY, registerPluginTools } from './mcp.js';
+import { startMcpServer, TOOL_REGISTRY } from './mcp.js';
 import { startMcpClientServer } from './mcp-client.js';
 import { load, save, getDocument, getTitle, getFilePath, getDocId, getStatus, updateDocument, setMetadata, applyTextEdits, isAgentLocked, getPendingDocFilenames, getPendingDocCounts } from './state.js';
 import { listDocuments, switchDocument, createDocument, deleteDocument, reloadDocument, updateDocumentTitle, openFile } from './documents.js';
@@ -21,7 +21,7 @@ import { createVersionRouter } from './version-routes.js';
 import { createSyncRouter } from './sync-routes.js';
 import { createImageRouter } from './image-upload.js';
 import { createExportRouter } from './export-routes.js';
-import { loadPlugins } from './plugin-loader.js';
+import { PluginManager } from './plugin-manager.js';
 import type { PluginActionPayload } from './plugin-types.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -35,7 +35,7 @@ function isPortTaken(port: number): Promise<boolean> {
   });
 }
 
-export async function startServer(options: { port?: number; noOpen?: boolean; plugins?: string[]; pluginConfig?: Record<string, string> } = {}): Promise<void> {
+export async function startServer(options: { port?: number; noOpen?: boolean; plugins?: string[] } = {}): Promise<void> {
   const port = options.port || 5050;
 
   // Check if another instance already owns the port
@@ -248,38 +248,63 @@ export async function startServer(options: { port?: number; noOpen?: boolean; pl
     }
   });
 
-  // Load plugins
-  const pluginResult = await loadPlugins(options.plugins || [], options.pluginConfig || {});
-  for (const err of pluginResult.errors) console.error(`[Plugin] ${err}`);
-  for (const { plugin, config } of pluginResult.plugins) {
-    if (plugin.registerRoutes) await plugin.registerRoutes({ app, config });
-    if (plugin.mcpTools) registerPluginTools(plugin.mcpTools(config));
-    console.log(`[Plugin] Loaded: ${plugin.name} v${plugin.version}`);
+  // Plugin Manager — discover, enable/disable, config persistence
+  const pluginManager = new PluginManager(app);
+  await pluginManager.discover();
+
+  // Auto-enable from --plugins CLI flag
+  for (const name of (options.plugins || [])) {
+    const result = await pluginManager.enable(name);
+    if (!result.success) console.error(`[Plugin] ${result.error}`);
   }
 
-  // Plugin discovery endpoint — client fetches to build dynamic context menu
+  // Auto-enable from saved config.json
+  const savedConfig = (await import('./helpers.js')).readConfig();
+  for (const [name, state] of Object.entries(savedConfig.plugins || {})) {
+    if (state.enabled && !((options.plugins || []).includes(name))) {
+      const result = await pluginManager.enable(name);
+      if (!result.success) console.error(`[Plugin] ${result.error}`);
+    }
+  }
+
+  // Enabled plugins' context menu items (backward-compatible)
   app.get('/api/plugins', (_req, res) => {
-    const descriptors = pluginResult.plugins.map(({ plugin }) => ({
-      name: plugin.name,
-      contextMenuItems: plugin.contextMenuItems?.() || [],
-    }));
-    res.json({ plugins: descriptors });
+    res.json({ plugins: pluginManager.getEnabledPluginDescriptors() });
+  });
+
+  // All discovered plugins with enabled status, configSchema, current config
+  app.get('/api/available-plugins', (_req, res) => {
+    res.json({ plugins: pluginManager.getAvailablePlugins() });
+  });
+
+  // Enable a plugin
+  app.post('/api/plugins/enable', async (req, res) => {
+    const { name } = req.body;
+    if (!name) { res.status(400).json({ error: 'name is required' }); return; }
+    const result = await pluginManager.enable(name);
+    res.json(result);
+  });
+
+  // Disable a plugin
+  app.post('/api/plugins/disable', async (req, res) => {
+    const { name } = req.body;
+    if (!name) { res.status(400).json({ error: 'name is required' }); return; }
+    const result = await pluginManager.disable(name);
+    res.json(result);
+  });
+
+  // Update plugin config
+  app.post('/api/plugins/config', (req, res) => {
+    const { name, config } = req.body;
+    if (!name || !config) { res.status(400).json({ error: 'name and config are required' }); return; }
+    const result = pluginManager.updateConfig(name, config);
+    res.json(result);
   });
 
   // Plugin action dispatch — client sends action payload, routed to correct plugin
   app.post('/api/plugin-action', async (req, res) => {
     try {
       const payload = req.body as PluginActionPayload;
-      const prefix = payload.action.split(':')[0];
-      const loaded = pluginResult.plugins.find(({ plugin }) =>
-        plugin.contextMenuItems?.().some((item) => item.action.startsWith(prefix + ':'))
-      );
-      if (!loaded) {
-        res.status(404).json({ error: `No plugin handles action "${payload.action}"` });
-        return;
-      }
-      // Forward to plugin's registered route — plugins handle their own actions
-      // via routes registered in registerRoutes(). The client calls those directly.
       res.status(404).json({ error: 'Use plugin-registered routes directly' });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
