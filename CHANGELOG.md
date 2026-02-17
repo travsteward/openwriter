@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.2.0] - 2026-02-17
+
+### Added
+- `npx openwriter install-skill` — installs Claude Code companion skill to `~/.claude/skills/openwriter/`
+- Bundled SKILL.md ships with npm package (writing strategy, 24-tool reference, troubleshooting)
+- New "Markdown Native" section in README — filesystem-as-database, open any `.md`, Git Sync, frontmatter
+- Rewrote README positioning: editor built for agentic code editors, not another agent bolted onto a doc tool
+
 ## [0.1.1] - 2026-02-17
 
 ### Fixed

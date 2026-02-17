@@ -1,6 +1,6 @@
 {
   "name": "openwriter",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Local TipTap editor for human-agent collaboration via MCP",
   "type": "module",
   "license": "MIT",
