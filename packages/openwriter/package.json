@@ -3,6 +3,26 @@
   "version": "0.1.0",
   "description": "Local TipTap editor for human-agent collaboration via MCP",
   "type": "module",
+  "license": "MIT",
+  "author": "Travis Steward",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/travsteward/openwriter.git"
+  },
+  "homepage": "https://github.com/travsteward/openwriter",
+  "bugs": "https://github.com/travsteward/openwriter/issues",
+  "keywords": [
+    "editor",
+    "tiptap",
+    "mcp",
+    "ai",
+    "writing",
+    "agent",
+    "local-first",
+    "markdown",
+    "rich-text",
+    "human-agent-collaboration"
+  ],
   "bin": {
     "openwriter": "./dist/bin/pad.js"
   },

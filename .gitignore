@@ -3,3 +3,9 @@ dist/
 .env
 *.tsbuildinfo
 .turbo/
+
+# Project-internal (not for public repo)
+CLAUDE.md
+docs/
+.playwright-mcp/
+TODO.md
