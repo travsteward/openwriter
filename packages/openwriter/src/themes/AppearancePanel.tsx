@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import {
-  THEMES, SIDEBAR_MODES, SIDEBAR_STYLES, TYPOGRAPHY_PRESETS,
-  getTheme, getMode, getSidebarMode, getSidebarStyle, getTypography, applyAppearance,
+  THEMES, SIDEBAR_MODES, SIDEBAR_STYLES, TYPOGRAPHY_PRESETS, CANVAS_STYLES,
+  getTheme, getMode, getSidebarMode, getSidebarStyle, getTypography, getCanvasStyle, applyAppearance,
 } from './appearance-store';
-import type { ThemeName, ThemeMode, SidebarMode, SidebarStyle, TypographyPreset } from './appearance-store';
+import type { ThemeName, ThemeMode, SidebarMode, SidebarStyle, TypographyPreset, CanvasStyle } from './appearance-store';
 import './AppearancePanel.css';
 
 // SVG icons for sidebar modes
@@ -21,10 +21,11 @@ export default function AppearancePanel() {
   const [sidebarMode, setSidebarMode] = useState<SidebarMode>(getSidebarMode);
   const [sidebarStyle, setSidebarStyle] = useState<SidebarStyle>(getSidebarStyle);
   const [typography, setTypography] = useState<TypographyPreset>(getTypography);
+  const [canvasStyle, setCanvasStyle] = useState<CanvasStyle>(getCanvasStyle);
   const ref = useRef<HTMLDivElement>(null);
 
-  const apply = (t: ThemeName, m: ThemeMode, sm: SidebarMode, ss: SidebarStyle, tp: TypographyPreset = typography) => {
-    applyAppearance(t, m, sm, ss, tp);
+  const apply = (t: ThemeName, m: ThemeMode, sm: SidebarMode, ss: SidebarStyle, tp: TypographyPreset = typography, cs: CanvasStyle = canvasStyle) => {
+    applyAppearance(t, m, sm, ss, tp, cs);
   };
 
   const handleTheme = (id: ThemeName) => { setTheme(id); apply(id, mode, sidebarMode, sidebarStyle); };
@@ -41,6 +42,7 @@ export default function AppearancePanel() {
   };
   const handleSidebarStyle = (id: SidebarStyle) => { setSidebarStyle(id); apply(theme, mode, sidebarMode, id); };
   const handleTypography = (id: TypographyPreset) => { setTypography(id); apply(theme, mode, sidebarMode, sidebarStyle, id); };
+  const handleCanvasStyle = (id: CanvasStyle) => { setCanvasStyle(id); apply(theme, mode, sidebarMode, sidebarStyle, typography, id); };
 
   useEffect(() => {
     if (!open) return;
@@ -109,6 +111,24 @@ export default function AppearancePanel() {
                   onClick={() => handleTypography(t.id)}
                 >
                   {t.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Canvas style section */}
+          <div className="appearance-section">
+            <div className="appearance-section-header">
+              <span className="appearance-section-title">Canvas</span>
+            </div>
+            <div className="appearance-style-grid">
+              {CANVAS_STYLES.map((c) => (
+                <button
+                  key={c.id}
+                  className={`appearance-style-option ${canvasStyle === c.id ? 'active' : ''}`}
+                  onClick={() => handleCanvasStyle(c.id)}
+                >
+                  {c.label}
                 </button>
               ))}
             </div>

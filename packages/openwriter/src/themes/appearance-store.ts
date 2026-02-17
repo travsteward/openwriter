@@ -2,6 +2,7 @@ export type ThemeName = 'ink' | 'novel' | 'mono' | 'editorial' | 'studio' | 'cal
 export type ThemeMode = 'light' | 'dark';
 export type SidebarMode = 'default' | 'timeline' | 'board' | 'shelf';
 export type SidebarStyle = 'default' | 'frost' | 'minimal' | 'terminal';
+export type CanvasStyle = 'seamless' | 'outline' | 'raised' | 'page';
 export type TypographyPreset = 'default' | 'butterick' | 'web' | 'blog';
 
 export interface ThemeInfo {
@@ -38,6 +39,13 @@ export const SIDEBAR_STYLES: { id: SidebarStyle; label: string }[] = [
   { id: 'terminal', label: 'Terminal' },
 ];
 
+export const CANVAS_STYLES: { id: CanvasStyle; label: string }[] = [
+  { id: 'seamless', label: 'Seamless' },
+  { id: 'outline', label: 'Outline' },
+  { id: 'raised', label: 'Raised' },
+  { id: 'page', label: 'Page' },
+];
+
 export const TYPOGRAPHY_PRESETS: { id: TypographyPreset; label: string }[] = [
   { id: 'default', label: 'Default' },
   { id: 'web', label: 'Web' },
@@ -51,6 +59,7 @@ const KEYS = {
   sidebarMode: 'ow-sidebar-mode',
   sidebarStyle: 'ow-sidebar-style',
   typography: 'ow-typography',
+  canvas: 'ow-canvas',
 } as const;
 
 export function getTheme(): ThemeName {
@@ -83,7 +92,13 @@ export function getTypography(): TypographyPreset {
   return 'default';
 }
 
-export function applyAppearance(theme: ThemeName, mode: ThemeMode, sidebarMode: SidebarMode, sidebarStyle: SidebarStyle, typography: TypographyPreset = 'default'): void {
+export function getCanvasStyle(): CanvasStyle {
+  const stored = localStorage.getItem(KEYS.canvas);
+  if (stored && CANVAS_STYLES.some(c => c.id === stored)) return stored as CanvasStyle;
+  return 'seamless';
+}
+
+export function applyAppearance(theme: ThemeName, mode: ThemeMode, sidebarMode: SidebarMode, sidebarStyle: SidebarStyle, typography: TypographyPreset = 'default', canvas: CanvasStyle = 'seamless'): void {
   const el = document.documentElement;
   el.setAttribute('data-theme', theme);
   el.setAttribute('data-mode', mode);
@@ -94,13 +109,19 @@ export function applyAppearance(theme: ThemeName, mode: ThemeMode, sidebarMode: 
   } else {
     el.setAttribute('data-typography', typography);
   }
+  if (canvas === 'seamless') {
+    el.removeAttribute('data-canvas');
+  } else {
+    el.setAttribute('data-canvas', canvas);
+  }
   localStorage.setItem(KEYS.theme, theme);
   localStorage.setItem(KEYS.mode, mode);
   localStorage.setItem(KEYS.sidebarMode, sidebarMode);
   localStorage.setItem(KEYS.sidebarStyle, sidebarStyle);
   localStorage.setItem(KEYS.typography, typography);
+  localStorage.setItem(KEYS.canvas, canvas);
 }
 
 export function initAppearance(): void {
-  applyAppearance(getTheme(), getMode(), getSidebarMode(), getSidebarStyle(), getTypography());
+  applyAppearance(getTheme(), getMode(), getSidebarMode(), getSidebarStyle(), getTypography(), getCanvasStyle());
 }

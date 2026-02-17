@@ -1,0 +1,35 @@
+/* Canvas Styles — driven by data-canvas attribute on <html> */
+
+/* Outline: thin border around content column */
+[data-canvas="outline"] .tiptap {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 2rem 2rem;
+}
+
+/* Raised: card-on-surface — editor-container gets tinted bg, .tiptap gets card treatment */
+[data-canvas="raised"] .editor-container {
+  background: color-mix(in srgb, var(--bg-primary), #808080 8%);
+}
+[data-canvas="raised"] .tiptap {
+  background: var(--bg-primary);
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  padding: 2rem 2rem;
+  margin-top: 0.5rem;
+  margin-bottom: 2rem;
+}
+
+/* Page: paper-on-desk — border + shadow + rounded corners */
+[data-canvas="page"] .editor-container {
+  background: color-mix(in srgb, var(--bg-primary), #808080 8%);
+}
+[data-canvas="page"] .tiptap {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-light);
+  border-radius: 4px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  padding: 3rem 2.5rem;
+  margin-top: 0.5rem;
+  margin-bottom: 2rem;
+}
