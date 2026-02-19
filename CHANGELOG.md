@@ -4,6 +4,35 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.2.2] - 2026-02-18
+
+### Fixed
+- Race condition where accepting changes on a populated document while agent creates another document caused accepted changes to revert
+- Server now validates doc-update targets match active file, routes mismatched updates to correct file on disk
+
+### Changed
+- Tags are now document-scoped (stored in frontmatter) instead of workspace-scoped — tags travel with the document
+- Simplified `tag_doc` and `untag_doc` MCP tools (no workspace parameter needed)
+- Two-step document creation flow: `create_document` (shows spinner) then `populate_document` (delivers content)
+- Documents deleted via OS trash (recoverable) instead of permanent delete
+
+### Removed
+- Workspace-level tag storage (`workspace-tags.ts` deleted)
+
+## [0.2.1] - 2026-02-17
+
+### Changed
+- Updated SKILL.md for dual-entry orientation (skill-first and MCP-first discovery)
+- Added `install-skill` CLI command for skill distribution
+
+## [0.2.0] - 2026-02-17
+
+### Added
+- Skill distribution via `npx openwriter install-skill`
+- Markdown-native README rewrite
+- Plugin selector dropdown with dynamic enable/disable from UI
+- Canvas style options in Appearance panel
+
 ## [0.1.0] - 2026-02-17
 
 ### Added

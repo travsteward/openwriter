@@ -1,6 +1,6 @@
 {
   "name": "openwriter",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "The open-source writing surface for AI agents. Markdown-native editor with pending change review — your agent writes, you accept or reject.",
   "type": "module",
   "license": "MIT",
