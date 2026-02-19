@@ -15,7 +15,7 @@ interface TweetContext {
 }
 
 interface TweetComposeViewProps {
-  tweetContext: TweetContext;
+  tweetContext?: TweetContext;
   editor: Editor | null;
   children: ReactNode;
 }
@@ -45,12 +45,13 @@ export default function TweetComposeView({ tweetContext, editor, children }: Twe
   }, [editor]);
 
   const charCount = editor ? getCharCount() : 0;
+  const hasContext = tweetContext?.url;
   const isReply = tweetContext?.mode === 'reply';
 
   return (
     <div className="tweet-compose-wrapper">
       {/* Reply mode: tweet above compose */}
-      {isReply && (
+      {hasContext && isReply && (
         <div className="tweet-context-section">
           {loading && <TweetSkeleton />}
           {error && (
@@ -76,7 +77,7 @@ export default function TweetComposeView({ tweetContext, editor, children }: Twe
       </div>
 
       {/* Quote mode: tweet below compose */}
-      {!isReply && (
+      {hasContext && !isReply && (
         <div className="tweet-context-section tweet-quote-section">
           {loading && <TweetSkeleton />}
           {error && (

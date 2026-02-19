@@ -318,6 +318,18 @@ export default function App() {
     });
   }, []);
 
+  const handleViewChange = useCallback((view: string | null) => {
+    const newMeta = { ...metadata, view: view ?? undefined };
+    if (!view) delete newMeta.view;
+    setMetadata(newMeta);
+    // Persist to server
+    fetch('/api/metadata', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newMeta),
+    }).catch(() => {});
+  }, [metadata]);
+
   const handleSync = useCallback(() => {
     if (syncStatus.state === 'unconfigured') {
       setShowSyncSetup(true);
@@ -359,6 +371,8 @@ export default function App() {
           editor={editorInstance}
           onToggleToolbar={toggleToolbar}
           toolbarOpen={showToolbar}
+          documentView={metadata?.view}
+          onViewChange={handleViewChange}
         />
         {showToolbar && editorInstance && <FormatToolbar editor={editorInstance} />}
         {isBoardMode && (
@@ -374,7 +388,7 @@ export default function App() {
           />
         )}
         <div className="editor-container">
-          {metadata?.view === 'tweet' && metadata?.tweetContext ? (
+          {metadata?.view === 'tweet' ? (
             <TweetComposeView tweetContext={metadata.tweetContext} editor={editorInstance}>
               <PadEditor
                 key={activeDocKey}

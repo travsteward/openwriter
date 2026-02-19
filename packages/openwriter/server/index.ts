@@ -96,6 +96,18 @@ export async function startHttpServer(options: { port?: number; noOpen?: boolean
     broadcastDocumentSwitched,
   }));
 
+  // Update document metadata from browser (e.g. view toggle in Appearance panel)
+  app.post('/api/metadata', (req, res) => {
+    try {
+      setMetadata(req.body);
+      save();
+      broadcastMetadataChanged(getMetadata());
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   app.post('/api/save', (_req, res) => {
     save();
     res.json({ success: true });
