@@ -1,17 +1,16 @@
 /**
- * Express server: serves built React app, WebSocket, orchestrates MCP.
+ * Express HTTP server: serves built React app, WebSocket, plugins.
+ * MCP stdio transport is started separately in bin/pad.ts for fast startup.
  */
 
 import express from 'express';
 import { createServer } from 'http';
-import { createConnection } from 'net';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { existsSync } from 'fs';
 import { setupWebSocket, broadcastAgentStatus, broadcastDocumentSwitched, broadcastDocumentsChanged, broadcastWorkspacesChanged, broadcastPendingDocsChanged, broadcastSyncStatus } from './ws.js';
-import { startMcpServer, TOOL_REGISTRY } from './mcp.js';
-import { startMcpClientServer } from './mcp-client.js';
-import { load, save, getDocument, getTitle, getFilePath, getDocId, getStatus, updateDocument, setMetadata, applyTextEdits, isAgentLocked, getPendingDocFilenames, getPendingDocCounts, getDocTagsByFilename, addDocTag, removeDocTag } from './state.js';
+import { TOOL_REGISTRY } from './mcp.js';
+import { save, getDocument, getTitle, getFilePath, getDocId, getStatus, updateDocument, setMetadata, applyTextEdits, isAgentLocked, getPendingDocFilenames, getPendingDocCounts, getDocTagsByFilename, addDocTag, removeDocTag } from './state.js';
 import { listDocuments, switchDocument, createDocument, deleteDocument, reloadDocument, updateDocumentTitle, openFile } from './documents.js';
 import { createWorkspaceRouter } from './workspace-routes.js';
 import { createLinkRouter } from './link-routes.js';
@@ -28,39 +27,8 @@ import { checkForUpdate } from './update-check.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-function isPortTaken(port: number): Promise<boolean> {
-  return new Promise((resolve) => {
-    const socket = createConnection({ port, host: '127.0.0.1' });
-    socket.once('connect', () => { socket.destroy(); resolve(true); });
-    socket.once('error', () => { resolve(false); });
-  });
-}
-
-export async function startServer(options: { port?: number; noOpen?: boolean; plugins?: string[] } = {}): Promise<void> {
+export async function startHttpServer(options: { port?: number; noOpen?: boolean; plugins?: string[] } = {}): Promise<void> {
   const port = options.port || 5050;
-
-  // Check if another instance already owns the port
-  const portTaken = await isPortTaken(port);
-  if (portTaken) {
-    console.error(`[OpenWriter] Port ${port} in use — entering client mode (proxying to existing server)`);
-    // Start client-mode MCP (proxies tool calls via HTTP)
-    startMcpClientServer(port).catch((err) => {
-      console.error('[MCP-Client] Failed to start:', err);
-    });
-    // Skip browser open — existing server already has it open
-    return;
-  }
-
-  // Load saved document
-  load();
-
-  // Start MCP stdio server immediately — this is what Claude Code waits for.
-  // Core tools are already in TOOL_REGISTRY; plugin tools register later.
-  startMcpServer().then(() => {
-    broadcastAgentStatus(true);
-  }).catch((err) => {
-    console.error('[MCP] Failed to start:', err);
-  });
 
   const app = express();
   app.use(express.json({ limit: '10mb' }));
@@ -374,6 +342,9 @@ export async function startServer(options: { port?: number; noOpen?: boolean; pl
 
   // Setup WebSocket on same server
   setupWebSocket(server);
+
+  // Broadcast agent status now that WS is ready
+  broadcastAgentStatus(true);
 
   server.listen(port, () => {
     console.log(`OpenWriter running at http://localhost:${port}`);

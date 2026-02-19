@@ -10,13 +10,20 @@
  *   3. Saved in ~/.openwriter/config.json (from a previous --api-key)
  *
  * If no key found, server starts anyway — plugins that need it will report errors.
+ *
+ * Boot order optimized for fast MCP startup:
+ *   1. Parse args + config (light imports only)
+ *   2. Port check (fast TCP probe)
+ *   3. Start MCP stdio transport (what Claude Code waits for)
+ *   4. Lazy-load Express server + plugins (heavy deps deferred)
  */
 
 // Redirect all console output to stderr so MCP stdio protocol stays clean on stdout
 const originalLog = console.log;
 console.log = (...args: any[]) => console.error(...args);
 
-import { startServer } from '../server/index.js';
+// Only light imports here — helpers.js uses fs/path/os/crypto (all Node stdlib)
+import { createConnection } from 'net';
 import { readConfig, saveConfig } from '../server/helpers.js';
 
 const args = process.argv.slice(2);
@@ -71,5 +78,32 @@ if (args[0] === 'install-skill') {
   if (avApiKey) process.env.AV_API_KEY = avApiKey;
   if (avBackendUrl) process.env.AV_BACKEND_URL = avBackendUrl;
 
-  startServer({ port, noOpen, plugins });
+  // Fast port check — determines primary vs client mode
+  const portTaken = await new Promise<boolean>((resolve) => {
+    const socket = createConnection({ port, host: '127.0.0.1' });
+    socket.once('connect', () => { socket.destroy(); resolve(true); });
+    socket.once('error', () => { resolve(false); });
+  });
+
+  if (portTaken) {
+    // Client mode: proxy MCP calls to existing primary server via HTTP
+    console.error(`[OpenWriter] Port ${port} in use — entering client mode (proxying to existing server)`);
+    const { startMcpClientServer } = await import('../server/mcp-client.js');
+    startMcpClientServer(port).catch((err) => {
+      console.error('[MCP-Client] Failed to start:', err);
+    });
+  } else {
+    // Primary mode: start MCP stdio FIRST, then lazy-load Express
+    const { load } = await import('../server/state.js');
+    load();
+
+    const { startMcpServer } = await import('../server/mcp.js');
+    startMcpServer().catch((err) => {
+      console.error('[MCP] Failed to start:', err);
+    });
+
+    // Deferred: load Express + plugins (heavy deps) after MCP is connecting
+    const { startHttpServer } = await import('../server/index.js');
+    startHttpServer({ port, noOpen, plugins });
+  }
 }
