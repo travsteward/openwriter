@@ -586,6 +586,29 @@
   font-family: var(--font-body);
 }
 
+/* Writing placeholder */
+.sidebar-writing-placeholder {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.sidebar-writing-spinner {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border: 1.5px solid rgba(255,255,255,0.3);
+  border-top-color: #2563eb;
+  border-radius: 50%;
+  animation: sidebar-spin 0.6s linear infinite;
+  margin-right: 6px;
+  flex-shrink: 0;
+  vertical-align: middle;
+}
+
+@keyframes sidebar-spin {
+  to { transform: rotate(360deg); }
+}
+
 /* Pending changes indicator dot */
 .sidebar-pending-dot {
   display: inline-block;

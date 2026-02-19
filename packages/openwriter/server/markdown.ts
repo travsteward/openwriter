@@ -5,4 +5,3 @@
 
 export { tiptapToMarkdown, nodeText, inlineToMarkdown } from './markdown-serialize.js';
 export { markdownToTiptap, markdownToNodes } from './markdown-parse.js';
-export type { ParsedMarkdown } from './markdown-parse.js';

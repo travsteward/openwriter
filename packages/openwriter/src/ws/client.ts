@@ -42,11 +42,13 @@ interface UseWebSocketOptions {
   onTitleChanged?: (title: string) => void;
   onPendingDocsChanged?: (data: PendingDocsPayload) => void;
   onSyncStatus?: (status: SyncStatus) => void;
+  onWritingStarted?: (title: string, target: { wsFilename: string; containerId: string | null } | null) => void;
+  onWritingFinished?: () => void;
   /** Called on reconnect so the app can re-sync editor state to server */
   getEditorState?: () => { document: any } | null;
 }
 
-export function useWebSocket({ onNodeChanges, onAgentStatus, onDocumentSwitched, onDocumentsChanged, onWorkspacesChanged, onTitleChanged, onPendingDocsChanged, onSyncStatus, getEditorState }: UseWebSocketOptions) {
+export function useWebSocket({ onNodeChanges, onAgentStatus, onDocumentSwitched, onDocumentsChanged, onWorkspacesChanged, onTitleChanged, onPendingDocsChanged, onSyncStatus, onWritingStarted, onWritingFinished, getEditorState }: UseWebSocketOptions) {
   const wsRef = useRef<WebSocket | null>(null);
   const [connected, setConnected] = useState(false);
 
@@ -59,6 +61,8 @@ export function useWebSocket({ onNodeChanges, onAgentStatus, onDocumentSwitched,
   const onTitleChangedRef = useRef(onTitleChanged);
   const onPendingDocsChangedRef = useRef(onPendingDocsChanged);
   const onSyncStatusRef = useRef(onSyncStatus);
+  const onWritingStartedRef = useRef(onWritingStarted);
+  const onWritingFinishedRef = useRef(onWritingFinished);
   const getEditorStateRef = useRef(getEditorState);
   onNodeChangesRef.current = onNodeChanges;
   onAgentStatusRef.current = onAgentStatus;
@@ -68,6 +72,8 @@ export function useWebSocket({ onNodeChanges, onAgentStatus, onDocumentSwitched,
   onTitleChangedRef.current = onTitleChanged;
   onPendingDocsChangedRef.current = onPendingDocsChanged;
   onSyncStatusRef.current = onSyncStatus;
+  onWritingStartedRef.current = onWritingStarted;
+  onWritingFinishedRef.current = onWritingFinished;
   getEditorStateRef.current = getEditorState;
 
   useEffect(() => {
@@ -130,6 +136,14 @@ export function useWebSocket({ onNodeChanges, onAgentStatus, onDocumentSwitched,
 
           if (msg.type === 'sync-status') {
             onSyncStatusRef.current?.({ state: msg.state, lastSyncTime: msg.lastSyncTime, pendingFiles: msg.pendingFiles, error: msg.error });
+          }
+
+          if (msg.type === 'writing-started' && msg.title) {
+            onWritingStartedRef.current?.(msg.title, msg.target || null);
+          }
+
+          if (msg.type === 'writing-finished') {
+            onWritingFinishedRef.current?.();
           }
 
           if (msg.type === 'plugins-changed') {

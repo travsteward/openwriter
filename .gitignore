@@ -3,6 +3,8 @@ dist/
 .env
 *.tsbuildinfo
 .turbo/
+.claude/
+*.stackdump
 
 # Project-internal (not for public repo)
 CLAUDE.md

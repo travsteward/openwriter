@@ -4,9 +4,10 @@
  * Each document is a .md file in ~/.openwriter/.
  */
 
-import { existsSync, readFileSync, writeFileSync, unlinkSync, readdirSync, statSync, mkdirSync } from 'fs';
+import { existsSync, readFileSync, writeFileSync, readdirSync, statSync, mkdirSync } from 'fs';
 import { join } from 'path';
 import matter from 'gray-matter';
+import trash from 'trash';
 import { tiptapToMarkdown, markdownToTiptap } from './markdown.js';
 import { parseMarkdownContent } from './compact.js';
 import {
@@ -77,8 +78,8 @@ export function listDocuments(): DocumentInfo[] {
     } catch { /* skip unreadable external files */ }
   }
 
-  // Stable sort: alphabetical by filename (no reordering on switch)
-  files.sort((a, b) => a.filename.localeCompare(b.filename));
+  // Most recently modified first — new docs appear at top (matches spinner position)
+  files.sort((a, b) => new Date(b.lastModified).getTime() - new Date(a.lastModified).getTime());
   return files;
 }
 
@@ -161,7 +162,7 @@ export function createDocument(title?: string, content?: string | PadDocument, p
   return { document: getDocument(), title: getTitle(), filename };
 }
 
-export function deleteDocument(filename: string): { switched: boolean; newDoc?: { document: PadDocument; title: string; filename: string } } {
+export async function deleteDocument(filename: string): Promise<{ switched: boolean; newDoc?: { document: PadDocument; title: string; filename: string } }> {
   ensureDataDir();
   const targetPath = resolveDocPath(filename);
 
@@ -178,7 +179,7 @@ export function deleteDocument(filename: string): { switched: boolean; newDoc?: 
   const isDeletingActive = targetPath === getFilePath();
 
   if (existsSync(targetPath)) {
-    unlinkSync(targetPath);
+    await trash(targetPath);
   }
 
   if (isDeletingActive) {

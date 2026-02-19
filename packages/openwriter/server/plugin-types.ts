@@ -52,14 +52,6 @@ export interface PluginActionPayload {
   instruction?: string;
 }
 
-export interface PluginActionResponse {
-  nodes?: any[];
-  nodeIds?: string[];
-  action?: string;
-  error?: string;
-  success?: boolean;
-}
-
 export interface LoadedPlugin {
   plugin: OpenWriterPlugin;
   config: Record<string, string>;
@@ -69,3 +61,4 @@ export interface PluginLoadResult {
   plugins: LoadedPlugin[];
   errors: string[];
 }
+

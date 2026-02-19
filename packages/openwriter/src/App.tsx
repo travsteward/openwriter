@@ -27,6 +27,35 @@ export default function App() {
   const [syncStatus, setSyncStatus] = useState<SyncStatus>({ state: 'unconfigured' });
   const [showSyncSetup, setShowSyncSetup] = useState(false);
   const [showToolbar, setShowToolbar] = useState(() => localStorage.getItem('ow-toolbar') !== 'hidden');
+  const [writingTitle, setWritingTitle] = useState<string | null>(null);
+  const [writingTarget, setWritingTarget] = useState<{ wsFilename: string; containerId: string | null } | null>(null);
+  const writingStartedAt = useRef<number>(0);
+  const writingClearTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const MIN_WRITING_DISPLAY_MS = 1500;
+
+  const showWritingTitle = useCallback((title: string, target: { wsFilename: string; containerId: string | null } | null) => {
+    if (writingClearTimer.current) { clearTimeout(writingClearTimer.current); writingClearTimer.current = null; }
+    writingStartedAt.current = Date.now();
+    setWritingTitle(title);
+    setWritingTarget(target);
+  }, []);
+
+  const clearWritingTitle = useCallback(() => {
+    if (writingClearTimer.current) return; // already scheduled
+    const elapsed = Date.now() - writingStartedAt.current;
+    const remaining = MIN_WRITING_DISPLAY_MS - elapsed;
+    if (remaining <= 0) {
+      setWritingTitle(null);
+      setWritingTarget(null);
+    } else {
+      writingClearTimer.current = setTimeout(() => {
+        writingClearTimer.current = null;
+        setWritingTitle(null);
+        setWritingTarget(null);
+      }, remaining);
+    }
+  }, []);
+
   const [, setSidebarModeKey] = useState(0);
   const docUpdateTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -82,6 +111,8 @@ export default function App() {
     setActiveFilename(payload.filename);
     setInitialContent(payload.document);
     setTitle(payload.title);
+    // Don't clear writingTitle here — only writing-finished clears the spinner.
+    // This lets the two-step create flow (create_document → populate_document) keep the spinner alive.
     setActiveDocKey((k) => k + 1);
     setSidebarRefreshKey((k) => k + 1);
 
@@ -126,6 +157,8 @@ export default function App() {
     onDocumentsChanged: handleDocumentsChanged,
     onWorkspacesChanged: handleWorkspacesChanged,
     onPendingDocsChanged: handlePendingDocsChanged,
+    onWritingStarted: (title, target) => showWritingTitle(title, target),
+    onWritingFinished: () => clearWritingTitle(),
     onSyncStatus: (status) => setSyncStatus(status),
     onTitleChanged: (newTitle) => setTitle(newTitle),
     getEditorState: () => {
@@ -143,7 +176,7 @@ export default function App() {
       clearTimeout(docUpdateTimer.current);
       docUpdateTimer.current = null;
     }
-    sendMessage({ type: 'doc-update', document: editor.getJSON() });
+    sendMessage({ type: 'doc-update', document: editor.getJSON(), filename: currentFilename.current });
     sendMessage({ type: 'save' });
   }, [sendMessage]);
 
@@ -252,7 +285,7 @@ export default function App() {
   const handleDocUpdate = useCallback((json: any) => {
     if (docUpdateTimer.current) clearTimeout(docUpdateTimer.current);
     docUpdateTimer.current = setTimeout(() => {
-      sendMessage({ type: 'doc-update', document: json });
+      sendMessage({ type: 'doc-update', document: json, filename: currentFilename.current });
     }, 1000);
   }, [sendMessage]);
 
@@ -291,6 +324,8 @@ export default function App() {
           refreshKey={sidebarRefreshKey}
           workspacesRefreshKey={workspacesRefreshKey}
           pendingDocs={pendingDocs}
+          writingTitle={writingTitle}
+          writingTarget={writingTarget}
           onClose={() => setSidebarOpen(false)}
         />
       )}
@@ -318,6 +353,8 @@ export default function App() {
             refreshKey={sidebarRefreshKey}
             workspacesRefreshKey={workspacesRefreshKey}
             pendingDocs={pendingDocs}
+            writingTitle={writingTitle}
+          writingTarget={writingTarget}
           />
         )}
         <div className="editor-container">

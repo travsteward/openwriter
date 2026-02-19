@@ -53,7 +53,7 @@ export default function ReviewPanel({ editor, pendingDocs, currentFilename, onSw
     if (remaining.length === 0) {
       // Flush resolved editor state to server before pending-resolved
       // (bypasses the 1s debounce so server sees the clean document)
-      sendMessage({ type: 'doc-update', document: editor.getJSON() });
+      sendMessage({ type: 'doc-update', document: editor.getJSON(), filename: currentFilename });
       sendMessage({
         type: 'pending-resolved',
         filename: currentFilename,

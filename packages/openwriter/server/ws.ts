@@ -10,6 +10,7 @@ import {
   getTitle,
   getFilePath,
   getDocId,
+  getMetadata,
   setMetadata,
   save,
   onChanges,
@@ -17,9 +18,12 @@ import {
   getPendingDocFilenames,
   getPendingDocCounts,
   stripPendingAttrs,
+  saveDocToFile,
+  stripPendingAttrsFromFile,
   type NodeChange,
 } from './state.js';
-import { switchDocument, createDocument, deleteDocument } from './documents.js';
+import { switchDocument, createDocument, deleteDocument, getActiveFilename } from './documents.js';
+import { removeDocFromAllWorkspaces } from './workspaces.js';
 
 const clients = new Set<WebSocket>();
 let currentAgentConnected = false;
@@ -82,13 +86,17 @@ export function setupWebSocket(server: Server): void {
       },
     }));
 
-    ws.on('message', (data) => {
+    ws.on('message', async (data) => {
       try {
         const msg = JSON.parse(data.toString());
 
         if (msg.type === 'doc-update' && msg.document) {
           if (isAgentLocked()) {
             // Agent write in progress — ignore browser doc-updates
+          } else if (msg.filename && msg.filename !== getActiveFilename()) {
+            // Browser sent a doc-update for a different document (race: server switched away).
+            // Save directly to that file on disk instead of corrupting the active doc.
+            saveDocToFile(msg.filename, msg.document);
           } else {
             updateDocument(msg.document);
             debouncedSave();
@@ -138,20 +146,44 @@ export function setupWebSocket(server: Server): void {
         if (msg.type === 'pending-resolved' && msg.filename) {
           const action = msg.action as string; // 'accept' or 'reject'
           const resolvedFilename = msg.filename as string;
+          const isActiveDoc = resolvedFilename === getActiveFilename();
 
-          if (action === 'reject' && msg.wasAgentCreated) {
+          // Get metadata from the correct source (active state or disk file)
+          const metadata = isActiveDoc ? getMetadata() : null;
+
+          if (action === 'reject' && metadata?.agentCreated) {
             // Agent-created doc with all content rejected → delete the file
+            // Cancel debounced save (doc-update may have queued one for the now-empty doc)
+            if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
             try {
-              deleteDocument(resolvedFilename);
+              // Remove from any workspace manifests before deleting the file
+              removeDocFromAllWorkspaces(resolvedFilename);
+              const result = await deleteDocument(resolvedFilename);
+              if (result.switched && result.newDoc) {
+                broadcastDocumentSwitched(result.newDoc.document, result.newDoc.title, result.newDoc.filename);
+              }
+              broadcastDocumentsChanged();
+              broadcastWorkspacesChanged();
+              broadcastPendingDocsChanged();
+              return; // File deleted — no strip/save needed
             } catch (err: any) {
               console.error('[WS] Failed to delete rejected agent doc:', err.message);
+              // Fall through to normal strip+save (e.g. only doc remaining)
             }
           }
 
-          // Strip pending attrs that transferPendingAttrs() re-added from stale server state,
-          // then save clean markdown to disk.
-          stripPendingAttrs();
-          save();
+          if (isActiveDoc) {
+            // Normal path: resolved doc is the active one
+            if (action === 'accept' && metadata?.agentCreated) {
+              delete metadata.agentCreated;
+            }
+            stripPendingAttrs();
+            save();
+          } else {
+            // Race path: resolved doc is NOT the active one (server switched away).
+            // Strip pending attrs directly from the file on disk.
+            stripPendingAttrsFromFile(resolvedFilename, action === 'accept');
+          }
           broadcastPendingDocsChanged();
         }
       } catch {
@@ -239,6 +271,20 @@ export function broadcastAgentStatus(connected: boolean): void {
 
 let lastSyncStatus: any = null;
 
+export function broadcastWritingStarted(title: string, target?: { wsFilename: string; containerId: string | null }): void {
+  const msg = JSON.stringify({ type: 'writing-started', title, target: target || null });
+  for (const ws of clients) {
+    if (ws.readyState === WebSocket.OPEN) ws.send(msg);
+  }
+}
+
+export function broadcastWritingFinished(): void {
+  const msg = JSON.stringify({ type: 'writing-finished' });
+  for (const ws of clients) {
+    if (ws.readyState === WebSocket.OPEN) ws.send(msg);
+  }
+}
+
 export function broadcastSyncStatus(status: any): void {
   lastSyncStatus = status;
   const msg = JSON.stringify({ type: 'sync-status', ...status });
@@ -247,8 +293,4 @@ export function broadcastSyncStatus(status: any): void {
       ws.send(msg);
     }
   }
-}
-
-export function getLastSyncStatus(): any {
-  return lastSyncStatus;
 }

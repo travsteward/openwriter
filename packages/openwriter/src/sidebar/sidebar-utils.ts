@@ -46,17 +46,3 @@ export function dateGroup(iso: string): string {
   return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
-/** Consistent spine colors for shelf mode — hash filename to index. */
-const SPINE_COLORS = [
-  '#8b7355', '#5b6b5a', '#6b5b5b', '#5b6b8b', '#7b6b55',
-  '#6b7b5b', '#8b6b6b', '#5b5b7b', '#7b5b6b', '#6b8b7b',
-  '#9b8b6b', '#5b7b6b', '#7b5b5b', '#6b6b8b', '#8b7b5b',
-];
-
-export function spineColor(filename: string): string {
-  let hash = 0;
-  for (let i = 0; i < filename.length; i++) {
-    hash = ((hash << 5) - hash + filename.charCodeAt(i)) | 0;
-  }
-  return SPINE_COLORS[Math.abs(hash) % SPINE_COLORS.length];
-}

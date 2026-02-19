@@ -40,6 +40,19 @@ function extractTextContent(content: JSONContent | JSONContent[]): string {
   return '';
 }
 
+const LEAF_BLOCK_TYPES = new Set(['paragraph', 'heading', 'codeBlock', 'horizontalRule', 'table', 'image']);
+
+/** Mark leaf block nodes as pending, recursing into containers. */
+function markLeafBlocksPending(nodes: JSONContent[], status: string): void {
+  for (const node of nodes) {
+    if (node.type && LEAF_BLOCK_TYPES.has(node.type)) {
+      node.attrs = { ...node.attrs, pendingStatus: status };
+    } else if (node.content) {
+      markLeafBlocksPending(node.content, status);
+    }
+  }
+}
+
 // ============================================================================
 // APPLY INSERT
 // ============================================================================
@@ -75,9 +88,9 @@ export function applyInsert(
       attrs: {
         ...node.attrs,
         id: node.attrs?.id || (index === 0 ? anchor.nodeId : generateNodeId()),
-        pendingStatus: 'insert',
       },
     }));
+    markLeafBlocksPending(contentWithPending, 'insert');
 
     try {
       editor.chain()
@@ -137,9 +150,9 @@ export function applyInsert(
     attrs: {
       ...node.attrs,
       id: node.attrs?.id || generateNodeId(),
-      pendingStatus: 'insert',
     },
   }));
+  markLeafBlocksPending(contentWithPending, 'insert');
 
   const insertPos = insertAfter
     ? anchorResult.pos + anchorResult.node.nodeSize
@@ -191,9 +204,9 @@ export function applyRewrite(
     attrs: {
       ...n.attrs,
       id: n.attrs?.id || generateNodeId(),
-      pendingStatus: 'insert',
     },
   }));
+  markLeafBlocksPending(extraNodes, 'insert');
 
   const allNodes = [firstNode, ...extraNodes];
 

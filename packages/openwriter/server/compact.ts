@@ -212,7 +212,6 @@ export function compactNodes(nodes: any[]): string {
  * Single paragraph -> single node. Multiple blocks -> array.
  * Used when agents send markdown strings as content in write_to_pad.
  */
-export function parseMarkdownContent(content: string): any {
-  const nodes = markdownToNodes(content);
-  return nodes.length === 1 ? nodes[0] : nodes;
+export function parseMarkdownContent(content: string): any[] {
+  return markdownToNodes(content);
 }
