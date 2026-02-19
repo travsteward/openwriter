@@ -702,34 +702,40 @@ export function load(): void {
     })
     .sort((a, b) => b.mtime - a.mtime);
 
-  if (files.length === 0) {
-    // No existing docs — start fresh with temp file
-    state.filePath = tempFilePath();
-    state.isTemp = true;
-    return;
+  // Walk sorted files until we find a real document with content.
+  // Skip empty temp files so we don't open a blank scratch pad when real docs exist.
+  for (const file of files) {
+    try {
+      const raw = readFileSync(file.path, 'utf-8');
+      const parsed = markdownToTiptap(raw);
+      const isTemp = file.name.startsWith(TEMP_PREFIX);
+
+      // Skip empty temp files — prefer a real document
+      if (isTemp && isDocEmpty(parsed.document)) continue;
+
+      state.document = parsed.document;
+      state.title = parsed.title;
+      state.metadata = parsed.metadata;
+      state.lastModified = new Date(statSync(file.path).mtimeMs);
+      state.filePath = file.path;
+      state.isTemp = isTemp;
+
+      // Lazy docId migration: assign if missing, save to persist
+      const hadDocId = !!state.metadata.docId;
+      state.docId = ensureDocId(state.metadata);
+      if (!hadDocId) {
+        const md = tiptapToMarkdown(state.document, state.title, state.metadata);
+        writeFileSync(state.filePath, md, 'utf-8');
+      }
+      break;
+    } catch {
+      // Corrupt file — try next one
+      continue;
+    }
   }
 
-  // Open the most recent file
-  const latest = files[0];
-  try {
-    const raw = readFileSync(latest.path, 'utf-8');
-    const parsed = markdownToTiptap(raw);
-    state.document = parsed.document;
-    state.title = parsed.title;
-    state.metadata = parsed.metadata;
-    state.lastModified = new Date(statSync(latest.path).mtimeMs);
-    state.filePath = latest.path;
-    state.isTemp = latest.name.startsWith(TEMP_PREFIX);
-
-    // Lazy docId migration: assign if missing, save to persist
-    const hadDocId = !!state.metadata.docId;
-    state.docId = ensureDocId(state.metadata);
-    if (!hadDocId) {
-      const md = tiptapToMarkdown(state.document, state.title, state.metadata);
-      writeFileSync(state.filePath, md, 'utf-8');
-    }
-  } catch {
-    // Corrupt file — start fresh
+  // If nothing loaded (all files were empty temps or corrupt), start fresh
+  if (!state.filePath) {
     state.filePath = tempFilePath();
     state.isTemp = true;
   }
