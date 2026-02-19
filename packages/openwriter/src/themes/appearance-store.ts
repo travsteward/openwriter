@@ -2,7 +2,7 @@ export type ThemeName = 'ink' | 'novel' | 'mono' | 'editorial' | 'studio' | 'cal
 export type ThemeMode = 'light' | 'dark';
 export type SidebarMode = 'default' | 'timeline' | 'board' | 'shelf';
 export type SidebarStyle = 'default' | 'frost' | 'minimal' | 'terminal';
-export type CanvasStyle = 'seamless' | 'outline' | 'raised' | 'page';
+export type CanvasStyle = 'seamless' | 'outline' | 'page' | 'paper';
 export type TypographyPreset = 'default' | 'butterick' | 'web' | 'blog';
 
 export interface ThemeInfo {
@@ -42,8 +42,8 @@ export const SIDEBAR_STYLES: { id: SidebarStyle; label: string }[] = [
 export const CANVAS_STYLES: { id: CanvasStyle; label: string }[] = [
   { id: 'seamless', label: 'Seamless' },
   { id: 'outline', label: 'Outline' },
-  { id: 'raised', label: 'Raised' },
   { id: 'page', label: 'Page' },
+  { id: 'paper', label: 'Paper' },
 ];
 
 export const TYPOGRAPHY_PRESETS: { id: TypographyPreset; label: string }[] = [

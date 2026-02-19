@@ -68,6 +68,7 @@ body {
   line-height: var(--h1-line-height);
   color: var(--h1-color);
   font-style: var(--h1-style);
+  margin-top: 1.5em;
   margin-bottom: 0.5em;
 }
 
@@ -78,6 +79,7 @@ body {
   letter-spacing: var(--h2-spacing);
   line-height: var(--h2-line-height);
   color: var(--h2-color);
+  margin-top: 1.5em;
   margin-bottom: 0.5em;
 }
 
@@ -92,7 +94,14 @@ body {
   border-bottom: var(--h3-border);
   padding-bottom: var(--h3-pb);
   display: var(--h3-display);
+  margin-top: 1.2em;
   margin-bottom: 0.5em;
+}
+
+.tiptap h1:first-child,
+.tiptap h2:first-child,
+.tiptap h3:first-child {
+  margin-top: 0;
 }
 
 .tiptap ul,
