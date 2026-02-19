@@ -8,14 +8,15 @@ import { createServer } from 'http';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { existsSync } from 'fs';
-import { setupWebSocket, broadcastAgentStatus, broadcastDocumentSwitched, broadcastDocumentsChanged, broadcastWorkspacesChanged, broadcastPendingDocsChanged, broadcastSyncStatus } from './ws.js';
+import { setupWebSocket, broadcastAgentStatus, broadcastDocumentSwitched, broadcastDocumentsChanged, broadcastWorkspacesChanged, broadcastMetadataChanged, broadcastPendingDocsChanged, broadcastSyncStatus } from './ws.js';
 import { TOOL_REGISTRY } from './mcp.js';
 import { z } from 'zod';
 import { zodToJsonSchema } from 'zod-to-json-schema';
-import { save, getDocument, getTitle, getFilePath, getDocId, getStatus, updateDocument, setMetadata, applyTextEdits, isAgentLocked, getPendingDocFilenames, getPendingDocCounts, getDocTagsByFilename, addDocTag, removeDocTag } from './state.js';
+import { save, getDocument, getTitle, getFilePath, getDocId, getMetadata, getStatus, updateDocument, setMetadata, applyTextEdits, isAgentLocked, getPendingDocFilenames, getPendingDocCounts, getDocTagsByFilename, addDocTag, removeDocTag } from './state.js';
 import { listDocuments, switchDocument, createDocument, deleteDocument, reloadDocument, updateDocumentTitle, openFile } from './documents.js';
 import { createWorkspaceRouter } from './workspace-routes.js';
 import { createLinkRouter } from './link-routes.js';
+import { createTweetRouter } from './tweet-routes.js';
 import { markdownToTiptap } from './markdown.js';
 import { importGoogleDoc } from './gdoc-import.js';
 import { createVersionRouter } from './version-routes.js';
@@ -67,7 +68,7 @@ export async function startHttpServer(options: { port?: number; noOpen?: boolean
   });
 
   app.get('/api/document', (_req, res) => {
-    res.json({ document: getDocument(), title: getTitle() });
+    res.json({ document: getDocument(), title: getTitle(), metadata: getMetadata() });
   });
 
   app.get('/api/pending-docs', (_req, res) => {
@@ -232,6 +233,9 @@ export async function startHttpServer(options: { port?: number; noOpen?: boolean
 
   // Mount link-doc routes (create-link-doc, auto-tag-link)
   app.use(createLinkRouter({ broadcastDocumentsChanged, broadcastWorkspacesChanged }));
+
+  // Mount tweet embed proxy
+  app.use(createTweetRouter());
 
   // Text edit (fine-grained find/replace + mark changes within a node)
   app.post('/api/edit-text', (req, res) => {

@@ -75,6 +75,7 @@ export function setupWebSocket(server: Server): void {
       title: getTitle(),
       filename,
       docId: getDocId(),
+      metadata: getMetadata(),
     }));
 
     // Send pending docs info on connect
@@ -113,6 +114,7 @@ export function setupWebSocket(server: Server): void {
             title: getTitle(),
             filename,
             docId: getDocId(),
+            metadata: getMetadata(),
           }));
         }
 
@@ -198,12 +200,19 @@ export function setupWebSocket(server: Server): void {
   });
 }
 
-export function broadcastDocumentSwitched(document: any, title: string, filename: string): void {
-  const msg = JSON.stringify({ type: 'document-switched', document, title, filename, docId: getDocId() });
+export function broadcastDocumentSwitched(document: any, title: string, filename: string, metadata?: Record<string, any>): void {
+  const msg = JSON.stringify({ type: 'document-switched', document, title, filename, docId: getDocId(), metadata: metadata ?? getMetadata() });
   for (const ws of clients) {
     if (ws.readyState === WebSocket.OPEN) {
       ws.send(msg);
     }
+  }
+}
+
+export function broadcastMetadataChanged(metadata: Record<string, any>): void {
+  const msg = JSON.stringify({ type: 'metadata-changed', metadata });
+  for (const ws of clients) {
+    if (ws.readyState === WebSocket.OPEN) ws.send(msg);
   }
 }
 

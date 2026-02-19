@@ -7,6 +7,7 @@ import './themes/themes-extra.css';
 import './themes/typography-presets.css';
 import './sidebar/sidebar-styles.css';
 import './themes/canvas-styles.css';
+import './tweet-compose/tweet-compose.css';
 import App from './App';
 import './App.css';
 

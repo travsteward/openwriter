@@ -19,6 +19,7 @@ export interface DocumentSwitchedPayload {
   title: string;
   filename: string;
   docId?: string;
+  metadata?: Record<string, any>;
 }
 
 export interface PendingDocsPayload {
@@ -43,12 +44,13 @@ interface UseWebSocketOptions {
   onPendingDocsChanged?: (data: PendingDocsPayload) => void;
   onSyncStatus?: (status: SyncStatus) => void;
   onWritingStarted?: (title: string, target: { wsFilename: string; containerId: string | null } | null) => void;
+  onMetadataChanged?: (metadata: Record<string, any>) => void;
   onWritingFinished?: () => void;
   /** Called on reconnect so the app can re-sync editor state to server */
   getEditorState?: () => { document: any } | null;
 }
 
-export function useWebSocket({ onNodeChanges, onAgentStatus, onDocumentSwitched, onDocumentsChanged, onWorkspacesChanged, onTitleChanged, onPendingDocsChanged, onSyncStatus, onWritingStarted, onWritingFinished, getEditorState }: UseWebSocketOptions) {
+export function useWebSocket({ onNodeChanges, onAgentStatus, onDocumentSwitched, onDocumentsChanged, onWorkspacesChanged, onTitleChanged, onPendingDocsChanged, onMetadataChanged, onSyncStatus, onWritingStarted, onWritingFinished, getEditorState }: UseWebSocketOptions) {
   const wsRef = useRef<WebSocket | null>(null);
   const [connected, setConnected] = useState(false);
 
@@ -61,6 +63,7 @@ export function useWebSocket({ onNodeChanges, onAgentStatus, onDocumentSwitched,
   const onTitleChangedRef = useRef(onTitleChanged);
   const onPendingDocsChangedRef = useRef(onPendingDocsChanged);
   const onSyncStatusRef = useRef(onSyncStatus);
+  const onMetadataChangedRef = useRef(onMetadataChanged);
   const onWritingStartedRef = useRef(onWritingStarted);
   const onWritingFinishedRef = useRef(onWritingFinished);
   const getEditorStateRef = useRef(getEditorState);
@@ -71,6 +74,7 @@ export function useWebSocket({ onNodeChanges, onAgentStatus, onDocumentSwitched,
   onWorkspacesChangedRef.current = onWorkspacesChanged;
   onTitleChangedRef.current = onTitleChanged;
   onPendingDocsChangedRef.current = onPendingDocsChanged;
+  onMetadataChangedRef.current = onMetadataChanged;
   onSyncStatusRef.current = onSyncStatus;
   onWritingStartedRef.current = onWritingStarted;
   onWritingFinishedRef.current = onWritingFinished;
@@ -115,7 +119,12 @@ export function useWebSocket({ onNodeChanges, onAgentStatus, onDocumentSwitched,
               title: msg.title,
               filename: msg.filename,
               docId: msg.docId,
+              metadata: msg.metadata,
             });
+          }
+
+          if (msg.type === 'metadata-changed' && msg.metadata) {
+            onMetadataChangedRef.current?.(msg.metadata);
           }
 
           if (msg.type === 'documents-changed') {

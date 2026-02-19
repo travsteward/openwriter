@@ -12,6 +12,7 @@ import { useWebSocket, type PendingDocsPayload, type SyncStatus } from './ws/cli
 import { applyNodeChangeToEditor } from './decorations/bridge';
 import { getSidebarMode } from './themes/appearance-store';
 
+import TweetComposeView from './tweet-compose/TweetComposeView';
 import './decorations/styles.css';
 
 export default function App() {
@@ -26,6 +27,7 @@ export default function App() {
   const [pendingDocs, setPendingDocs] = useState<PendingDocsPayload>({ filenames: [], counts: {} });
   const [syncStatus, setSyncStatus] = useState<SyncStatus>({ state: 'unconfigured' });
   const [showSyncSetup, setShowSyncSetup] = useState(false);
+  const [metadata, setMetadata] = useState<Record<string, any>>({});
   const [showToolbar, setShowToolbar] = useState(() => localStorage.getItem('ow-toolbar') !== 'hidden');
   const [writingTitle, setWritingTitle] = useState<string | null>(null);
   const [writingTarget, setWritingTarget] = useState<{ wsFilename: string; containerId: string | null } | null>(null);
@@ -70,6 +72,17 @@ export default function App() {
   const [canGoForward, setCanGoForward] = useState(false);
 
   // Fetch saved document from server on mount
+  // Set/remove data-view attribute on <html> for CSS targeting
+  useEffect(() => {
+    const view = metadata?.view;
+    if (view) {
+      document.documentElement.setAttribute('data-view', view);
+    } else {
+      document.documentElement.removeAttribute('data-view');
+    }
+    return () => document.documentElement.removeAttribute('data-view');
+  }, [metadata?.view]);
+
   // Re-render when sidebar mode changes (board mode needs different layout)
   useEffect(() => {
     const handler = () => setSidebarModeKey(k => k + 1);
@@ -83,6 +96,7 @@ export default function App() {
       .then((data) => {
         if (data.document) setInitialContent(data.document);
         if (data.title) setTitle(data.title);
+        if (data.metadata) setMetadata(data.metadata);
       })
       .catch(() => {
         setInitialContent(undefined);
@@ -106,11 +120,12 @@ export default function App() {
     setEditorInstance(editor);
   }, []);
 
-  const handleDocumentSwitched = useCallback((payload: { document: any; title: string; filename: string; docId?: string }) => {
+  const handleDocumentSwitched = useCallback((payload: { document: any; title: string; filename: string; docId?: string; metadata?: Record<string, any> }) => {
     currentFilename.current = payload.filename;
     setActiveFilename(payload.filename);
     setInitialContent(payload.document);
     setTitle(payload.title);
+    setMetadata(payload.metadata || {});
     // Don't clear writingTitle here — only writing-finished clears the spinner.
     // This lets the two-step create flow (create_document → populate_document) keep the spinner alive.
     setActiveDocKey((k) => k + 1);
@@ -157,6 +172,7 @@ export default function App() {
     onDocumentsChanged: handleDocumentsChanged,
     onWorkspacesChanged: handleWorkspacesChanged,
     onPendingDocsChanged: handlePendingDocsChanged,
+    onMetadataChanged: (m) => setMetadata(m),
     onWritingStarted: (title, target) => showWritingTitle(title, target),
     onWritingFinished: () => clearWritingTitle(),
     onSyncStatus: (status) => setSyncStatus(status),
@@ -358,13 +374,25 @@ export default function App() {
           />
         )}
         <div className="editor-container">
-          <PadEditor
-            key={activeDocKey}
-            initialContent={initialContent}
-            onUpdate={handleDocUpdate}
-            onReady={handleEditorReady}
-            onLinkClick={handleSwitchDocument}
-          />
+          {metadata?.view === 'tweet' && metadata?.tweetContext ? (
+            <TweetComposeView tweetContext={metadata.tweetContext} editor={editorInstance}>
+              <PadEditor
+                key={activeDocKey}
+                initialContent={initialContent}
+                onUpdate={handleDocUpdate}
+                onReady={handleEditorReady}
+                onLinkClick={handleSwitchDocument}
+              />
+            </TweetComposeView>
+          ) : (
+            <PadEditor
+              key={activeDocKey}
+              initialContent={initialContent}
+              onUpdate={handleDocUpdate}
+              onReady={handleEditorReady}
+              onLinkClick={handleSwitchDocument}
+            />
+          )}
         </div>
         <ReviewPanel
           editor={editorInstance}

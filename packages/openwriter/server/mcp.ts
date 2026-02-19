@@ -25,7 +25,7 @@ import {
   type NodeChange,
 } from './state.js';
 import { listDocuments, switchDocument, createDocument, deleteDocument, openFile, getActiveFilename } from './documents.js';
-import { broadcastDocumentSwitched, broadcastDocumentsChanged, broadcastWorkspacesChanged, broadcastTitleChanged, broadcastPendingDocsChanged, broadcastWritingStarted, broadcastWritingFinished } from './ws.js';
+import { broadcastDocumentSwitched, broadcastDocumentsChanged, broadcastWorkspacesChanged, broadcastTitleChanged, broadcastMetadataChanged, broadcastPendingDocsChanged, broadcastWritingStarted, broadcastWritingFinished } from './ws.js';
 import { listWorkspaces, getWorkspace, getDocTitle, getItemContext, addDoc, updateWorkspaceContext, createWorkspace, deleteWorkspace, addContainerToWorkspace, findOrCreateWorkspace, findOrCreateContainer, moveDoc } from './workspaces.js';
 import { addDocTag, removeDocTag, getDocTagsByFilename } from './state.js';
 import type { WorkspaceNode } from './workspace-types.js';
@@ -304,6 +304,8 @@ export const TOOL_REGISTRY: ToolDef[] = [
       const meta = getMetadata();
       for (const key of removed) delete meta[key];
       save();
+
+      broadcastMetadataChanged(getMetadata());
 
       if (cleaned.title) {
         broadcastTitleChanged(cleaned.title);

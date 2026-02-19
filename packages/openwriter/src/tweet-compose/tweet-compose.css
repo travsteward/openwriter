@@ -1,0 +1,301 @@
+/* =============================================================
+   Tweet Compose View — per-document view styles
+   Activated via [data-view="tweet"] on <html>
+   ============================================================= */
+
+/* --- Global overrides when in tweet compose mode --- */
+[data-view="tweet"] .editor-container {
+  display: flex;
+  justify-content: center;
+}
+
+[data-view="tweet"] .ProseMirror {
+  max-width: 100% !important;
+  padding: 4px 0 !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  font-size: 15px !important;
+  line-height: 1.4 !important;
+}
+
+/* --- Compose wrapper --- */
+.tweet-compose-wrapper {
+  width: 100%;
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 16px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* --- Tweet embed card --- */
+.tweet-embed-card {
+  border: 1px solid var(--border-light, rgba(128, 128, 128, 0.2));
+  border-radius: 12px;
+  padding: 12px 16px;
+  background: var(--bg-primary, #fff);
+  margin: 0 0 4px;
+}
+
+.tweet-embed-nested {
+  margin-top: 12px;
+  border-color: var(--border-light, rgba(128, 128, 128, 0.25));
+}
+
+/* Author row */
+.tweet-author-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.tweet-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.tweet-embed-nested .tweet-avatar {
+  width: 24px;
+  height: 24px;
+}
+
+.tweet-avatar-placeholder {
+  background: var(--border-light, rgba(128, 128, 128, 0.2));
+}
+
+.tweet-author-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.tweet-author-name {
+  font-weight: 700;
+  font-size: 15px;
+  line-height: 1.2;
+  color: var(--ink-dark, #0f1419);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tweet-author-handle {
+  font-size: 13px;
+  color: var(--ink-muted, #536471);
+  line-height: 1.2;
+}
+
+/* Tweet text */
+.tweet-text {
+  font-size: 15px;
+  line-height: 1.4;
+  color: var(--ink-dark, #0f1419);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.tweet-embed-nested .tweet-text {
+  font-size: 14px;
+}
+
+/* Media */
+.tweet-media {
+  margin-top: 12px;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.tweet-media-img {
+  width: 100%;
+  display: block;
+  border-radius: 12px;
+}
+
+.tweet-media-video-placeholder {
+  width: 100%;
+  height: 200px;
+  background: rgba(128, 128, 128, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  color: var(--ink-muted, #536471);
+  font-size: 14px;
+}
+
+/* Footer / date */
+.tweet-footer {
+  margin-top: 12px;
+  padding-top: 8px;
+}
+
+.tweet-date {
+  font-size: 13px;
+  color: var(--ink-muted, #536471);
+}
+
+/* Metrics row */
+.tweet-metrics-row {
+  display: flex;
+  gap: 24px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-light, rgba(128, 128, 128, 0.15));
+}
+
+.tweet-metric {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--ink-muted, #536471);
+}
+
+.tweet-metric svg {
+  opacity: 0.6;
+}
+
+/* --- Replying to indicator --- */
+.tweet-replying-to {
+  font-size: 13px;
+  color: var(--ink-muted, #536471);
+  padding: 8px 0 4px;
+}
+
+.tweet-reply-handle {
+  color: #1d9bf0;
+}
+
+/* --- Compose box --- */
+.tweet-compose-box {
+  border-left: 2px solid var(--border-light, rgba(128, 128, 128, 0.2));
+  padding-left: 16px;
+  margin: 8px 0;
+  min-height: 80px;
+}
+
+/* --- Quote section (below compose) --- */
+.tweet-quote-section {
+  margin-top: 4px;
+}
+
+/* --- Compose footer: counter + post button --- */
+.tweet-compose-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 8px 0;
+  border-top: 1px solid var(--border-light, rgba(128, 128, 128, 0.15));
+}
+
+/* --- Character counter --- */
+.tweet-char-counter {
+  position: relative;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tweet-char-number {
+  position: absolute;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+/* --- Post button placeholder --- */
+.tweet-post-btn {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  padding: 8px 20px;
+  border-radius: 9999px;
+  border: none;
+  background: #1d9bf0;
+  color: #fff;
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* --- Error state --- */
+.tweet-embed-error {
+  border: 1px solid var(--border-light, rgba(128, 128, 128, 0.2));
+  border-radius: 12px;
+  padding: 16px;
+  text-align: center;
+  color: var(--ink-muted, #536471);
+  font-size: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tweet-fallback-link {
+  color: #1d9bf0;
+  font-size: 13px;
+  word-break: break-all;
+}
+
+/* --- Skeleton loading --- */
+.tweet-skeleton .tweet-skeleton-line {
+  display: block;
+  height: 12px;
+  border-radius: 4px;
+  background: var(--border-light, rgba(128, 128, 128, 0.15));
+}
+
+.tweet-pulse {
+  animation: tweet-pulse-anim 1.5s ease-in-out infinite;
+}
+
+@keyframes tweet-pulse-anim {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* ============================================================
+   Dark mode overrides
+   ============================================================ */
+[data-mode="dark"] .tweet-embed-card {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+[data-mode="dark"] .tweet-author-name {
+  color: var(--ink-dark, #e7e9ea);
+}
+
+[data-mode="dark"] .tweet-text {
+  color: var(--ink-dark, #e7e9ea);
+}
+
+[data-mode="dark"] .tweet-embed-error {
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+[data-mode="dark"] .tweet-compose-box {
+  border-left-color: rgba(255, 255, 255, 0.15);
+}
+
+[data-mode="dark"] .tweet-compose-footer {
+  border-top-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-mode="dark"] .tweet-metrics-row {
+  border-top-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-mode="dark"] .tweet-skeleton .tweet-skeleton-line {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+[data-mode="dark"] .tweet-avatar-placeholder {
+  background: rgba(255, 255, 255, 0.1);
+}
