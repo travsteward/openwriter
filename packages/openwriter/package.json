@@ -24,12 +24,12 @@
     "human-agent-collaboration"
   ],
   "bin": {
-    "openwriter": "./dist/bin/pad.js"
+    "openwriter": "./dist/bin/pad.mjs"
   },
   "scripts": {
     "dev": "concurrently \"vite\" \"tsx watch server/index.ts\"",
-    "build": "vite build && tsc -p tsconfig.server.json",
-    "preview": "node dist/bin/pad.js",
+    "build": "vite build && tsc -p tsconfig.server.json && node esbuild.mcp.mjs",
+    "preview": "node dist/bin/pad.mjs",
     "lint": "eslint src server bin --ext .ts,.tsx"
   },
   "dependencies": {
