@@ -74,6 +74,18 @@ export default function FloatingToolbar({ editor }: { editor: Editor }) {
     };
   }, [editor]);
 
+  // Hide toolbar when editor loses focus (e.g. clicking outside the editor)
+  useEffect(() => {
+    const onBlur = () => {
+      dragging.current = false;
+      setVisible(false);
+      lastFrom.current = -1;
+      lastTo.current = -1;
+    };
+    editor.on('blur', onBlur);
+    return () => { editor.off('blur', onBlur); };
+  }, [editor]);
+
   useEffect(() => {
     const onTransaction = () => {
       const { from, to } = editor.state.selection;
