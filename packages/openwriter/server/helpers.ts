@@ -95,6 +95,8 @@ interface OpenWriterConfig {
   gitPat?: string;
   repoName?: string;
   plugins?: Record<string, PluginConfig>;
+  lastUpdateCheck?: string;   // ISO timestamp
+  latestVersion?: string;     // cached version from registry
 }
 
 export function readConfig(): OpenWriterConfig {

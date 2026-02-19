@@ -29,10 +29,13 @@ Markdown is the native language of AI. Every LLM reads it, writes it, and thinks
 ## Quick Start
 
 ```bash
-npx openwriter
+npm install -g openwriter
+openwriter
 ```
 
 That's it. Opens your browser to `localhost:5050` with a ready-to-use editor. Documents save as markdown files in `~/.openwriter/`.
+
+> **Try without installing:** `npx openwriter` works too, but global install starts instantly (no npm resolution delay on every launch).
 
 Already have markdown files? Open them directly — the agent can use `open_file` to load any `.md` from disk, or you can drag files into the sidebar.
 
@@ -45,7 +48,7 @@ npx skills add https://github.com/travsteward/openwriter --skill openwriter
 
 Then add the MCP server for the 24 editing tools:
 ```bash
-claude mcp add -s user open-writer -- npx openwriter --no-open
+claude mcp add -s user open-writer -- openwriter --no-open
 ```
 
 The skill teaches your agent how to use OpenWriter's tools effectively — writing strategy, review etiquette, and troubleshooting. The MCP server provides the actual document editing capabilities.
@@ -56,8 +59,8 @@ The skill teaches your agent how to use OpenWriter's tools effectively — writi
 {
   "mcpServers": {
     "open-writer": {
-      "command": "npx",
-      "args": ["openwriter", "--no-open"]
+      "command": "openwriter",
+      "args": ["--no-open"]
     }
   }
 }
@@ -243,7 +246,7 @@ export default plugin;
 Load plugins at startup:
 
 ```bash
-npx openwriter --plugins my-plugin,another-plugin
+openwriter --plugins my-plugin,another-plugin
 ```
 
 ---
@@ -251,7 +254,7 @@ npx openwriter --plugins my-plugin,another-plugin
 ## CLI Options
 
 ```bash
-npx openwriter [options]
+openwriter [options]
 
 Options:
   --port <number>       Port number (default: 5050)

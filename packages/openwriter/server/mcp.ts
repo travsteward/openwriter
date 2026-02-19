@@ -31,6 +31,7 @@ import { addDocTag, removeDocTag, getDocTagsByFilename } from './state.js';
 import type { WorkspaceNode } from './workspace-types.js';
 import { importGoogleDoc } from './gdoc-import.js';
 import { toCompactFormat, compactNodes, parseMarkdownContent } from './compact.js';
+import { getUpdateInfo } from './update-check.js';
 
 
 export type ToolResult = { content: { type: 'text'; text: string }[] };
@@ -92,7 +93,10 @@ export const TOOL_REGISTRY: ToolDef[] = [
     description: 'Get the current status of the pad: word count, pending changes. Cheap call for polling.',
     schema: {},
     handler: async () => {
-      return { content: [{ type: 'text', text: JSON.stringify(getStatus()) }] };
+      const status = getStatus();
+      const latestVersion = getUpdateInfo();
+      const payload = latestVersion ? { ...status, updateAvailable: latestVersion } : status;
+      return { content: [{ type: 'text', text: JSON.stringify(payload) }] };
     },
   },
   {

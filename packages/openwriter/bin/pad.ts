@@ -2,7 +2,7 @@
 
 /**
  * CLI entry point for OpenWriter.
- * Usage: npx openwriter [--api-key av_live_xxx] [--port 5050] [--no-open] [--av-url URL] [--plugins name1,name2]
+ * Usage: openwriter [--api-key av_live_xxx] [--port 5050] [--no-open] [--av-url URL] [--plugins name1,name2]
  *
  * API key resolution (first wins):
  *   1. --api-key CLI flag

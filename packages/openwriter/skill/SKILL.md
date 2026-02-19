@@ -38,11 +38,14 @@ Skip to [Writing Strategy](#writing-strategy) below.
 
 The user installed this skill from a directory but hasn't set up the MCP server yet. OpenWriter needs an MCP server to provide the 24 editing tools.
 
-**Step 1:** Tell the user to install the npm package and MCP server:
+**Step 1:** Tell the user to install globally and add the MCP server:
 
 ```bash
+# Install globally for instant startup (no npx resolution delay)
+npm install -g openwriter
+
 # Add the OpenWriter MCP server to Claude Code
-claude mcp add -s user open-writer -- npx openwriter --no-open
+claude mcp add -s user open-writer -- openwriter --no-open
 ```
 
 Then restart the Claude Code session. The MCP tools become available on next launch.
@@ -51,8 +54,8 @@ Then restart the Claude Code session. The MCP tools become available on next lau
 
 ```json
 "open-writer": {
-  "command": "npx",
-  "args": ["openwriter", "--no-open"]
+  "command": "openwriter",
+  "args": ["--no-open"]
 }
 ```
 
@@ -62,8 +65,8 @@ The `mcpServers` key is at the top level of `~/.claude.json`. If it doesn't exis
 {
   "mcpServers": {
     "open-writer": {
-      "command": "npx",
-      "args": ["openwriter", "--no-open"]
+      "command": "openwriter",
+      "args": ["--no-open"]
     }
   }
 }
@@ -254,4 +257,4 @@ When importing or organizing book-length projects, read the source material firs
 
 **"pendingChanges" never clears** — User needs to accept/reject changes in the browser at http://localhost:5050.
 
-**Server not starting** — Ensure `npx openwriter` works from your terminal. If on Windows and using `npx`, the MCP config may need `"command": "cmd"` with `"args": ["/c", "npx", "openwriter", "--no-open"]`.
+**Server not starting** — Ensure `openwriter` works from your terminal (`npm install -g openwriter` first). If on Windows and the global command isn't found, the MCP config may need `"command": "cmd"` with `"args": ["/c", "openwriter", "--no-open"]`.

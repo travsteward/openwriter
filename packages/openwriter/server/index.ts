@@ -23,6 +23,7 @@ import { createImageRouter } from './image-upload.js';
 import { createExportRouter } from './export-routes.js';
 import { PluginManager } from './plugin-manager.js';
 import type { PluginActionPayload } from './plugin-types.js';
+import { checkForUpdate } from './update-check.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -386,4 +387,7 @@ export async function startServer(options: { port?: number; noOpen?: boolean; pl
       : 'http://localhost:5173';
     open.default(url).catch(() => {});
   }
+
+  // Fire-and-forget update check (primary server only — client mode returns early above)
+  checkForUpdate().catch(() => {});
 }
