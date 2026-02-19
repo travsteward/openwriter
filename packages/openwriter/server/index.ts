@@ -10,6 +10,8 @@ import { dirname, join } from 'path';
 import { existsSync } from 'fs';
 import { setupWebSocket, broadcastAgentStatus, broadcastDocumentSwitched, broadcastDocumentsChanged, broadcastWorkspacesChanged, broadcastPendingDocsChanged, broadcastSyncStatus } from './ws.js';
 import { TOOL_REGISTRY } from './mcp.js';
+import { z } from 'zod';
+import { zodToJsonSchema } from 'zod-to-json-schema';
 import { save, getDocument, getTitle, getFilePath, getDocId, getStatus, updateDocument, setMetadata, applyTextEdits, isAgentLocked, getPendingDocFilenames, getPendingDocCounts, getDocTagsByFilename, addDocTag, removeDocTag } from './state.js';
 import { listDocuments, switchDocument, createDocument, deleteDocument, reloadDocument, updateDocumentTitle, openFile } from './documents.js';
 import { createWorkspaceRouter } from './workspace-routes.js';
@@ -36,6 +38,16 @@ export async function startHttpServer(options: { port?: number; noOpen?: boolean
   // API routes for direct HTTP access (fallback if WS not available)
   app.get('/api/status', (_req, res) => {
     res.json(getStatus());
+  });
+
+  // MCP tool metadata: lets client-mode proxies discover tools without importing mcp.js
+  app.get('/api/mcp-tools', (_req, res) => {
+    const tools = TOOL_REGISTRY.map((t) => ({
+      name: t.name,
+      description: t.description,
+      inputSchema: zodToJsonSchema(z.object(t.schema)),
+    }));
+    res.json({ tools });
   });
 
   // MCP-over-HTTP: allows client-mode terminals to proxy tool calls
