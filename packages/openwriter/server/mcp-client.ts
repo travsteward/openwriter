@@ -10,7 +10,7 @@ import { TOOL_REGISTRY } from './mcp.js';
 
 export async function startMcpClientServer(port: number): Promise<void> {
   const server = new McpServer({
-    name: 'open-writer-client',
+    name: 'openwriter-client',
     version: '0.2.0',
   });
 

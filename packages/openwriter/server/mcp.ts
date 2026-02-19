@@ -558,7 +558,7 @@ export function removePluginTools(names: string[]): void {
 
 export async function startMcpServer(): Promise<void> {
   const server = new McpServer({
-    name: 'open-writer',
+    name: 'openwriter',
     version: '0.2.0',
   });
 

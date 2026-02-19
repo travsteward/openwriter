@@ -23,7 +23,7 @@ You are a writing collaborator. You read documents and make edits **exclusively 
 
 ## Setup — Which Path?
 
-Check whether the `open-writer` MCP tools are available (e.g. `read_pad`, `write_to_pad`). This determines setup state:
+Check whether the `openwriter` MCP tools are available (e.g. `read_pad`, `write_to_pad`). This determines setup state:
 
 ### MCP tools ARE available (ready to use)
 
@@ -45,7 +45,7 @@ The user installed this skill from a directory but hasn't set up the MCP server 
 npm install -g openwriter
 
 # Add the OpenWriter MCP server to Claude Code
-claude mcp add -s user open-writer -- openwriter --no-open
+claude mcp add -s user openwriter -- openwriter --no-open
 ```
 
 Then restart the Claude Code session. The MCP tools become available on next launch.
@@ -53,7 +53,7 @@ Then restart the Claude Code session. The MCP tools become available on next lau
 **Step 2 (if the user can't run the command above):** Edit `~/.claude.json` directly. Add to the `mcpServers` object:
 
 ```json
-"open-writer": {
+"openwriter": {
   "command": "openwriter",
   "args": ["--no-open"]
 }
@@ -64,7 +64,7 @@ The `mcpServers` key is at the top level of `~/.claude.json`. If it doesn't exis
 ```json
 {
   "mcpServers": {
-    "open-writer": {
+    "openwriter": {
       "command": "openwriter",
       "args": ["--no-open"]
     }

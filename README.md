@@ -48,7 +48,7 @@ npx skills add https://github.com/travsteward/openwriter --skill openwriter
 
 Then add the MCP server for the 24 editing tools:
 ```bash
-claude mcp add -s user open-writer -- openwriter --no-open
+claude mcp add -s user openwriter -- openwriter --no-open
 ```
 
 The skill teaches your agent how to use OpenWriter's tools effectively — writing strategy, review etiquette, and troubleshooting. The MCP server provides the actual document editing capabilities.
@@ -58,7 +58,7 @@ The skill teaches your agent how to use OpenWriter's tools effectively — writi
 ```json
 {
   "mcpServers": {
-    "open-writer": {
+    "openwriter": {
       "command": "openwriter",
       "args": ["--no-open"]
     }
