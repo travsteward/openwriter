@@ -531,7 +531,7 @@ export const TOOL_REGISTRY: ToolDef[] = [
   },
 ];
 
-/** Register MCP tools from plugins. Call before startMcpServer(). */
+/** Register MCP tools from plugins. Tools added after startMcpServer() won't be visible to existing MCP sessions. */
 export function registerPluginTools(tools: import('./plugin-types.js').PluginMcpTool[]): void {
   for (const tool of tools) {
     TOOL_REGISTRY.push({

@@ -54,6 +54,14 @@ export async function startServer(options: { port?: number; noOpen?: boolean; pl
   // Load saved document
   load();
 
+  // Start MCP stdio server immediately — this is what Claude Code waits for.
+  // Core tools are already in TOOL_REGISTRY; plugin tools register later.
+  startMcpServer().then(() => {
+    broadcastAgentStatus(true);
+  }).catch((err) => {
+    console.error('[MCP] Failed to start:', err);
+  });
+
   const app = express();
   app.use(express.json({ limit: '10mb' }));
 
@@ -366,13 +374,6 @@ export async function startServer(options: { port?: number; noOpen?: boolean; pl
 
   // Setup WebSocket on same server
   setupWebSocket(server);
-
-  // Start MCP stdio server (for agent connections)
-  startMcpServer().then(() => {
-    broadcastAgentStatus(true);
-  }).catch((err) => {
-    console.error('[MCP] Failed to start:', err);
-  });
 
   server.listen(port, () => {
     console.log(`OpenWriter running at http://localhost:${port}`);
