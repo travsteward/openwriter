@@ -3,7 +3,19 @@ import type { SidebarModeProps, DocumentInfo, WorkspaceNode, ContainerItem } fro
 import { useSidebarDrag } from './sidebar-drag';
 import { formatDate, isExternal, parentDir } from './sidebar-utils';
 
-export default function SidebarDefault({ docs, workspaces, assignedFiles, pendingDocs, onSwitchDocument, onCreateDocument, actions, scrollRef }: SidebarModeProps) {
+/** Recursively check if a container ID exists in the workspace tree. */
+function hasContainer(nodes: WorkspaceNode[], id: string | null): boolean {
+  if (!id) return true;
+  for (const n of nodes) {
+    if (n.type === 'container') {
+      if (n.id === id) return true;
+      if (hasContainer(n.items, id)) return true;
+    }
+  }
+  return false;
+}
+
+export default function SidebarDefault({ docs, workspaces, assignedFiles, pendingDocs, onSwitchDocument, onCreateDocument, actions, scrollRef, writingTitle, writingTarget }: SidebarModeProps) {
   const [editingFilename, setEditingFilename] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
@@ -72,33 +84,31 @@ export default function SidebarDefault({ docs, workspaces, assignedFiles, pendin
           <div className="sidebar-item-meta">
             {doc.wordCount.toLocaleString()} words &middot; {formatDate(doc.lastModified)}
           </div>
-          {wsFilename && (
-            <div className="sidebar-tags">
-              {actions.getDocTags(wsFilename, doc.filename).map(tag => (
-                <span key={tag} className="sidebar-tag" onClick={(e) => e.stopPropagation()}>
-                  {tag}
-                  <span className="sidebar-tag-remove" onClick={(e) => { e.stopPropagation(); actions.handleRemoveTag(wsFilename, doc.filename, tag); }}>&times;</span>
-                </span>
-              ))}
-              {tagInputFile === doc.filename ? (
-                <input
-                  className="sidebar-tag-input"
-                  value={tagInputValue}
-                  onChange={(e) => setTagInputValue(e.target.value)}
-                  onBlur={() => { if (tagInputValue.trim()) actions.handleAddTag(wsFilename, doc.filename, tagInputValue); setTagInputFile(null); }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') { actions.handleAddTag(wsFilename, doc.filename, tagInputValue); setTagInputFile(null); setTagInputValue(''); }
-                    if (e.key === 'Escape') { setTagInputFile(null); setTagInputValue(''); }
-                  }}
-                  autoFocus
-                  onClick={(e) => e.stopPropagation()}
-                  placeholder="tag..."
-                />
-              ) : (
-                <button className="sidebar-tag-add" onClick={(e) => { e.stopPropagation(); setTagInputFile(doc.filename); setTagInputValue(''); }}>+</button>
-              )}
-            </div>
-          )}
+          <div className="sidebar-tags">
+            {actions.getDocTags(doc.filename).map(tag => (
+              <span key={tag} className="sidebar-tag" onClick={(e) => e.stopPropagation()}>
+                {tag}
+                <span className="sidebar-tag-remove" onClick={(e) => { e.stopPropagation(); actions.handleRemoveTag(doc.filename, tag); }}>&times;</span>
+              </span>
+            ))}
+            {tagInputFile === doc.filename ? (
+              <input
+                className="sidebar-tag-input"
+                value={tagInputValue}
+                onChange={(e) => setTagInputValue(e.target.value)}
+                onBlur={() => { if (tagInputValue.trim()) actions.handleAddTag(doc.filename, tagInputValue); setTagInputFile(null); }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') { actions.handleAddTag(doc.filename, tagInputValue); setTagInputFile(null); setTagInputValue(''); }
+                  if (e.key === 'Escape') { setTagInputFile(null); setTagInputValue(''); }
+                }}
+                autoFocus
+                onClick={(e) => e.stopPropagation()}
+                placeholder="tag..."
+              />
+            ) : (
+              <button className="sidebar-tag-add" onClick={(e) => { e.stopPropagation(); setTagInputFile(doc.filename); setTagInputValue(''); }}>+</button>
+            )}
+          </div>
         </>
       )}
       {wsFilename ? (
@@ -183,8 +193,20 @@ export default function SidebarDefault({ docs, workspaces, assignedFiles, pendin
         </div>
         {!isCollapsed && (
           <div className="sidebar-container-list" data-drop-ws={wsFilename} data-drop-container={container.id}>
-            {container.items.map((child, i) => renderNode(child, depth + 1, wsFilename, container.id, container.items, i))}
-            {container.items.length === 0 && <div className="sidebar-empty">{draggedItem ? 'Drop here' : 'Empty'}</div>}
+            {writingTitle && writingTarget?.wsFilename === wsFilename && writingTarget.containerId === container.id && (
+              <div className="sidebar-item sidebar-writing-placeholder">
+                <div className="sidebar-item-title">
+                  <span className="sidebar-writing-spinner" />
+                  <span className="sidebar-item-title-text">{writingTitle}</span>
+                </div>
+                <div className="sidebar-item-meta">Writing...</div>
+              </div>
+            )}
+            {(writingTitle && writingTarget?.wsFilename === wsFilename && writingTarget.containerId === container.id
+              ? container.items.filter(n => n.type !== 'doc' || n.title !== writingTitle)
+              : container.items
+            ).map((child, i) => renderNode(child, depth + 1, wsFilename, container.id, container.items, i))}
+            {container.items.length === 0 && !writingTitle && <div className="sidebar-empty">{draggedItem ? 'Drop here' : 'Empty'}</div>}
           </div>
         )}
       </div>
@@ -201,7 +223,16 @@ export default function SidebarDefault({ docs, workspaces, assignedFiles, pendin
         </div>
         {!collapsedSections.has('docs') && (
           <div className="sidebar-section-list" data-drop-ws="__docs__">
-            {unassignedDocs.map((doc, i) => {
+            {writingTitle && (!writingTarget || !workspaces.some(w => w.filename === writingTarget?.wsFilename)) && (
+              <div className="sidebar-item sidebar-writing-placeholder">
+                <div className="sidebar-item-title">
+                  <span className="sidebar-writing-spinner" />
+                  <span className="sidebar-item-title-text">{writingTitle}</span>
+                </div>
+                <div className="sidebar-item-meta">Writing...</div>
+              </div>
+            )}
+            {(writingTitle ? unassignedDocs.filter((d) => d.title !== writingTitle) : unassignedDocs).map((doc, i) => {
               const siblings: WorkspaceNode[] = unassignedDocs.map((d) => ({ type: 'doc' as const, file: d.filename, title: d.title }));
               return renderDocItem(doc, undefined, null, siblings, i);
             })}
@@ -239,8 +270,20 @@ export default function SidebarDefault({ docs, workspaces, assignedFiles, pendin
             </div>
             {!isCollapsed && (
               <div className="sidebar-section-list" data-drop-ws={wsInfo.filename}>
-                {wsRoot.map((node, i) => renderNode(node, 0, wsInfo.filename, null, wsRoot, i))}
-                {wsRoot.length === 0 && <div className="sidebar-empty">{draggedItem ? 'Drop here to add' : 'Empty workspace'}</div>}
+                {writingTitle && writingTarget?.wsFilename === wsInfo.filename && (writingTarget.containerId === null || !hasContainer(wsRoot, writingTarget.containerId)) && (
+                  <div className="sidebar-item sidebar-writing-placeholder">
+                    <div className="sidebar-item-title">
+                      <span className="sidebar-writing-spinner" />
+                      <span className="sidebar-item-title-text">{writingTitle}</span>
+                    </div>
+                    <div className="sidebar-item-meta">Writing...</div>
+                  </div>
+                )}
+                {(writingTitle && writingTarget?.wsFilename === wsInfo.filename && writingTarget.containerId === null
+                  ? wsRoot.filter(n => n.type !== 'doc' || n.title !== writingTitle)
+                  : wsRoot
+                ).map((node, i) => renderNode(node, 0, wsInfo.filename, null, wsRoot, i))}
+                {wsRoot.length === 0 && !writingTitle && <div className="sidebar-empty">{draggedItem ? 'Drop here to add' : 'Empty workspace'}</div>}
               </div>
             )}
           </div>

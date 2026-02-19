@@ -11,7 +11,7 @@ import { existsSync } from 'fs';
 import { setupWebSocket, broadcastAgentStatus, broadcastDocumentSwitched, broadcastDocumentsChanged, broadcastWorkspacesChanged, broadcastPendingDocsChanged, broadcastSyncStatus } from './ws.js';
 import { startMcpServer, TOOL_REGISTRY } from './mcp.js';
 import { startMcpClientServer } from './mcp-client.js';
-import { load, save, getDocument, getTitle, getFilePath, getDocId, getStatus, updateDocument, setMetadata, applyTextEdits, isAgentLocked, getPendingDocFilenames, getPendingDocCounts } from './state.js';
+import { load, save, getDocument, getTitle, getFilePath, getDocId, getStatus, updateDocument, setMetadata, applyTextEdits, isAgentLocked, getPendingDocFilenames, getPendingDocCounts, getDocTagsByFilename, addDocTag, removeDocTag } from './state.js';
 import { listDocuments, switchDocument, createDocument, deleteDocument, reloadDocument, updateDocumentTitle, openFile } from './documents.js';
 import { createWorkspaceRouter } from './workspace-routes.js';
 import { createLinkRouter } from './link-routes.js';
@@ -186,9 +186,9 @@ export async function startServer(options: { port?: number; noOpen?: boolean; pl
     }
   });
 
-  app.delete('/api/documents/:filename', (req, res) => {
+  app.delete('/api/documents/:filename', async (req, res) => {
     try {
-      const result = deleteDocument(req.params.filename);
+      const result = await deleteDocument(req.params.filename);
       if (result.switched && result.newDoc) {
         broadcastDocumentSwitched(result.newDoc.document, result.newDoc.title, result.newDoc.filename);
       } else {
@@ -211,7 +211,34 @@ export async function startServer(options: { port?: number; noOpen?: boolean; pl
     }
   });
 
-  // Mount workspace CRUD + doc/container/tag routes
+  // Document-level tag routes
+  app.get('/api/doc-tags/:filename', (req, res) => {
+    res.json({ tags: getDocTagsByFilename(req.params.filename) });
+  });
+
+  app.post('/api/doc-tags/:filename', (req, res) => {
+    try {
+      const { tag } = req.body;
+      if (!tag?.trim()) { res.status(400).json({ error: 'tag is required' }); return; }
+      addDocTag(req.params.filename, tag.trim());
+      broadcastDocumentsChanged();
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(400).json({ error: err.message });
+    }
+  });
+
+  app.delete('/api/doc-tags/:filename/:tag', (req, res) => {
+    try {
+      removeDocTag(req.params.filename, req.params.tag);
+      broadcastDocumentsChanged();
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(400).json({ error: err.message });
+    }
+  });
+
+  // Mount workspace CRUD + doc/container routes
   app.use(createWorkspaceRouter({ broadcastWorkspacesChanged }));
 
   // Mount link-doc routes (create-link-doc, auto-tag-link)

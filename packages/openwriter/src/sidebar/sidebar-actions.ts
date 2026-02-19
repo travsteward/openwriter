@@ -1,9 +1,10 @@
-import { useCallback } from 'react';
+import { useCallback, useRef, useEffect, useState } from 'react';
 import type { SidebarActions, WorkspaceWithData } from './sidebar-types';
 
 export function useSidebarActions(
   workspaces: WorkspaceWithData[],
   fetchDocs: () => void,
+  docTagsRefreshKey?: number,
 ): SidebarActions {
   const handleDelete = useCallback((filename: string) => {
     fetch(`/api/documents/${encodeURIComponent(filename)}`, { method: 'DELETE' }).catch(() => {});
@@ -80,27 +81,58 @@ export function useSidebarActions(
     }).catch(() => {});
   }, []);
 
-  const getDocTags = useCallback((wsFilename: string, docFile: string): string[] => {
-    const ws = workspaces.find(w => w.filename === wsFilename);
-    if (!ws?.workspace?.tags) return [];
-    const tags: string[] = [];
-    for (const [tag, files] of Object.entries(ws.workspace.tags)) {
-      if (files.includes(docFile)) tags.push(tag);
-    }
-    return tags;
-  }, [workspaces]);
+  // Doc-level tags: cached in memory, refreshed on docTagsRefreshKey change
+  const [docTagsCache, setDocTagsCache] = useState<Record<string, string[]>>({});
+  const fetchedTagsKey = useRef(-1);
 
-  const handleAddTag = useCallback((wsFilename: string, docFile: string, tag: string) => {
+  useEffect(() => {
+    if (docTagsRefreshKey === fetchedTagsKey.current) return;
+    fetchedTagsKey.current = docTagsRefreshKey ?? 0;
+    // Fetch tags for all known docs
+    fetch('/api/documents')
+      .then(r => r.json())
+      .then((docs: { filename: string }[]) => {
+        const cache: Record<string, string[]> = {};
+        return Promise.all(
+          docs.map(d =>
+            fetch(`/api/doc-tags/${encodeURIComponent(d.filename)}`)
+              .then(r => r.json())
+              .then(data => { if (data.tags?.length) cache[d.filename] = data.tags; })
+              .catch(() => {})
+          )
+        ).then(() => setDocTagsCache(cache));
+      })
+      .catch(() => {});
+  }, [docTagsRefreshKey]);
+
+  const getDocTags = useCallback((docFile: string): string[] => {
+    return docTagsCache[docFile] || [];
+  }, [docTagsCache]);
+
+  const handleAddTag = useCallback((docFile: string, tag: string) => {
     if (!tag.trim()) return;
-    fetch(`/api/workspaces/${encodeURIComponent(wsFilename)}/tags/${encodeURIComponent(docFile)}`, {
+    // Optimistic update
+    setDocTagsCache(prev => {
+      const existing = prev[docFile] || [];
+      if (existing.includes(tag.trim())) return prev;
+      return { ...prev, [docFile]: [...existing, tag.trim()] };
+    });
+    fetch(`/api/doc-tags/${encodeURIComponent(docFile)}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ tag: tag.trim() }),
     }).catch(() => {});
   }, []);
 
-  const handleRemoveTag = useCallback((wsFilename: string, docFile: string, tag: string) => {
-    fetch(`/api/workspaces/${encodeURIComponent(wsFilename)}/tags/${encodeURIComponent(docFile)}/${encodeURIComponent(tag)}`, {
+  const handleRemoveTag = useCallback((docFile: string, tag: string) => {
+    // Optimistic update
+    setDocTagsCache(prev => {
+      const existing = prev[docFile] || [];
+      const filtered = existing.filter(t => t !== tag);
+      if (filtered.length === 0) { const next = { ...prev }; delete next[docFile]; return next; }
+      return { ...prev, [docFile]: filtered };
+    });
+    fetch(`/api/doc-tags/${encodeURIComponent(docFile)}/${encodeURIComponent(tag)}`, {
       method: 'DELETE',
     }).catch(() => {});
   }, []);

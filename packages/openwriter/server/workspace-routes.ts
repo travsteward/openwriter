@@ -18,8 +18,6 @@ import {
   removeContainer,
   renameContainer,
   reorderContainer,
-  tagDoc,
-  untagDoc,
 } from './workspaces.js';
 
 interface BroadcastFn {
@@ -54,9 +52,9 @@ export function createWorkspaceRouter(b: BroadcastFn): Router {
     }
   });
 
-  router.delete('/api/workspaces/:filename', (req, res) => {
+  router.delete('/api/workspaces/:filename', async (req, res) => {
     try {
-      deleteWorkspace(req.params.filename);
+      await deleteWorkspace(req.params.filename);
       b.broadcastWorkspacesChanged();
       res.json({ success: true });
     } catch (err: any) {
@@ -154,27 +152,6 @@ export function createWorkspaceRouter(b: BroadcastFn): Router {
   router.put('/api/workspaces/:filename/containers/:containerId/reorder', (req, res) => {
     try {
       const ws = reorderContainer(req.params.filename, req.params.containerId, req.body.afterIdentifier ?? null);
-      b.broadcastWorkspacesChanged();
-      res.json(ws);
-    } catch (err: any) {
-      res.status(400).json({ error: err.message });
-    }
-  });
-
-  // Tag operations
-  router.post('/api/workspaces/:filename/tags/:docFile', (req, res) => {
-    try {
-      const ws = tagDoc(req.params.filename, req.params.docFile, req.body.tag);
-      b.broadcastWorkspacesChanged();
-      res.json(ws);
-    } catch (err: any) {
-      res.status(400).json({ error: err.message });
-    }
-  });
-
-  router.delete('/api/workspaces/:filename/tags/:docFile/:tag', (req, res) => {
-    try {
-      const ws = untagDoc(req.params.filename, req.params.docFile, req.params.tag);
       b.broadcastWorkspacesChanged();
       res.json(ws);
     } catch (err: any) {

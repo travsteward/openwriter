@@ -5,9 +5,10 @@
 
 import { Router } from 'express';
 import { existsSync, writeFileSync } from 'fs';
-import { listWorkspaces, getWorkspace, addDoc, addContainerToWorkspace, tagDoc } from './workspaces.js';
+import { listWorkspaces, getWorkspace, addDoc, addContainerToWorkspace } from './workspaces.js';
 import { collectAllFiles } from './workspace-tree.js';
 import { getActiveFilename } from './documents.js';
+import { addDocTag } from './state.js';
 import { filePathForTitle, ensureDataDir } from './helpers.js';
 import { tiptapToMarkdown } from './markdown.js';
 
@@ -75,9 +76,9 @@ export function createLinkRouter(b: BroadcastFns): Router {
 
           // 5. Tag with "linked"
           try {
-            tagDoc(wsInfo.filename, filename, 'linked');
+            addDocTag(filename, 'linked');
           } catch {
-            // Doc not in workspace or already tagged
+            // Already tagged or file missing
           }
         } catch {
           // Skip problematic workspaces
@@ -111,14 +112,14 @@ export function createLinkRouter(b: BroadcastFns): Router {
           const wsFiles = collectAllFiles(ws.root);
           // Both source and target must be in same workspace
           if (!wsFiles.includes(currentFilename) || !wsFiles.includes(targetFile)) continue;
-          tagDoc(wsInfo.filename, targetFile, 'linked');
+          addDocTag(targetFile, 'linked');
           tagged = true;
         } catch {
           // Skip
         }
       }
 
-      if (tagged) b.broadcastWorkspacesChanged();
+      if (tagged) b.broadcastDocumentsChanged();
       res.json({ success: true, tagged });
     } catch (err: any) {
       res.status(500).json({ error: err.message });

@@ -36,7 +36,6 @@ export interface Workspace {
   title: string;
   voiceProfileId?: string | null;
   root: WorkspaceNode[];
-  tags: Record<string, string[]>;
   context?: WorkspaceContext;
 }
 
@@ -50,12 +49,12 @@ export interface WorkspaceInfo {
 // V1 TYPES (legacy)
 // ============================================================================
 
-export interface LegacyWorkspaceItem {
+interface LegacyWorkspaceItem {
   file: string;
   tag: string;
 }
 
-export interface LegacyWorkspace {
+interface LegacyWorkspace {
   title: string;
   type?: string;
   voiceProfileId?: string | null;
@@ -73,15 +72,10 @@ export function isV1(data: any): boolean {
 }
 
 export function migrateV1toV2(legacy: LegacyWorkspace): Workspace {
-  const tags: Record<string, string[]> = {};
   const root: WorkspaceNode[] = [];
 
   for (const item of legacy.items || []) {
     root.push({ type: 'doc', file: item.file, title: item.file.replace(/\.md$/, '') });
-    if (item.tag) {
-      if (!tags[item.tag]) tags[item.tag] = [];
-      if (!tags[item.tag].includes(item.file)) tags[item.tag].push(item.file);
-    }
   }
 
   return {
@@ -89,7 +83,6 @@ export function migrateV1toV2(legacy: LegacyWorkspace): Workspace {
     title: legacy.title,
     voiceProfileId: legacy.voiceProfileId ?? null,
     root,
-    tags,
     context: legacy.context,
   };
 }

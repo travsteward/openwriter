@@ -15,16 +15,18 @@ interface SidebarProps {
   refreshKey: number;
   workspacesRefreshKey: number;
   pendingDocs: PendingDocsPayload;
+  writingTitle?: string | null;
+  writingTarget?: { wsFilename: string; containerId: string | null } | null;
   onClose?: () => void;
 }
 
-export default function Sidebar({ open, onSwitchDocument, onCreateDocument, refreshKey, workspacesRefreshKey, pendingDocs, onClose }: SidebarProps) {
+export default function Sidebar({ open, onSwitchDocument, onCreateDocument, refreshKey, workspacesRefreshKey, pendingDocs, writingTitle, writingTarget, onClose }: SidebarProps) {
   const { docs, workspaces, assignedFiles, fetchDocs, scrollRef } = useSidebarData(refreshKey, workspacesRefreshKey);
-  const actions = useSidebarActions(workspaces, fetchDocs);
+  const actions = useSidebarActions(workspaces, fetchDocs, refreshKey);
   const mode = getSidebarMode();
 
   const modeProps = {
-    docs, workspaces, assignedFiles, pendingDocs,
+    docs, workspaces, assignedFiles, pendingDocs, writingTitle, writingTarget,
     onSwitchDocument, onCreateDocument, actions, scrollRef,
   };
 

@@ -18,7 +18,6 @@ export interface WorkspaceFull {
   version: 2;
   title: string;
   root: WorkspaceNode[];
-  tags: Record<string, string[]>;
   context?: any;
 }
 
@@ -47,6 +46,8 @@ export interface SidebarModeProps {
   onCreateDocument: () => void;
   actions: SidebarActions;
   scrollRef: React.RefObject<HTMLDivElement>;
+  writingTitle?: string | null;
+  writingTarget?: { wsFilename: string; containerId: string | null } | null;
 }
 
 export interface SidebarActions {
@@ -60,7 +61,7 @@ export interface SidebarActions {
   handleCreateContainer: (wsFilename: string, parentContainerId: string | null) => void;
   handleDeleteContainer: (wsFilename: string, containerId: string) => void;
   handleRenameContainer: (wsFilename: string, containerId: string, newName: string) => void;
-  getDocTags: (wsFilename: string, docFile: string) => string[];
-  handleAddTag: (wsFilename: string, docFile: string, tag: string) => void;
-  handleRemoveTag: (wsFilename: string, docFile: string, tag: string) => void;
+  getDocTags: (docFile: string) => string[];
+  handleAddTag: (docFile: string, tag: string) => void;
+  handleRemoveTag: (docFile: string, tag: string) => void;
 }

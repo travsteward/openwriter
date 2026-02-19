@@ -257,7 +257,7 @@ const AGENT_LOCK_MS = 5000; // Block browser doc-updates for 5s after agent writ
 let lastAgentWriteTime = 0;
 
 /** Set the agent write lock (called after agent changes). */
-function setAgentLock(): void {
+export function setAgentLock(): void {
   lastAgentWriteTime = Date.now();
 }
 
@@ -286,7 +286,7 @@ export function cancelDebouncedSave(): void {
   }
 }
 
-export function applyChanges(changes: NodeChange[]): number {
+export function applyChanges(changes: NodeChange[]): { count: number; lastNodeId: string | null } {
   // Apply to server-side document (source of truth)
   const processed = applyChangesToDocument(changes);
 
@@ -301,7 +301,21 @@ export function applyChanges(changes: NodeChange[]): number {
   // Debounced save — coalesces rapid agent writes into a single disk write
   debouncedSave();
 
-  return processed.length;
+  // Find the last created node ID for chaining inserts
+  let lastNodeId: string | null = null;
+  for (let i = processed.length - 1; i >= 0; i--) {
+    const change = processed[i];
+    if (change.content) {
+      const contentArr = Array.isArray(change.content) ? change.content : [change.content];
+      const lastNode = contentArr[contentArr.length - 1];
+      if (lastNode?.attrs?.id) {
+        lastNodeId = lastNode.attrs.id;
+        break;
+      }
+    }
+  }
+
+  return { count: processed.length, lastNodeId };
 }
 
 export function onChanges(listener: ChangeListener): () => void {
@@ -320,6 +334,14 @@ export function onChanges(listener: ChangeListener): () => void {
  * Returns the parent array and index for in-place mutation.
  */
 function findNodeInDoc(nodes: any[], id: string): { parent: any[]; index: number } | null {
+  // Special sentinel: "end" resolves to the last top-level node in the document
+  if (id === 'end') {
+    const topLevel = state.document.content;
+    if (topLevel && topLevel.length > 0) {
+      return { parent: topLevel, index: topLevel.length - 1 };
+    }
+    return null;
+  }
   for (let i = 0; i < nodes.length; i++) {
     if (nodes[i].attrs?.id === id) {
       return { parent: nodes, index: i };
@@ -367,9 +389,9 @@ function applyChangesToDocument(changes: NodeChange[]): NodeChange[] {
         attrs: {
           ...node.attrs,
           id: node.attrs?.id || generateNodeId(),
-          pendingStatus: 'insert',
         },
       }));
+      markLeafBlocksAsPending(extraNodes, 'insert');
 
       found.parent.splice(found.index, 1, firstNode, ...extraNodes);
 
@@ -388,9 +410,10 @@ function applyChangesToDocument(changes: NodeChange[]): NodeChange[] {
         attrs: {
           ...node.attrs,
           id: node.attrs?.id || (change.nodeId && !change.afterNodeId && i === 0 ? change.nodeId : generateNodeId()),
-          pendingStatus: 'insert',
         },
       }));
+      // Mark leaf blocks as pending (not containers) for correct serialization
+      markLeafBlocksAsPending(contentWithIds, 'insert');
 
       if (change.nodeId && !change.afterNodeId) {
         // Replace empty node
@@ -512,29 +535,27 @@ export function stripPendingAttrs(): void {
 }
 
 /**
- * Mark leaf block nodes as pending. Only marks text-containing blocks
- * (paragraph, heading, codeBlock, horizontalRule) — NOT container nodes
- * (bulletList, orderedList, listItem, blockquote) whose children get marked instead.
- * This prevents overlapping decorations and ensures accept/reject acts on visible blocks.
+ * Mark leaf block nodes as pending within a node array.
+ * Only marks text-containing blocks (paragraph, heading, codeBlock, etc.)
+ * NOT container nodes (bulletList, orderedList, listItem, blockquote).
+ * This ensures collectPendingState captures them correctly on save.
  */
-export function markAllNodesAsPending(doc: PadDocument, status: 'insert' | 'rewrite'): void {
-  function mark(nodes: any[]) {
-    if (!nodes) return;
-    for (const node of nodes) {
-      if (node.type && LEAF_BLOCK_TYPES.has(node.type)) {
-        node.attrs = { ...node.attrs, pendingStatus: status };
-        if (!node.attrs.id) {
-          node.attrs.id = generateNodeId();
-        }
-        // Don't recurse into leaf blocks — prevents overlapping decorations
-        // (e.g. table marked + its inner paragraphs also marked)
-      } else if (node.content) {
-        // Recurse into container children to mark nested leaf blocks (e.g. paragraphs inside listItems)
-        mark(node.content);
+function markLeafBlocksAsPending(nodes: any[], status: string): void {
+  if (!nodes) return;
+  for (const node of nodes) {
+    if (node.type && LEAF_BLOCK_TYPES.has(node.type)) {
+      node.attrs = { ...node.attrs, pendingStatus: status };
+      if (!node.attrs.id) {
+        node.attrs.id = generateNodeId();
       }
+    } else if (node.content) {
+      markLeafBlocksAsPending(node.content, status);
     }
   }
-  mark(doc.content);
+}
+
+export function markAllNodesAsPending(doc: PadDocument, status: 'insert' | 'rewrite'): void {
+  markLeafBlocksAsPending(doc.content, status);
 }
 
 /** Get filenames of all docs with pending changes (disk scan + external docs + current in-memory doc). */
@@ -802,4 +823,150 @@ function cleanupEmptyTempFiles(): void {
       }
     }
   } catch { /* ignore errors during cleanup */ }
+}
+
+// ============================================================================
+// DOCUMENT-LEVEL TAG OPERATIONS
+// ============================================================================
+
+/** Get tags for the active document from its metadata. */
+export function getDocTags(): string[] {
+  const tags = state.metadata.tags;
+  return Array.isArray(tags) ? tags : [];
+}
+
+/** Get tags for any document by filename (reads from disk if not active). */
+export function getDocTagsByFilename(filename: string): string[] {
+  // If it's the active doc, use in-memory state
+  const activeFilename = state.filePath
+    ? (isExternalDoc(state.filePath) ? state.filePath : state.filePath.split(/[/\\]/).pop() || '')
+    : '';
+  if (filename === activeFilename) return getDocTags();
+
+  // Otherwise read from disk
+  const targetPath = resolveDocPath(filename);
+  if (!existsSync(targetPath)) return [];
+  try {
+    const raw = readFileSync(targetPath, 'utf-8');
+    const { data } = matter(raw);
+    return Array.isArray(data.tags) ? data.tags : [];
+  } catch { return []; }
+}
+
+/** Add a tag to a document. Works on active doc or any file on disk. */
+export function addDocTag(filename: string, tag: string): void {
+  const activeFilename = state.filePath
+    ? (isExternalDoc(state.filePath) ? state.filePath : state.filePath.split(/[/\\]/).pop() || '')
+    : '';
+
+  if (filename === activeFilename) {
+    // Active doc — update in-memory metadata
+    const tags: string[] = Array.isArray(state.metadata.tags) ? [...state.metadata.tags] : [];
+    if (!tags.includes(tag)) {
+      tags.push(tag);
+      state.metadata.tags = tags;
+      save();
+    }
+  } else {
+    // Non-active doc — read/write disk
+    const targetPath = resolveDocPath(filename);
+    if (!existsSync(targetPath)) return;
+    try {
+      const raw = readFileSync(targetPath, 'utf-8');
+      const parsed = markdownToTiptap(raw);
+      const tags: string[] = Array.isArray(parsed.metadata.tags) ? [...parsed.metadata.tags] : [];
+      if (!tags.includes(tag)) {
+        tags.push(tag);
+        parsed.metadata.tags = tags;
+        const markdown = tiptapToMarkdown(parsed.document, parsed.title, parsed.metadata);
+        writeFileSync(targetPath, markdown, 'utf-8');
+      }
+    } catch { /* best-effort */ }
+  }
+}
+
+/** Remove a tag from a document. Works on active doc or any file on disk. */
+export function removeDocTag(filename: string, tag: string): void {
+  const activeFilename = state.filePath
+    ? (isExternalDoc(state.filePath) ? state.filePath : state.filePath.split(/[/\\]/).pop() || '')
+    : '';
+
+  if (filename === activeFilename) {
+    const tags: string[] = Array.isArray(state.metadata.tags) ? [...state.metadata.tags] : [];
+    const idx = tags.indexOf(tag);
+    if (idx >= 0) {
+      tags.splice(idx, 1);
+      state.metadata.tags = tags.length > 0 ? tags : undefined;
+      save();
+    }
+  } else {
+    const targetPath = resolveDocPath(filename);
+    if (!existsSync(targetPath)) return;
+    try {
+      const raw = readFileSync(targetPath, 'utf-8');
+      const parsed = markdownToTiptap(raw);
+      const tags: string[] = Array.isArray(parsed.metadata.tags) ? [...parsed.metadata.tags] : [];
+      const idx = tags.indexOf(tag);
+      if (idx >= 0) {
+        tags.splice(idx, 1);
+        parsed.metadata.tags = tags.length > 0 ? tags : undefined;
+        const markdown = tiptapToMarkdown(parsed.document, parsed.title, parsed.metadata);
+        writeFileSync(targetPath, markdown, 'utf-8');
+      }
+    } catch { /* best-effort */ }
+  }
+}
+
+// ============================================================================
+// CROSS-DOCUMENT HELPERS (operate on specific files, not the active singleton)
+// ============================================================================
+
+/**
+ * Save a browser doc-update to a specific file on disk.
+ * Used when the browser sends a doc-update for a non-active document (race condition guard).
+ */
+export function saveDocToFile(filename: string, doc: PadDocument): void {
+  const targetPath = resolveDocPath(filename);
+  if (!existsSync(targetPath)) return; // Target doesn't exist, nothing to save to
+  try {
+    const raw = readFileSync(targetPath, 'utf-8');
+    const parsed = markdownToTiptap(raw);
+    // Transfer pending attrs from on-disk version to the incoming doc
+    if (hasPendingChanges(parsed.document)) {
+      transferPendingAttrs(parsed.document, doc);
+    }
+    const markdown = tiptapToMarkdown(doc, parsed.title, parsed.metadata);
+    writeFileSync(targetPath, markdown, 'utf-8');
+  } catch { /* best-effort */ }
+}
+
+/**
+ * Strip pending attrs from a specific file on disk (not the active document).
+ * Optionally clears agentCreated metadata (on accept).
+ */
+export function stripPendingAttrsFromFile(filename: string, clearAgentCreated?: boolean): void {
+  const targetPath = resolveDocPath(filename);
+  if (!existsSync(targetPath)) return;
+  try {
+    const raw = readFileSync(targetPath, 'utf-8');
+    const parsed = markdownToTiptap(raw);
+    // Strip pending attrs from the parsed document
+    function strip(nodes: any[]) {
+      if (!nodes) return;
+      for (const node of nodes) {
+        if (node.attrs?.pendingStatus) {
+          delete node.attrs.pendingStatus;
+          delete node.attrs.pendingOriginalContent;
+          delete node.attrs.pendingTextEdits;
+        }
+        if (node.content) strip(node.content);
+      }
+    }
+    strip(parsed.document.content);
+    if (clearAgentCreated && parsed.metadata.agentCreated) {
+      delete parsed.metadata.agentCreated;
+    }
+    const markdown = tiptapToMarkdown(parsed.document, parsed.title, parsed.metadata);
+    writeFileSync(targetPath, markdown, 'utf-8');
+  } catch { /* best-effort */ }
 }

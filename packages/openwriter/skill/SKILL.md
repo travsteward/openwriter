@@ -3,7 +3,7 @@ name: openwriter
 description: |
   OpenWriter — the writing surface for AI agents. A markdown-native rich text
   editor where agents write via MCP tools and users accept or reject changes
-  in-browser. 24 tools for document editing, multi-doc workspaces, and
+  in-browser. 26 MCP tools for document editing, multi-doc workspaces, and
   organization. Plain .md files on disk — no database, no lock-in.
 
   Use when user says: "open writer", "openwriter", "write in openwriter",
@@ -75,7 +75,7 @@ After editing, tell the user:
 
 **Note:** You cannot run `claude mcp add` from inside a session (nested session error). That's why we edit the JSON directly when configuring from within Claude Code.
 
-## MCP Tools Reference (24 tools)
+## MCP Tools Reference (26 tools)
 
 ### Document Operations
 
@@ -83,6 +83,7 @@ After editing, tell the user:
 |------|-------------|
 | `read_pad` | Read the current document (compact tagged-line format) |
 | `write_to_pad` | Apply edits as pending decorations (rewrite, insert, delete) |
+| `populate_document` | Populate an empty doc with content (two-step creation flow) |
 | `get_pad_status` | Lightweight poll: word count, pending changes, userSignaledReview |
 | `get_nodes` | Fetch specific nodes by ID |
 | `get_metadata` | Get frontmatter metadata for the active document |
@@ -94,14 +95,14 @@ After editing, tell the user:
 |------|-------------|
 | `list_documents` | List all documents with filename, word count, active status |
 | `switch_document` | Switch to a different document by filename |
-| `create_document` | Create a new document (optional title, content, path) |
+| `create_document` | Create a new empty document (optional workspace + container placement) |
 | `open_file` | Open an existing .md file from any location on disk |
+| `delete_document` | Delete a document file (moves to OS trash, recoverable) |
 
 ### Import
 
 | Tool | Description |
 |------|-------------|
-| `replace_document` | Import external content into a new/blank document |
 | `import_gdoc` | Import a Google Doc (auto-splits multi-chapter docs) |
 
 ### Workspace Management
@@ -110,6 +111,7 @@ After editing, tell the user:
 |------|-------------|
 | `list_workspaces` | List all workspaces with title and doc count |
 | `create_workspace` | Create a new workspace |
+| `delete_workspace` | Delete a workspace and all its document files (moves to OS trash) |
 | `get_workspace_structure` | Get full workspace tree: containers, docs, tags, context |
 | `get_item_context` | Get progressive disclosure context for a doc in a workspace |
 | `update_workspace_context` | Update workspace context (characters, settings, rules) |
@@ -120,8 +122,8 @@ After editing, tell the user:
 |------|-------------|
 | `add_doc` | Add a document to a workspace (optional container placement) |
 | `create_container` | Create a folder inside a workspace (max depth: 3) |
-| `tag_doc` | Add a tag to a document in a workspace |
-| `untag_doc` | Remove a tag from a document |
+| `tag_doc` | Add a tag to a document (stored in doc frontmatter) |
+| `untag_doc` | Remove a tag from a document (stored in doc frontmatter) |
 | `move_doc` | Move a document to a different container or root level |
 
 ### Text Operations
@@ -132,14 +134,53 @@ After editing, tell the user:
 
 ## Writing Strategy
 
-**Incremental edits, not monolithic replacement.**
+OpenWriter has two distinct modes: **editing** existing documents and **creating** new content. Use the right approach for each.
 
-- Use `write_to_pad` for all edits — never `replace_document` (unless importing into a blank doc)
+### Editing (write_to_pad)
+
+For making changes to existing documents — rewrites, insertions, deletions:
+
+- Use `write_to_pad` for all edits
 - Send **3-8 changes per call** for a responsive, streaming feel
-- Always `read_pad` before writing — you need fresh node IDs
+- Always `read_pad` before editing to get fresh node IDs
 - Respect `pendingChanges > 0` — wait for the user to accept/reject before sending more
 - Content accepts markdown strings (preferred) or TipTap JSON
 - Decoration colors: **blue** = rewrite, **green** = insert, **red** = delete
+
+### Creating New Documents (two-step flow)
+
+**Always use the two-step flow** when creating new content:
+
+```
+1. create_document({ title: "My Doc" })      ← no content, fires instantly, shows spinner
+2. populate_document({ content: "..." })      ← delivers content, clears spinner
+```
+
+**Why two steps?** MCP tool calls are atomic — the server doesn't receive the call until ALL parameters are fully generated. For a document with hundreds or thousands of words, the user would wait 30+ seconds with zero feedback while you generate content tokens. The two-step flow shows a sidebar spinner immediately (step 1 has no content to generate), then the spinner persists while you generate and deliver the content (step 2).
+
+**Rules:**
+- `create_document` does NOT accept a `content` parameter — it always creates an empty doc
+- Step 1 (`create_document`) — shows spinner, creates empty doc, does NOT switch the editor
+- Step 2 (`populate_document`) — writes content to the active doc, marks as pending decorations, switches the editor, clears the spinner
+- Never use `write_to_pad` for the initial population — use `populate_document` exclusively
+
+### Workspace-Integrated Creation
+
+`create_document` accepts optional `workspace` and `container` parameters for direct workspace placement:
+
+```
+create_document({
+  title: "Opening Chapter",
+  workspace: "The Immortal",        ← creates workspace if it doesn't exist
+  container: "Chapters"             ← creates container if it doesn't exist
+})
+```
+
+- **`workspace`** (string) — workspace title to add the doc to. Auto-creates if not found (case-insensitive match).
+- **`container`** (string) — container name within the workspace (e.g. "Chapters", "Notes", "References"). Auto-creates if not found. Requires `workspace`.
+- Both are optional — omit for standalone docs outside any workspace.
+
+This eliminates the need for separate `create_workspace`, `create_container`, and `add_doc` calls when building up a workspace.
 
 ## Workflow
 
@@ -161,13 +202,38 @@ After editing, tell the user:
 4. write_to_pad      → apply edits
 ```
 
-### Creating new content
+### Creating new content (two-step)
 
 ```
-1. create_document({ title: "My Doc", content: "# Heading\n\nContent..." })
-2. read_pad          → get node IDs from created content
-3. write_to_pad      → refine with edits
+1. create_document({ title: "My Doc", workspace: "Project", container: "Chapters" })
+                                                → spinner appears, doc placed in workspace
+2. populate_document({ content: "# ..." })     → content delivered, spinner clears
+3. read_pad                                     → get node IDs if further edits needed
+4. write_to_pad                                 → refine with edits
 ```
+
+### Building a workspace (multiple docs)
+
+```
+1. create_document({ title: "Ch 1", workspace: "My Book", container: "Chapters" })
+2. populate_document({ content: "..." })
+3. create_document({ title: "Ch 2", workspace: "My Book", container: "Chapters" })
+4. populate_document({ content: "..." })
+5. create_document({ title: "Character Bible", workspace: "My Book", container: "References" })
+6. populate_document({ content: "..." })
+7. tag_doc + update_workspace_context           → organize and add context
+```
+
+The workspace and containers are auto-created on the first `create_document` call. Subsequent calls reuse the existing workspace/containers (matched case-insensitively).
+
+### Book workspace guidelines
+
+When importing or organizing book-length projects, read the source material first and **follow the grain** — break content into the categories the author is already thinking in, don't impose a template.
+
+- **One concept per doc.** Don't create one giant reference doc. If the material covers characters, setting, plot, and themes, those are separate documents.
+- **Preserve originals.** Keep raw drafts separate from revised versions (e.g. Drafts vs. Chapters containers). The author needs both.
+- **Synthesize, don't just copy.** Reorganize messy notes into clean, scannable docs (headers, bullets, sections) while keeping the author's voice and prose verbatim.
+- **Surface open threads.** Unanswered questions, brainstorm lists, and loose ideas get their own doc — don't bury them inside reference material.
 
 ## Review Etiquette
 

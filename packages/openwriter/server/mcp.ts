@@ -21,15 +21,17 @@ import {
   updateDocument,
   save,
   markAllNodesAsPending,
+  setAgentLock,
   type NodeChange,
 } from './state.js';
-import { listDocuments, switchDocument, createDocument, openFile, getActiveFilename } from './documents.js';
-import { broadcastDocumentSwitched, broadcastDocumentsChanged, broadcastWorkspacesChanged, broadcastTitleChanged, broadcastPendingDocsChanged } from './ws.js';
-import { listWorkspaces, getWorkspace, getDocTitle, getItemContext, addDoc, updateWorkspaceContext, createWorkspace, addContainerToWorkspace, tagDoc, untagDoc, moveDoc } from './workspaces.js';
+import { listDocuments, switchDocument, createDocument, deleteDocument, openFile, getActiveFilename } from './documents.js';
+import { broadcastDocumentSwitched, broadcastDocumentsChanged, broadcastWorkspacesChanged, broadcastTitleChanged, broadcastPendingDocsChanged, broadcastWritingStarted, broadcastWritingFinished } from './ws.js';
+import { listWorkspaces, getWorkspace, getDocTitle, getItemContext, addDoc, updateWorkspaceContext, createWorkspace, deleteWorkspace, addContainerToWorkspace, findOrCreateWorkspace, findOrCreateContainer, moveDoc } from './workspaces.js';
+import { addDocTag, removeDocTag, getDocTagsByFilename } from './state.js';
 import type { WorkspaceNode } from './workspace-types.js';
 import { importGoogleDoc } from './gdoc-import.js';
 import { toCompactFormat, compactNodes, parseMarkdownContent } from './compact.js';
-import { markdownToTiptap } from './markdown.js';
+
 
 export type ToolResult = { content: { type: 'text'; text: string }[] };
 
@@ -53,7 +55,7 @@ export const TOOL_REGISTRY: ToolDef[] = [
   },
   {
     name: 'write_to_pad',
-    description: 'Preferred tool for all document edits. Send 3-8 changes per call for responsive feel. Multiple rapid calls better than one monolithic call. Content can be a markdown string (preferred) or TipTap JSON. Markdown strings are auto-converted. Changes appear as pending decorations the user accepts or rejects.',
+    description: 'Preferred tool for all document edits. Send 3-8 changes per call for responsive feel. Multiple rapid calls better than one monolithic call. Content can be a markdown string (preferred) or TipTap JSON. Markdown strings are auto-converted. Changes appear as pending decorations the user accepts or rejects. Use afterNodeId: "end" to append to the document without knowing node IDs. Response includes lastNodeId for chaining subsequent inserts.',
     schema: {
       changes: z.array(z.object({
         operation: z.enum(['rewrite', 'insert', 'delete']),
@@ -70,7 +72,7 @@ export const TOOL_REGISTRY: ToolDef[] = [
         }
         return resolved;
       });
-      const appliedCount = applyChanges(processed as NodeChange[]);
+      const { count: appliedCount, lastNodeId } = applyChanges(processed as NodeChange[]);
       broadcastPendingDocsChanged();
       return {
         content: [{
@@ -78,6 +80,7 @@ export const TOOL_REGISTRY: ToolDef[] = [
           text: JSON.stringify({
             success: appliedCount > 0,
             appliedCount,
+            ...(lastNodeId ? { lastNodeId } : {}),
             ...(appliedCount < processed.length ? { skipped: processed.length - appliedCount } : {}),
           }),
         }],
@@ -123,6 +126,7 @@ export const TOOL_REGISTRY: ToolDef[] = [
       filename: z.string().describe('Filename of the document to switch to (e.g. "My Essay.md")'),
     },
     handler: async ({ filename }: { filename: string }) => {
+      broadcastWritingFinished(); // Clear any in-progress creation spinner
       const result = switchDocument(filename);
       broadcastDocumentSwitched(result.document, result.title, result.filename);
       const compact = toCompactFormat(result.document, result.title, getWordCount(), getPendingChangeCount());
@@ -131,29 +135,103 @@ export const TOOL_REGISTRY: ToolDef[] = [
   },
   {
     name: 'create_document',
-    description: 'Create a new document and switch to it. Always provide a title — documents without one show as "Untitled". Saves the current document first. Accepts optional content as markdown string or TipTap JSON — if provided, the document is created with that content. Without content, creates an empty document. Use `path` to create the file at a specific location instead of ~/.openwriter/.',
+    description: 'Create a new empty document and switch to it. Always provide a title. Saves the current document first. Shows a sidebar spinner that persists until populate_document is called — always call populate_document next to add content. If workspace is provided, the doc is automatically added to it (workspace is created if it doesn\'t exist). If container is also provided, the doc is placed inside that container (created if it doesn\'t exist).',
     schema: {
       title: z.string().optional().describe('Title for the new document. Defaults to "Untitled".'),
-      content: z.any().optional().describe('Initial content: markdown string (preferred) or TipTap JSON doc object. If omitted, document starts empty.'),
       path: z.string().optional().describe('Absolute file path to create the document at (e.g. "C:/projects/doc.md"). If omitted, creates in ~/.openwriter/.'),
+      workspace: z.string().optional().describe('Workspace title to add this doc to. Creates the workspace if it doesn\'t exist.'),
+      container: z.string().optional().describe('Container name within the workspace (e.g. "Chapters", "Notes", "References"). Creates the container if it doesn\'t exist. Requires workspace.'),
     },
-    handler: async ({ title, content, path }: { title?: string; content?: any; path?: string }) => {
-      const result = createDocument(title, content, path);
-      if (content) {
-        const doc = getDocument();
+    handler: async ({ title, path, workspace, container }: { title?: string; path?: string; workspace?: string; container?: string }) => {
+      // Resolve workspace/container up front so spinner renders in the right place
+      let wsTarget: { wsFilename: string; containerId: string | null } | undefined;
+      if (workspace) {
+        const ws = findOrCreateWorkspace(workspace);
+        let containerId: string | null = null;
+        if (container) {
+          const c = findOrCreateContainer(ws.filename, container);
+          containerId = c.containerId;
+        }
+        wsTarget = { wsFilename: ws.filename, containerId };
+        broadcastWorkspacesChanged(); // Browser sees container structure before spinner
+      }
+      broadcastWritingStarted(title || 'Untitled', wsTarget);
+      // Yield so the browser receives and renders the placeholder before heavy work
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      try {
+        // Lock browser doc-updates: prevents race where browser sends a doc-update
+        // for the previous document but server has already switched active doc.
+        setAgentLock();
+        const result = createDocument(title, undefined, path);
+        setMetadata({ agentCreated: true });
+        save(); // Persist agentCreated flag to frontmatter
+
+        // Auto-add to workspace if specified (defer sidebar broadcasts to populate_document
+        // so the real doc entry doesn't appear alongside the spinner placeholder)
+        let wsInfo = '';
+        if (wsTarget) {
+          addDoc(wsTarget.wsFilename, wsTarget.containerId, result.filename, result.title);
+          wsInfo = ` → workspace "${workspace}"${container ? ` / ${container}` : ''}`;
+        }
+
+        // Spinner persists until populate_document is called
+        return {
+          content: [{
+            type: 'text',
+            text: `Created "${result.title}" (${result.filename})${wsInfo} — empty. Call populate_document to add content.`,
+          }],
+        };
+      } catch (err) {
+        broadcastWritingFinished();
+        throw err;
+      }
+    },
+  },
+  {
+    name: 'populate_document',
+    description: 'Populate the active document with content. Use after create_document (without content) to complete the two-step creation flow. Content appears as pending decorations for user review. Clears the sidebar creation spinner and shows the document.',
+    schema: {
+      content: z.any().describe('Document content: markdown string (preferred) or TipTap JSON doc object.'),
+    },
+    handler: async ({ content }: { content: any }) => {
+      try {
+        let doc: any;
+
+        if (typeof content === 'string') {
+          doc = { type: 'doc', content: parseMarkdownContent(content) };
+        } else if (content?.type === 'doc' && Array.isArray(content.content)) {
+          doc = content;
+        } else {
+          broadcastWritingFinished();
+          return {
+            content: [{ type: 'text', text: 'Error: content must be a markdown string or TipTap JSON { type: "doc", content: [...] }' }],
+          };
+        }
+
+        setAgentLock(); // Block browser doc-updates during population
         markAllNodesAsPending(doc, 'insert');
         updateDocument(doc);
         save();
+
+        // Broadcast sidebar updates first (deferred from create_document) so the doc
+        // entry and spinner removal arrive in the same render cycle
+        broadcastDocumentsChanged();
+        broadcastWorkspacesChanged();
+        broadcastDocumentSwitched(doc, getTitle(), getActiveFilename());
+        broadcastPendingDocsChanged();
+        broadcastWritingFinished();
+
+        const wordCount = getWordCount();
+        return {
+          content: [{
+            type: 'text',
+            text: `Populated "${getTitle()}" — ${wordCount.toLocaleString()} words`,
+          }],
+        };
+      } catch (err) {
+        broadcastWritingFinished();
+        throw err;
       }
-      broadcastDocumentSwitched(result.document, result.title, result.filename);
-      broadcastPendingDocsChanged();
-      const wordCount = getWordCount();
-      return {
-        content: [{
-          type: 'text',
-          text: `Created "${result.title}" (${result.filename})${wordCount > 0 ? ` — ${wordCount} words` : ''}`,
-        }],
-      };
     },
   },
   {
@@ -170,43 +248,22 @@ export const TOOL_REGISTRY: ToolDef[] = [
     },
   },
   {
-    name: 'replace_document',
-    description: 'Only for importing external content into a new/blank document. Never use to edit a document you already wrote — use write_to_pad instead. Accepts markdown string (preferred) or TipTap JSON. Optionally updates the title.',
+    name: 'delete_document',
+    description: 'Delete a document file. Moves to OS trash (Recycle Bin / macOS Trash). If deleting the active document, automatically switches to the most recent remaining doc. Cannot delete the last document. IMPORTANT: Always confirm with the user before calling this tool.',
     schema: {
-      content: z.any().describe('New document content: markdown string (preferred) or TipTap JSON { type: "doc", content: [...] }'),
-      title: z.string().optional().describe('New title for the document. If omitted, title is unchanged (or extracted from markdown frontmatter).'),
+      filename: z.string().describe('Filename of the document to delete (e.g. "My Essay.md")'),
     },
-    handler: async ({ content, title }: { content: any; title?: string }) => {
-      let doc: any;
-      let newTitle = title;
-
-      if (typeof content === 'string') {
-        const parsed = markdownToTiptap(content);
-        doc = parsed.document;
-        if (!newTitle && parsed.title !== 'Untitled') newTitle = parsed.title;
-      } else if (content?.type === 'doc' && Array.isArray(content.content)) {
-        doc = content;
-      } else {
-        return {
-          content: [{ type: 'text', text: JSON.stringify({ success: false, error: 'content must be a markdown string or TipTap JSON { type: "doc", content: [...] }' }) }],
-        };
+    handler: async ({ filename }: { filename: string }) => {
+      const result = await deleteDocument(filename);
+      if (result.switched && result.newDoc) {
+        broadcastDocumentSwitched(result.newDoc.document, result.newDoc.title, result.newDoc.filename);
       }
-
-      const status = getWordCount() === 0 ? 'insert' : 'rewrite';
-      markAllNodesAsPending(doc, status);
-      updateDocument(doc);
-      if (newTitle) setMetadata({ title: newTitle });
-      save();
-
-      broadcastDocumentSwitched(doc, newTitle || getTitle(), getActiveFilename());
-      broadcastPendingDocsChanged();
-
-      return {
-        content: [{
-          type: 'text',
-          text: `Document replaced — ${getWordCount().toLocaleString()} words${newTitle ? `, title: "${newTitle}"` : ''}`,
-        }],
-      };
+      broadcastDocumentsChanged();
+      let text = `Deleted "${filename}" (moved to trash)`;
+      if (result.switched && result.newDoc) {
+        text += `. Switched to "${result.newDoc.filename}"`;
+      }
+      return { content: [{ type: 'text', text }] };
     },
   },
   {
@@ -280,8 +337,25 @@ export const TOOL_REGISTRY: ToolDef[] = [
     },
   },
   {
+    name: 'delete_workspace',
+    description: 'Delete a workspace and all its document files. Files go to OS trash (Recycle Bin / macOS Trash). IMPORTANT: Always confirm with the user before calling this tool.',
+    schema: {
+      filename: z.string().describe('Workspace manifest filename (e.g. "my-novel-a1b2c3d4.json")'),
+    },
+    handler: async ({ filename }: { filename: string }) => {
+      const result = await deleteWorkspace(filename);
+      broadcastWorkspacesChanged();
+      broadcastDocumentsChanged();
+      let text = `Deleted workspace "${filename}" and ${result.deletedFiles.length} files: ${result.deletedFiles.join(', ')}`;
+      if (result.skippedExternal.length > 0) {
+        text += `\nSkipped ${result.skippedExternal.length} external files (not owned by OpenWriter): ${result.skippedExternal.join(', ')}`;
+      }
+      return { content: [{ type: 'text', text }] };
+    },
+  },
+  {
     name: 'get_workspace_structure',
-    description: 'Get the full structure of a workspace: tree of containers and docs, tags index, plus context (characters, settings, rules). Use to understand workspace organization before writing.',
+    description: 'Get the full structure of a workspace: tree of containers and docs, per-doc tags, plus context (characters, settings, rules). Use to understand workspace organization before writing.',
     schema: {
       filename: z.string().describe('Workspace manifest filename (e.g. "my-novel-a1b2c3d4.json")'),
     },
@@ -292,7 +366,9 @@ export const TOOL_REGISTRY: ToolDef[] = [
         const lines: string[] = [];
         for (const node of nodes) {
           if (node.type === 'doc') {
-            lines.push(`${indent}${getDocTitle(node.file)}  (${node.file})`);
+            const tags = getDocTagsByFilename(node.file);
+            const tagStr = tags.length > 0 ? `  [${tags.join(', ')}]` : '';
+            lines.push(`${indent}${getDocTitle(node.file)}  (${node.file})${tagStr}`);
           } else {
             lines.push(`${indent}[container] ${node.name}  (id:${node.id})`);
             lines.push(...renderTree(node.items, indent + '  '));
@@ -303,14 +379,6 @@ export const TOOL_REGISTRY: ToolDef[] = [
 
       const treeLines = renderTree(ws.root, '  ');
       let text = `workspace: "${ws.title}"\nstructure:\n${treeLines.join('\n') || '  (empty)'}`;
-
-      const tagEntries = Object.entries(ws.tags);
-      if (tagEntries.length > 0) {
-        text += '\ntags:';
-        for (const [tag, files] of tagEntries) {
-          text += `\n  ${tag}: ${files.join(', ')}`;
-        }
-      }
 
       if (ws.context && Object.keys(ws.context).length > 0) {
         text += `\ncontext:\n${JSON.stringify(ws.context, null, 2)}`;
@@ -379,29 +447,27 @@ export const TOOL_REGISTRY: ToolDef[] = [
   },
   {
     name: 'tag_doc',
-    description: 'Add a tag to a document in a workspace. Tags are cross-cutting — a doc can have multiple tags.',
+    description: 'Add a tag to a document. Tags are stored in the document\'s frontmatter — they travel with the file. A doc can have multiple tags.',
     schema: {
-      workspaceFile: z.string().describe('Workspace manifest filename'),
-      docFile: z.string().describe('Document filename'),
+      docFile: z.string().describe('Document filename (e.g. "Chapter 1.md")'),
       tag: z.string().describe('Tag name to add'),
     },
-    handler: async ({ workspaceFile, docFile, tag }: any) => {
-      tagDoc(workspaceFile, docFile, tag);
-      broadcastWorkspacesChanged();
+    handler: async ({ docFile, tag }: any) => {
+      addDocTag(docFile, tag);
+      broadcastDocumentsChanged();
       return { content: [{ type: 'text', text: `Tagged "${docFile}" with [${tag}]` }] };
     },
   },
   {
     name: 'untag_doc',
-    description: 'Remove a tag from a document in a workspace.',
+    description: 'Remove a tag from a document.',
     schema: {
-      workspaceFile: z.string().describe('Workspace manifest filename'),
       docFile: z.string().describe('Document filename'),
       tag: z.string().describe('Tag name to remove'),
     },
-    handler: async ({ workspaceFile, docFile, tag }: any) => {
-      untagDoc(workspaceFile, docFile, tag);
-      broadcastWorkspacesChanged();
+    handler: async ({ docFile, tag }: any) => {
+      removeDocTag(docFile, tag);
+      broadcastDocumentsChanged();
       return { content: [{ type: 'text', text: `Removed tag [${tag}] from "${docFile}"` }] };
     },
   },
