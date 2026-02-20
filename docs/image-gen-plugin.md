@@ -244,6 +244,12 @@ Falls back to `GEMINI_API_KEY` env var (standard across other skills that use Ge
 
 ---
 
+## MCP Tool: `generate_image`
+
+A core MCP tool (in `server/mcp.ts`, not the plugin) exposes image generation to agents directly. Parameters: `prompt` (required, max 1000 chars), `aspect_ratio` (optional, default `"16:9"`), `set_cover` (optional boolean — atomically sets `articleContext.coverImage` in metadata). Uses the same Gemini Imagen 4 model and `/_images/` storage as the plugin's HTTP endpoint. Requires `GEMINI_API_KEY` env var.
+
+---
+
 ## Future Extensions
 
 The plugin is designed as a generic `image-gen` wrapper, not Gemini-specific:

@@ -4,10 +4,10 @@
 Check `TODO.md` for current tasks. Docs listed below cover architecture and roadmap — follow links for details.
 
 ## Project Overview
-OpenWriter — local TipTap rich text editor for human-agent collaboration. Turbo monorepo: `packages/openwriter` (Vite + React frontend, Express + WS server), `plugins/` (MCP tool plugins). Agent writes pending changes via MCP tools; user accepts/rejects in-browser. 24 MCP tools across document, multi-doc, workspace, and import operations.
+OpenWriter — local TipTap rich text editor for human-agent collaboration. Turbo monorepo: `packages/openwriter` (Vite + React frontend, Express + WS server), `plugins/` (MCP tool plugins). Agent writes pending changes via MCP tools; user accepts/rejects in-browser. 25 MCP tools across document, multi-doc, workspace, media, and import operations.
 
 ## Docs
-- [Architecture](docs/architecture.md) — system architecture, 24 MCP tools, HTTP API, decoration system, monorepo structure
+- [Architecture](docs/architecture.md) — system architecture, 25 MCP tools, HTTP API, decoration system, monorepo structure
 - [Vision](docs/vision.md) — strategic thesis, monetization paths, open-source strategy, roadmap with status
 - [Enhancements](docs/enhancements.md) — remaining future work (review UX, agent collab, mobile, publishing)
 - [GrepRAG Memory](docs/greprag-memory.md) — future: centralized agent memory via GrepRAG shared brain

@@ -1,6 +1,6 @@
 # OpenWriter — Architecture
 
-> Local TipTap 3.0 editor for human-agent collaboration. Turbo monorepo with plugin system. 24 MCP tools across document, multi-document, workspace, and import operations.
+> Local TipTap 3.0 editor for human-agent collaboration. Turbo monorepo with plugin system. 25 MCP tools across document, multi-document, workspace, media, and import operations.
 
 ---
 
@@ -52,13 +52,14 @@
 │  WebSocket                                                      │
 │  └── Push NodeChanges + document switches to browser            │
 │                                                                 │
-│  MCP Server (stdio) — 24 core tools + plugin tools              │
+│  MCP Server (stdio) — 25 core tools + plugin tools              │
 │  ├── Document: read_pad, write_to_pad, get_pad_status,          │
 │  │   get_nodes, replace_document, get_metadata, set_metadata,   │
 │  │   edit_text, open_file                                       │
 │  ├── Multi-doc: list_documents, switch_document, create_document│
 │  ├── Workspace: list/create/get_structure/get_item_context/     │
 │  │   add_doc/update_context/create_container/tag/untag/move_doc │
+│  ├── Media: generate_image                                      │
 │  ├── Import: import_gdoc                                        │
 │  └── Meta: open-writer (launch browser)                         │
 │                                                                 │
@@ -102,7 +103,7 @@ openwriter/                        # Turbo monorepo
 │       ├── server/                # 29 files
 │       │   ├── index.ts           # Express + WS + MCP + all HTTP routes
 │       │   ├── state.ts           # In-memory document state + server-side mutations
-│       │   ├── mcp.ts             # MCP stdio server (24 tools)
+│       │   ├── mcp.ts             # MCP stdio server (25 tools)
 │       │   ├── mcp-client.ts      # MCP client connection management
 │       │   ├── ws.ts              # WebSocket handler
 │       │   ├── compact.ts         # Tagged-line format serializer
@@ -216,7 +217,7 @@ AI agent connects via MCP stdio. Agent reads the document, makes changes, user r
 
 ---
 
-## 4. MCP Tools (24 core + plugin tools)
+## 4. MCP Tools (25 core + plugin tools)
 
 ### Document tools (9)
 
@@ -253,6 +254,12 @@ AI agent connects via MCP stdio. Agent reads the document, makes changes, user r
 | `create_container` | Folder inside workspace, max nesting depth 3 |
 | `tag_doc` / `untag_doc` | Cross-cutting tag management on documents |
 | `move_doc` | Move doc between containers or to root |
+
+### Media tools (1)
+
+| Tool | What It Does |
+|------|-------------|
+| `generate_image` | Generate image via Gemini Imagen 4, save to `/_images/`, optionally set as article cover |
 
 ### Import tools (1)
 
@@ -452,7 +459,7 @@ Benefits: no CORS issues, API key never exposed to browser, single origin, usage
 
 **Implemented**:
 - Full editor: TipTap 3.0, context menu, floating toolbar, 5 themes with dark mode
-- 24 core MCP tools + plugin system for extensibility
+- 25 core MCP tools + plugin system for extensibility
 - Decoration system: pending insert/rewrite/delete with review panel
 - Multi-document workspace with 4 sidebar views and drag-and-drop
 - Workspace v2: nested containers (max depth 3), cross-cutting tags, progressive disclosure context
@@ -465,3 +472,4 @@ Benefits: no CORS issues, API key never exposed to browser, single origin, usage
 - Ephemeral doc cleanup: docs with `ephemeral: true` frontmatter auto-trashed on startup (tweets flagged after posting)
 - Google Doc import (single doc or multi-chapter book)
 - Author's Voice plugin (voice rewrite, profile management)
+- MCP `generate_image` tool: Gemini Imagen 4 with optional atomic article cover setting
