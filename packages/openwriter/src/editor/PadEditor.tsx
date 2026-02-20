@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { EditorContent, useEditor, type Editor } from '@tiptap/react';
 
-import { padExtensions, buildExtensions } from './extensions';
+import { padExtensions } from './extensions';
 import FloatingToolbar from './FloatingToolbar';
 import { createPendingDecorationPlugin } from '../decorations/plugin';
 
@@ -26,15 +26,14 @@ interface PadEditorProps {
   onUpdate?: (json: any) => void;
   onReady?: (editor: Editor) => void;
   onLinkClick?: (filename: string) => void;
-  placeholder?: string;
 }
 
-export default function PadEditor({ initialContent, onUpdate, onReady, onLinkClick, placeholder }: PadEditorProps) {
+export default function PadEditor({ initialContent, onUpdate, onReady, onLinkClick }: PadEditorProps) {
   const onLinkClickRef = useRef(onLinkClick);
   onLinkClickRef.current = onLinkClick;
 
   const editor = useEditor({
-    extensions: placeholder ? buildExtensions({ placeholder }) : padExtensions,
+    extensions: padExtensions,
     content: initialContent || '<p></p>',
     onUpdate: ({ editor }) => {
       onUpdate?.(editor.getJSON());
