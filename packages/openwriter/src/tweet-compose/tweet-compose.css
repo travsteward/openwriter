@@ -76,10 +76,21 @@
   margin-bottom: 0 !important;
 }
 
+/* Base placeholder styling for all tweet modes */
 [data-view="tweet"] .ProseMirror p.is-editor-empty:first-child::before {
   content: "Add a comment" !important;
   color: var(--x-text-secondary) !important;
   font-size: 20px !important;
+}
+
+/* Standalone tweet: "What's happening?" */
+.tweet-compose-box--standalone .ProseMirror p.is-editor-empty:first-child::before {
+  content: "What's happening?" !important;
+}
+
+/* Reply: "Post your reply" */
+.tweet-reply-thread .ProseMirror p.is-editor-empty:first-child::before {
+  content: "Post your reply" !important;
 }
 
 /* --- Compose wrapper (main column) --- */
