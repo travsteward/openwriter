@@ -4,9 +4,13 @@
  * Exports TOOL_REGISTRY for HTTP proxy (multi-session support).
  */
 
+import { join } from 'path';
+import { existsSync, mkdirSync, writeFileSync } from 'fs';
+import { randomUUID } from 'crypto';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
+import { DATA_DIR, ensureDataDir } from './helpers.js';
 import {
   getDocument,
   getWordCount,
@@ -547,6 +551,66 @@ export const TOOL_REGISTRY: ToolDef[] = [
       if (result.workspaceFilename) text += `\nWorkspace manifest: ${result.workspaceFilename}`;
       text += `\n\n${lines.join('\n')}`;
       return { content: [{ type: 'text', text }] };
+    },
+  },
+  {
+    name: 'generate_image',
+    description: 'Generate an image using Gemini Imagen 4. Saves to ~/.openwriter/_images/. Optionally sets it as the active article\'s cover image atomically. Requires GEMINI_API_KEY env var.',
+    schema: {
+      prompt: z.string().max(1000).describe('Image generation prompt (max 1000 chars)'),
+      aspect_ratio: z.string().optional().describe('Aspect ratio (default "16:9"). Use "5:2" for article covers.'),
+      set_cover: z.boolean().optional().describe('If true, atomically set the generated image as the article cover (articleContext.coverImage in metadata).'),
+    },
+    handler: async ({ prompt, aspect_ratio, set_cover }: { prompt: string; aspect_ratio?: string; set_cover?: boolean }) => {
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) {
+        return { content: [{ type: 'text', text: 'Error: GEMINI_API_KEY environment variable is not set.' }] };
+      }
+
+      const { GoogleGenAI } = await import('@google/genai');
+      const ai = new GoogleGenAI({ apiKey });
+
+      const response = await ai.models.generateImages({
+        model: 'imagen-4.0-generate-001',
+        prompt,
+        config: {
+          numberOfImages: 1,
+          aspectRatio: (aspect_ratio || '16:9') as any,
+        },
+      });
+
+      const image = response.generatedImages?.[0];
+      if (!image?.image?.imageBytes) {
+        return { content: [{ type: 'text', text: 'Error: Gemini returned no image data.' }] };
+      }
+
+      // Save to ~/.openwriter/_images/
+      ensureDataDir();
+      const imagesDir = join(DATA_DIR, '_images');
+      if (!existsSync(imagesDir)) mkdirSync(imagesDir, { recursive: true });
+
+      const filename = `${randomUUID().slice(0, 8)}.png`;
+      const filePath = join(imagesDir, filename);
+      writeFileSync(filePath, Buffer.from(image.image.imageBytes, 'base64'));
+
+      const src = `/_images/${filename}`;
+
+      // Optionally set as article cover
+      if (set_cover) {
+        const meta = getMetadata();
+        const articleContext = (meta.articleContext as Record<string, any>) || {};
+        articleContext.coverImage = src;
+        setMetadata({ articleContext });
+        save();
+        broadcastMetadataChanged(getMetadata());
+      }
+
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({ success: true, src, ...(set_cover ? { coverSet: true } : {}) }),
+        }],
+      };
     },
   },
 ];

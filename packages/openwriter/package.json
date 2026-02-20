@@ -33,6 +33,7 @@
     "lint": "eslint src server bin --ext .ts,.tsx"
   },
   "dependencies": {
+    "@google/genai": "^1.42.0",
     "@modelcontextprotocol/sdk": "^1.12.1",
     "@tiptap/core": "^3.0.0",
     "@tiptap/extension-code-block-lowlight": "^3.19.0",
