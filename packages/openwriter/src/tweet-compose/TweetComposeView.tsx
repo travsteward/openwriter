@@ -8,11 +8,77 @@
  * Quote mode: compose area with avatar → quoted tweet card below.
  */
 
-import { type ReactNode, useCallback } from 'react';
+import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import type { Editor } from '@tiptap/react';
 import { useTweetEmbed } from '../hooks/useTweetEmbed';
 import TweetEmbed from './TweetEmbed';
 import CharacterCounter from './CharacterCounter';
+
+const LS_KEY = 'ow-x-handle';
+
+function ComposeAvatar() {
+  const [handle, setHandle] = useState(() => localStorage.getItem(LS_KEY) || '');
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  const save = () => {
+    const clean = draft.replace(/^@/, '').trim();
+    if (clean) {
+      localStorage.setItem(LS_KEY, clean);
+      setHandle(clean);
+    }
+    setEditing(false);
+  };
+
+  const open = () => {
+    setDraft(handle);
+    setEditing(true);
+    setTimeout(() => inputRef.current?.focus(), 0);
+  };
+
+  // Close on click outside
+  useEffect(() => {
+    if (!editing) return;
+    const handler = (e: MouseEvent) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) save();
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [editing, draft]);
+
+  const avatarUrl = handle ? `https://unavatar.io/twitter/${handle}` : '';
+
+  return (
+    <div className="tweet-compose-avatar-wrapper" ref={wrapperRef}>
+      {handle ? (
+        <img
+          className="tweet-compose-avatar tweet-compose-avatar-img"
+          src={avatarUrl}
+          alt={`@${handle}`}
+          onClick={open}
+          title={`@${handle} — click to change`}
+        />
+      ) : (
+        <div className="tweet-compose-avatar" onClick={open} title="Set your @handle" />
+      )}
+      {editing && (
+        <div className="tweet-handle-popover">
+          <input
+            ref={inputRef}
+            className="tweet-handle-input"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') save(); if (e.key === 'Escape') setEditing(false); }}
+            placeholder="your_handle"
+            spellCheck={false}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
 
 interface TweetContext {
   url: string;
@@ -83,7 +149,7 @@ export default function TweetComposeView({ tweetContext, editor, children }: Twe
                   <div className="tweet-avatar tweet-avatar-placeholder" />
                 )}
                 <div className="tweet-reply-thread-line" />
-                <div className="tweet-compose-avatar" />
+                <ComposeAvatar />
               </div>
 
               {/* Right column: tweet content → replying to → compose area */}
@@ -129,7 +195,7 @@ export default function TweetComposeView({ tweetContext, editor, children }: Twe
       {/* === Quote mode: compose above, quoted tweet below === */}
       {hasContext && !isReply && (
         <div className="tweet-compose-area">
-          <div className="tweet-compose-avatar" />
+          <ComposeAvatar />
           <div className="tweet-compose-content">
             <div className="tweet-compose-box">
               {children}
@@ -153,7 +219,7 @@ export default function TweetComposeView({ tweetContext, editor, children }: Twe
       {/* === No context: plain compose (tweet view without reply/quote) === */}
       {!hasContext && (
         <div className="tweet-compose-area">
-          <div className="tweet-compose-avatar" />
+          <ComposeAvatar />
           <div className="tweet-compose-content">
             <div className="tweet-compose-box">
               {children}

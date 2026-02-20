@@ -77,7 +77,7 @@
 }
 
 [data-view="tweet"] .ProseMirror p.is-editor-empty:first-child::before {
-  content: "What is happening?!" !important;
+  content: "Add a comment" !important;
   color: var(--x-text-secondary) !important;
   font-size: 20px !important;
 }
@@ -321,12 +321,61 @@
   padding: 12px 16px 0;
 }
 
+.tweet-compose-avatar-wrapper {
+  position: relative;
+  flex-shrink: 0;
+}
+
 .tweet-compose-avatar {
   width: 40px;
   height: 40px;
   border-radius: 9999px;
   background: var(--x-border);
   flex-shrink: 0;
+  cursor: pointer;
+}
+
+.tweet-compose-avatar-img {
+  object-fit: cover;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.tweet-compose-avatar-img:hover {
+  opacity: 0.85;
+}
+
+.tweet-handle-popover {
+  position: absolute;
+  top: 44px;
+  left: 0;
+  z-index: 100;
+  background: var(--x-bg);
+  border: 1px solid var(--x-border-card);
+  border-radius: 12px;
+  padding: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.tweet-handle-input {
+  font-family: var(--x-font);
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--x-text-primary);
+  background: transparent;
+  border: 1px solid var(--x-border-card);
+  border-radius: 8px;
+  padding: 6px 10px;
+  width: 160px;
+  outline: none;
+}
+
+.tweet-handle-input:focus {
+  border-color: var(--x-blue);
+}
+
+.tweet-handle-input::placeholder {
+  color: var(--x-text-secondary);
 }
 
 .tweet-compose-content {
