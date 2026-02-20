@@ -72,6 +72,10 @@
   color: var(--x-text-primary) !important;
 }
 
+[data-view="tweet"] .ProseMirror p {
+  margin-bottom: 0 !important;
+}
+
 [data-view="tweet"] .ProseMirror p.is-editor-empty:first-child::before {
   content: "What is happening?!" !important;
   color: var(--x-text-secondary) !important;
