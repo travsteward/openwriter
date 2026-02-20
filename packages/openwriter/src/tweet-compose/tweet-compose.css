@@ -56,6 +56,7 @@
 }
 
 [data-view="tweet"] .ProseMirror p.is-editor-empty:first-child::before {
+  content: "What is happening?!" !important;
   color: var(--x-text-secondary) !important;
   font-size: 20px !important;
 }
@@ -77,7 +78,7 @@
 }
 
 .tweet-quote-section {
-  padding: 0 16px;
+  padding: 12px 0 0;
 }
 
 /* --- Tweet embed card --- */
@@ -199,11 +200,10 @@
   font-size: 14px;
 }
 
-/* --- Action bar (reply, retweet, like, views, share) --- */
+/* --- Action bar (reply, retweet, like, bookmark, share) --- */
 .tweet-actions-row {
   display: flex;
   justify-content: space-between;
-  max-width: 425px;
   margin-top: 4px;
   padding: 4px 0;
 }
@@ -233,13 +233,13 @@
 .tweet-action-reply:hover { color: var(--x-blue); }
 .tweet-action-retweet:hover { color: var(--x-green); }
 .tweet-action-like:hover { color: #f91880; }
-.tweet-action-views:hover { color: var(--x-blue); }
+.tweet-action-bookmark:hover { color: var(--x-blue); }
 
-/* --- Reply thread layout --- */
+/* --- Reply thread layout (unified two-column) --- */
 .tweet-reply-thread {
   display: flex;
   gap: 12px;
-  padding: 12px 16px;
+  padding: 12px 16px 0;
 }
 
 .tweet-reply-thread-left {
@@ -253,8 +253,9 @@
 .tweet-reply-thread-line {
   width: 2px;
   flex: 1;
+  min-height: 12px;
   background: var(--x-thread-line);
-  margin-top: 4px;
+  margin: 4px 0;
 }
 
 .tweet-reply-thread-right {
@@ -262,7 +263,25 @@
   min-width: 0;
 }
 
-/* --- Replying to indicator --- */
+.tweet-reply-parent {
+  margin-bottom: 4px;
+}
+
+/* Parent tweet in reply thread uses timeline font size (not card size) */
+.tweet-reply-parent .tweet-text {
+  font-size: 17px;
+  line-height: 24px;
+}
+
+/* --- Replying to indicator (inline in thread) --- */
+.tweet-replying-to-inline {
+  font-size: 15px;
+  line-height: 20px;
+  color: var(--x-text-secondary);
+  padding: 8px 0 4px;
+}
+
+/* --- Replying to indicator (standalone, outside thread) --- */
 .tweet-replying-to {
   font-size: 15px;
   line-height: 20px;
