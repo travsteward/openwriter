@@ -233,6 +233,46 @@ export default function ContextMenu({ editorRef }: ContextMenuProps) {
     }
   }, [editorRef, getSelectedNodes]);
 
+  const handleImageGenAction = useCallback(async (instruction: string) => {
+    const editor = editorRef.current;
+    if (!editor) return;
+
+    const { $from } = editor.state.selection;
+    const from = $from.before($from.depth);
+    const to = $from.after($from.depth);
+
+    setLoading(true);
+    setVisible(false);
+    setShowCustom(false);
+
+    const loadingId = `ctx-img-${Date.now()}`;
+    editor.commands.applyLoadingEffect(loadingId, from, to, 'paragraph');
+
+    try {
+      const res = await fetch('/api/image-gen/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: instruction }),
+      });
+
+      const data = await res.json();
+      if (data.success && data.src) {
+        editor.chain()
+          .focus()
+          .deleteRange({ from, to })
+          .insertContentAt(from, { type: 'image', attrs: { src: data.src, alt: instruction } })
+          .run();
+      } else {
+        console.error('[ContextMenu] Image generation failed:', data.error);
+      }
+    } catch (err) {
+      console.error('[ContextMenu] Image generation failed:', err);
+    } finally {
+      editor.commands.removeLoadingEffect(loadingId);
+      setLoading(false);
+    }
+  }, [editorRef]);
+
   const handleAction = useCallback((item: MenuItem) => {
     const { action, isPlugin, promptForInput } = item;
 
@@ -242,6 +282,10 @@ export default function ContextMenu({ editorRef }: ContextMenuProps) {
       return;
     }
     if (isPlugin) {
+      if (action.startsWith('img:')) {
+        // Image gen actions with no prompt — shouldn't happen (all have promptForInput)
+        return;
+      }
       callPluginAction(action);
       return;
     }
@@ -297,11 +341,15 @@ export default function ContextMenu({ editorRef }: ContextMenuProps) {
 
   const handleCustomSubmit = useCallback(() => {
     if (customInput.trim()) {
-      callPluginAction(customAction, customInput.trim());
+      if (customAction.startsWith('img:')) {
+        handleImageGenAction(customInput.trim());
+      } else {
+        callPluginAction(customAction, customInput.trim());
+      }
       setCustomInput('');
       setCustomAction('');
     }
-  }, [callPluginAction, customAction, customInput]);
+  }, [callPluginAction, handleImageGenAction, customAction, customInput]);
 
   const handleLinkSelect = useCallback((filename: string) => {
     const editor = editorRef.current;
