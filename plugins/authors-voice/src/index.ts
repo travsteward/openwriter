@@ -22,7 +22,7 @@ interface PluginContextMenuItem {
   label: string;
   shortcut?: string;
   action: string;
-  condition?: 'has-selection' | 'always';
+  condition?: 'has-selection' | 'empty-node' | 'always';
   promptForInput?: boolean;
 }
 
@@ -30,6 +30,7 @@ interface OpenWriterPlugin {
   name: string;
   version: string;
   description?: string;
+  category?: 'writing' | 'social-media' | 'image-generation';
   configSchema?: Record<string, PluginConfigField>;
   registerRoutes?(ctx: PluginRouteContext): void | Promise<void>;
   contextMenuItems?(): PluginContextMenuItem[];
@@ -39,6 +40,7 @@ const plugin: OpenWriterPlugin = {
   name: '@openwriter/plugin-authors-voice',
   version: '0.1.0',
   description: "Rewrite text in your voice using Author's Voice",
+  category: 'writing',
 
   configSchema: {
     'api-key': {
@@ -100,8 +102,8 @@ const plugin: OpenWriterPlugin = {
       { label: 'Shrink', shortcut: 'S', action: 'av:shrink', condition: 'has-selection' as const },
       { label: 'Expand', shortcut: 'E', action: 'av:expand', condition: 'has-selection' as const },
       { label: 'Custom...', action: 'av:custom', condition: 'has-selection' as const, promptForInput: true },
-      { label: 'Fill paragraph', shortcut: 'F', action: 'av:fill', condition: 'has-selection' as const },
-      { label: 'Insert after', shortcut: 'I', action: 'av:insert', condition: 'has-selection' as const },
+      { label: 'Fill paragraph', shortcut: 'F', action: 'av:fill', condition: 'empty-node' as const },
+      { label: 'Insert after', shortcut: 'I', action: 'av:insert', condition: 'empty-node' as const },
     ];
   },
 };

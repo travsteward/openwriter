@@ -7,7 +7,7 @@ interface PluginMenuItem {
   label: string;
   shortcut?: string;
   action: string;
-  condition?: 'has-selection' | 'always';
+  condition?: 'has-selection' | 'empty-node' | 'always';
   promptForInput?: boolean;
 }
 
@@ -98,11 +98,17 @@ export default function ContextMenu({ editorRef }: ContextMenuProps) {
     const editor = editorRef.current;
     const { from, to } = editor?.state.selection || { from: 0, to: 0 };
     const hasSelection = from !== to;
+    const isEmptyNode = (() => {
+      if (!editor) return false;
+      const { $from } = editor.state.selection;
+      return $from.parent.content.size === 0;
+    })();
 
     // Plugin items first (filtered by condition)
     const items: MenuItem[] = [];
     for (const pi of pluginItems) {
       if (pi.condition === 'has-selection' && !hasSelection) continue;
+      if (pi.condition === 'empty-node' && !isEmptyNode) continue;
       items.push({
         action: pi.action,
         label: pi.label,

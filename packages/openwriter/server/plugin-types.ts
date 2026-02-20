@@ -5,10 +5,13 @@
 
 import type { Router } from 'express';
 
+export type PluginCategory = 'writing' | 'social-media' | 'image-generation';
+
 export interface OpenWriterPlugin {
   name: string;
   version: string;
   description?: string;
+  category?: PluginCategory;
   configSchema?: Record<string, PluginConfigField>;
   registerRoutes?(ctx: PluginRouteContext): void | Promise<void>;
   mcpTools?(config: Record<string, string>): PluginMcpTool[];
@@ -38,7 +41,7 @@ export interface PluginContextMenuItem {
   label: string;
   shortcut?: string;
   action: string;
-  condition?: 'has-selection' | 'always';
+  condition?: 'has-selection' | 'empty-node' | 'always';
   promptForInput?: boolean;
 }
 

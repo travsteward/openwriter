@@ -23,6 +23,7 @@ interface OpenWriterPlugin {
   name: string;
   version: string;
   description?: string;
+  category?: 'writing' | 'social-media' | 'image-generation';
   configSchema?: Record<string, PluginConfigField>;
   registerRoutes?(ctx: PluginRouteContext): void | Promise<void>;
 }
@@ -50,6 +51,7 @@ const plugin: OpenWriterPlugin = {
   name: '@openwriter/plugin-x-api',
   version: '0.1.0',
   description: 'Post tweets from OpenWriter',
+  category: 'social-media',
 
   configSchema: {
     'api-key':             { type: 'string', env: 'X_API_KEY', description: 'X API Key' },
