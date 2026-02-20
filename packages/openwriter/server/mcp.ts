@@ -139,14 +139,15 @@ export const TOOL_REGISTRY: ToolDef[] = [
   },
   {
     name: 'create_document',
-    description: 'Create a new empty document and switch to it. Always provide a title. Saves the current document first. Shows a sidebar spinner that persists until populate_document is called — always call populate_document next to add content. If workspace is provided, the doc is automatically added to it (workspace is created if it doesn\'t exist). If container is also provided, the doc is placed inside that container (created if it doesn\'t exist).',
+    description: 'Create a new empty document and switch to it. Always provide a title. Saves the current document first. By default shows a sidebar spinner that persists until populate_document is called — set empty=true to skip the spinner and switch immediately (use for template docs like tweets/articles that don\'t need agent content). If workspace is provided, the doc is automatically added to it (workspace is created if it doesn\'t exist). If container is also provided, the doc is placed inside that container (created if it doesn\'t exist).',
     schema: {
       title: z.string().optional().describe('Title for the new document. Defaults to "Untitled".'),
       path: z.string().optional().describe('Absolute file path to create the document at (e.g. "C:/projects/doc.md"). If omitted, creates in ~/.openwriter/.'),
       workspace: z.string().optional().describe('Workspace title to add this doc to. Creates the workspace if it doesn\'t exist.'),
       container: z.string().optional().describe('Container name within the workspace (e.g. "Chapters", "Notes", "References"). Creates the container if it doesn\'t exist. Requires workspace.'),
+      empty: z.boolean().optional().describe('If true, skip the writing spinner and switch to the doc immediately. No need to call populate_document. Use for template docs (tweets, articles) that start empty.'),
     },
-    handler: async ({ title, path, workspace, container }: { title?: string; path?: string; workspace?: string; container?: string }) => {
+    handler: async ({ title, path, workspace, container, empty }: { title?: string; path?: string; workspace?: string; container?: string; empty?: boolean }) => {
       // Resolve workspace/container up front so spinner renders in the right place
       let wsTarget: { wsFilename: string; containerId: string | null } | undefined;
       if (workspace) {
@@ -159,26 +160,43 @@ export const TOOL_REGISTRY: ToolDef[] = [
         wsTarget = { wsFilename: ws.filename, containerId };
         broadcastWorkspacesChanged(); // Browser sees container structure before spinner
       }
-      broadcastWritingStarted(title || 'Untitled', wsTarget);
-      // Yield so the browser receives and renders the placeholder before heavy work
-      await new Promise((resolve) => setTimeout(resolve, 200));
+
+      if (!empty) {
+        broadcastWritingStarted(title || 'Untitled', wsTarget);
+        // Yield so the browser receives and renders the placeholder before heavy work
+        await new Promise((resolve) => setTimeout(resolve, 200));
+      }
+
       try {
         // Lock browser doc-updates: prevents race where browser sends a doc-update
         // for the previous document but server has already switched active doc.
         setAgentLock();
         const result = createDocument(title, undefined, path);
-        setMetadata({ agentCreated: true });
-        save(); // Persist agentCreated flag to frontmatter
 
-        // Auto-add to workspace if specified (defer sidebar broadcasts to populate_document
-        // so the real doc entry doesn't appear alongside the spinner placeholder)
+        // Auto-add to workspace if specified
         let wsInfo = '';
         if (wsTarget) {
           addDoc(wsTarget.wsFilename, wsTarget.containerId, result.filename, result.title);
           wsInfo = ` → workspace "${workspace}"${container ? ` / ${container}` : ''}`;
         }
 
-        // Spinner persists until populate_document is called
+        if (empty) {
+          // Immediate switch — no spinner, no populate_document needed
+          save();
+          broadcastDocumentsChanged();
+          broadcastWorkspacesChanged();
+          broadcastDocumentSwitched(getDocument(), getTitle(), getActiveFilename());
+          return {
+            content: [{
+              type: 'text',
+              text: `Created "${result.title}" (${result.filename})${wsInfo} — ready.`,
+            }],
+          };
+        }
+
+        // Two-step flow: spinner persists until populate_document is called
+        setMetadata({ agentCreated: true });
+        save(); // Persist agentCreated flag to frontmatter
         return {
           content: [{
             type: 'text',
@@ -186,7 +204,7 @@ export const TOOL_REGISTRY: ToolDef[] = [
           }],
         };
       } catch (err) {
-        broadcastWritingFinished();
+        if (!empty) broadcastWritingFinished();
         throw err;
       }
     },
