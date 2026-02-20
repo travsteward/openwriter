@@ -399,7 +399,6 @@
   gap: 16px;
   padding: 6px 16px;
   margin-top: 8px;
-  border-top: 1px solid var(--x-border);
 }
 
 /* --- Character counter --- */
