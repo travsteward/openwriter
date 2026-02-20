@@ -389,17 +389,28 @@
 
 /* Legacy compose box (for when no avatar layout) */
 .tweet-compose-box {
-  min-height: 0;
+  min-height: 72px;
 }
 
 /* --- Compose footer: counter + post button --- */
 .tweet-compose-footer {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: flex-end;
   gap: 16px;
   padding: 6px 16px;
   margin-top: 8px;
+}
+
+.tweet-compose-footer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 16px;
+  right: 16px;
+  height: 1px;
+  background: var(--x-border);
 }
 
 /* --- Character counter --- */
