@@ -5,6 +5,7 @@ import AppearancePanel from '../themes/AppearancePanel';
 import PluginPanel from '../plugins/PluginPanel';
 import VersionPanel from '../versions/VersionPanel';
 import ExportPanel from '../export/ExportPanel';
+import TemplatePanel from './TemplatePanel';
 
 interface PendingFile {
   status: 'added' | 'modified' | 'deleted' | 'renamed';
@@ -24,6 +25,7 @@ interface TitlebarProps {
   editor?: Editor | null;
   onToggleToolbar?: () => void;
   toolbarOpen?: boolean;
+  onCreateTemplate?: (type: string, url?: string) => void;
 }
 
 // Cloud SVG icons for sync states
@@ -54,7 +56,7 @@ const CloudErrorIcon = () => (
   </svg>
 );
 
-export default function Titlebar({ title, onTitleChange, syncStatus, onSync, onToggleSidebar, canGoBack, canGoForward, onGoBack, onGoForward, editor, onToggleToolbar, toolbarOpen }: TitlebarProps) {
+export default function Titlebar({ title, onTitleChange, syncStatus, onSync, onToggleSidebar, canGoBack, canGoForward, onGoBack, onGoForward, editor, onToggleToolbar, toolbarOpen, onCreateTemplate }: TitlebarProps) {
   const [editing, setEditing] = useState(false);
   const [, setTick] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -205,6 +207,7 @@ export default function Titlebar({ title, onTitleChange, syncStatus, onSync, onT
             </svg>
           </button>
         )}
+        {onCreateTemplate && <TemplatePanel onCreateTemplate={onCreateTemplate} />}
         <PluginPanel />
         <AppearancePanel />
         <VersionPanel />

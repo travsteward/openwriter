@@ -145,6 +145,33 @@ export function setupWebSocket(server: Server): void {
           }
         }
 
+        if (msg.type === 'create-template' && msg.template) {
+          try {
+            const tmpl = msg.template as string;
+            const url = msg.url as string | undefined;
+
+            // Create with no title → temp file path (avoids naming conflicts)
+            const result = createDocument();
+
+            // Set template-appropriate metadata
+            if (tmpl === 'tweet') {
+              setMetadata({ tweetContext: { mode: 'tweet' }, title: 'Tweet' });
+            } else if (tmpl === 'reply') {
+              setMetadata({ tweetContext: { url, mode: 'reply' }, title: 'Reply' });
+            } else if (tmpl === 'quote') {
+              setMetadata({ tweetContext: { url, mode: 'quote' }, title: 'Quote Tweet' });
+            } else if (tmpl === 'article') {
+              setMetadata({ articleContext: { active: true }, title: 'Article' });
+            }
+
+            save();
+            broadcastDocumentSwitched(result.document, getTitle(), result.filename, getMetadata());
+            broadcastDocumentsChanged();
+          } catch (err: any) {
+            console.error('[WS] Create template failed:', err.message);
+          }
+        }
+
         if (msg.type === 'pending-resolved' && msg.filename) {
           const action = msg.action as string; // 'accept' or 'reject'
           const resolvedFilename = msg.filename as string;
