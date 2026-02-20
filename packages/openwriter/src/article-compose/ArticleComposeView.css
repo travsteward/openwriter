@@ -23,6 +23,7 @@
   background: transparent !important;
   display: flex;
   justify-content: center;
+  align-items: flex-start;
 }
 
 /* --- Article editor typography --- */
