@@ -17,6 +17,12 @@ import ArticleComposeView from './article-compose/ArticleComposeView';
 import { articleExtensions } from './editor/extensions';
 import './decorations/styles.css';
 
+/** articleContext: {} is truthy but meaningless — require at least one real key */
+function hasArticleContext(meta: Record<string, any> | undefined): boolean {
+  const ctx = meta?.articleContext;
+  return ctx != null && typeof ctx === 'object' && Object.keys(ctx).length > 0;
+}
+
 export default function App() {
   const editorRef = useRef<Editor | null>(null);
   const [editorInstance, setEditorInstance] = useState<Editor | null>(null);
@@ -75,8 +81,9 @@ export default function App() {
 
   // Fetch saved document from server on mount
   // Set/remove data-view attribute on <html> for CSS targeting
+  const isArticle = hasArticleContext(metadata);
   useEffect(() => {
-    if (metadata?.articleContext) {
+    if (isArticle) {
       document.documentElement.setAttribute('data-view', 'article');
     } else if (metadata?.tweetContext) {
       document.documentElement.setAttribute('data-view', 'tweet');
@@ -84,7 +91,7 @@ export default function App() {
       document.documentElement.removeAttribute('data-view');
     }
     return () => document.documentElement.removeAttribute('data-view');
-  }, [metadata?.tweetContext, metadata?.articleContext]);
+  }, [metadata?.tweetContext, isArticle]);
 
   // Re-render when sidebar mode changes (board mode needs different layout)
   useEffect(() => {
@@ -377,7 +384,7 @@ export default function App() {
           />
         )}
         <div className="editor-container">
-          {metadata?.articleContext ? (
+          {isArticle ? (
             <ArticleComposeView
               title={title}
               onTitleChange={handleTitleChange}
