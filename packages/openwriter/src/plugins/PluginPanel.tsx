@@ -94,10 +94,10 @@ export default function PluginPanel() {
         title="Plugins"
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M12 2v6" />
-          <path d="M6 8h12l-1.5 10a2 2 0 0 1-2 1.7H9.5a2 2 0 0 1-2-1.7L6 8z" />
-          <path d="M9 2v3" />
-          <path d="M15 2v3" />
+          <path d="M12 22v-5" />
+          <path d="M9 8V2" />
+          <path d="M15 8V2" />
+          <path d="M17 8a1 1 0 0 1 1 1v4a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1z" />
         </svg>
       </button>
       {open && (
