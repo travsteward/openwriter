@@ -221,7 +221,7 @@ export default function TweetComposeView({ tweetContext, editor, children }: Twe
         <div className="tweet-compose-area">
           <ComposeAvatar />
           <div className="tweet-compose-content">
-            <div className="tweet-compose-box">
+            <div className="tweet-compose-box tweet-compose-box--standalone">
               {children}
             </div>
           </div>

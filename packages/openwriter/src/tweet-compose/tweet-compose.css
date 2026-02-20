@@ -389,6 +389,10 @@
 
 /* Legacy compose box (for when no avatar layout) */
 .tweet-compose-box {
+  min-height: 0;
+}
+
+.tweet-compose-box--standalone {
   min-height: 96px;
 }
 
