@@ -14,12 +14,7 @@ const ModeIcons: Record<string, JSX.Element> = {
   shelf: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19V5"/><path d="M8 19V7"/><path d="M12 19V4"/><path d="M16 19V8"/><path d="M20 19V6"/><line x1="2" y1="20" x2="22" y2="20"/></svg>,
 };
 
-interface AppearancePanelProps {
-  documentView?: string;
-  onViewChange?: (view: string | null) => void;
-}
-
-export default function AppearancePanel({ documentView, onViewChange }: AppearancePanelProps = {}) {
+export default function AppearancePanel() {
   const [open, setOpen] = useState(false);
   const [theme, setTheme] = useState<ThemeName>(getTheme);
   const [mode, setMode] = useState<ThemeMode>(getMode);
@@ -136,27 +131,6 @@ export default function AppearancePanel({ documentView, onViewChange }: Appearan
                   {c.label}
                 </button>
               ))}
-            </div>
-          </div>
-
-          {/* Document View section */}
-          <div className="appearance-section">
-            <div className="appearance-section-header">
-              <span className="appearance-section-title">View</span>
-            </div>
-            <div className="appearance-style-grid">
-              <button
-                className={`appearance-style-option ${!documentView ? 'active' : ''}`}
-                onClick={() => onViewChange?.(null)}
-              >
-                Default
-              </button>
-              <button
-                className={`appearance-style-option ${documentView === 'tweet' ? 'active' : ''}`}
-                onClick={() => onViewChange?.(documentView === 'tweet' ? null : 'tweet')}
-              >
-                Tweet
-              </button>
             </div>
           </div>
 

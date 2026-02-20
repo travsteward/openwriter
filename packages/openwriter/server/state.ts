@@ -185,6 +185,20 @@ export function getMetadata(): Record<string, any> {
 export function setMetadata(updates: Record<string, any>): void {
   state.metadata = { ...state.metadata, ...updates };
   if (updates.title) state.title = updates.title;
+
+  // Auto-tag: tweetContext ↔ "x" tag
+  if ('tweetContext' in updates) {
+    const filename = state.filePath
+      ? (isExternalDoc(state.filePath) ? state.filePath : state.filePath.split(/[/\\]/).pop() || '')
+      : '';
+    if (filename) {
+      if (updates.tweetContext) {
+        addDocTag(filename, 'x');
+      } else {
+        removeDocTag(filename, 'x');
+      }
+    }
+  }
 }
 
 export function getStatus() {

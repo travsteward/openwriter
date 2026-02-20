@@ -24,8 +24,6 @@ interface TitlebarProps {
   editor?: Editor | null;
   onToggleToolbar?: () => void;
   toolbarOpen?: boolean;
-  documentView?: string;
-  onViewChange?: (view: string | null) => void;
 }
 
 // Cloud SVG icons for sync states
@@ -56,7 +54,7 @@ const CloudErrorIcon = () => (
   </svg>
 );
 
-export default function Titlebar({ title, onTitleChange, syncStatus, onSync, onToggleSidebar, canGoBack, canGoForward, onGoBack, onGoForward, editor, onToggleToolbar, toolbarOpen, documentView, onViewChange }: TitlebarProps) {
+export default function Titlebar({ title, onTitleChange, syncStatus, onSync, onToggleSidebar, canGoBack, canGoForward, onGoBack, onGoForward, editor, onToggleToolbar, toolbarOpen }: TitlebarProps) {
   const [editing, setEditing] = useState(false);
   const [, setTick] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -208,7 +206,7 @@ export default function Titlebar({ title, onTitleChange, syncStatus, onSync, onT
           </button>
         )}
         <PluginPanel />
-        <AppearancePanel documentView={documentView} onViewChange={onViewChange} />
+        <AppearancePanel />
         <VersionPanel />
         <ExportPanel />
         <div className="sync-btn-group" ref={pendingRef}>

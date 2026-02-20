@@ -74,14 +74,13 @@ export default function App() {
   // Fetch saved document from server on mount
   // Set/remove data-view attribute on <html> for CSS targeting
   useEffect(() => {
-    const view = metadata?.view;
-    if (view) {
-      document.documentElement.setAttribute('data-view', view);
+    if (metadata?.tweetContext) {
+      document.documentElement.setAttribute('data-view', 'tweet');
     } else {
       document.documentElement.removeAttribute('data-view');
     }
     return () => document.documentElement.removeAttribute('data-view');
-  }, [metadata?.view]);
+  }, [metadata?.tweetContext]);
 
   // Re-render when sidebar mode changes (board mode needs different layout)
   useEffect(() => {
@@ -318,22 +317,6 @@ export default function App() {
     });
   }, []);
 
-  const handleViewChange = useCallback((view: string | null) => {
-    // Update local state (functional update to avoid stale closure)
-    setMetadata(m => {
-      if (view) return { ...m, view };
-      const { view: _, ...rest } = m;
-      return rest;
-    });
-    // Only POST the view change — don't send full metadata to avoid overwriting
-    // tweetContext or other keys set by MCP agents
-    fetch('/api/metadata', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(view ? { view } : { view: null }),
-    }).catch(() => {});
-  }, []);
-
   const handleSync = useCallback(() => {
     if (syncStatus.state === 'unconfigured') {
       setShowSyncSetup(true);
@@ -375,8 +358,6 @@ export default function App() {
           editor={editorInstance}
           onToggleToolbar={toggleToolbar}
           toolbarOpen={showToolbar}
-          documentView={metadata?.view}
-          onViewChange={handleViewChange}
         />
         {showToolbar && editorInstance && <FormatToolbar editor={editorInstance} />}
         {isBoardMode && (
@@ -392,7 +373,7 @@ export default function App() {
           />
         )}
         <div className="editor-container">
-          {metadata?.view === 'tweet' ? (
+          {metadata?.tweetContext ? (
             <TweetComposeView tweetContext={metadata.tweetContext} editor={editorInstance}>
               <PadEditor
                 key={activeDocKey}
