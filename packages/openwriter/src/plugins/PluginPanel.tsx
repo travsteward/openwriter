@@ -29,6 +29,7 @@ export default function PluginPanel() {
   const [open, setOpen] = useState(false);
   const [plugins, setPlugins] = useState<AvailablePlugin[]>([]);
   const [loadingPlugin, setLoadingPlugin] = useState<string | null>(null);
+  const [expandedConfigs, setExpandedConfigs] = useState<Set<string>>(new Set());
   const ref = useRef<HTMLDivElement>(null);
 
   const fetchPlugins = useCallback(() => {
@@ -129,21 +130,43 @@ export default function PluginPanel() {
                   </label>
                 </div>
                 {p.enabled && Object.keys(p.configSchema).length > 0 && (
-                  <div className="plugin-config">
-                    {Object.entries(p.configSchema).map(([key, field]) => (
-                      <div key={key} className="plugin-config-field">
-                        <label className="plugin-config-label">
-                          {field.description || key}
-                        </label>
-                        <input
-                          className="plugin-config-input"
-                          type={key.toLowerCase().includes('key') || key.toLowerCase().includes('secret') ? 'password' : 'text'}
-                          defaultValue={p.config[key] || ''}
-                          placeholder={field.env ? `$${field.env}` : ''}
-                          onBlur={(e) => handleConfigBlur(p.name, key, e.target.value)}
-                        />
+                  <div className="plugin-config-section">
+                    <button
+                      className="plugin-config-toggle"
+                      onClick={() => setExpandedConfigs((prev) => {
+                        const next = new Set(prev);
+                        if (next.has(p.name)) next.delete(p.name);
+                        else next.add(p.name);
+                        return next;
+                      })}
+                    >
+                      <svg
+                        className={`plugin-config-chevron${expandedConfigs.has(p.name) ? ' plugin-config-chevron--open' : ''}`}
+                        width="12" height="12" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                      >
+                        <polyline points="9 18 15 12 9 6" />
+                      </svg>
+                      Settings
+                    </button>
+                    {expandedConfigs.has(p.name) && (
+                      <div className="plugin-config">
+                        {Object.entries(p.configSchema).map(([key, field]) => (
+                          <div key={key} className="plugin-config-field">
+                            <label className="plugin-config-label">
+                              {field.description || key}
+                            </label>
+                            <input
+                              className="plugin-config-input"
+                              type={key.toLowerCase().includes('key') || key.toLowerCase().includes('secret') || key.toLowerCase().includes('token') ? 'password' : 'text'}
+                              defaultValue={p.config[key] || ''}
+                              placeholder={field.env ? `$${field.env}` : ''}
+                              onBlur={(e) => handleConfigBlur(p.name, key, e.target.value)}
+                            />
+                          </div>
+                        ))}
                       </div>
-                    ))}
+                    )}
                   </div>
                 )}
               </div>

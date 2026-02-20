@@ -124,9 +124,41 @@
   cursor: wait;
 }
 
+/* Config section with disclosure toggle */
+.plugin-config-section {
+  margin-top: 6px;
+}
+
+.plugin-config-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--ink-light);
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.plugin-config-toggle:hover {
+  color: var(--ink-dark);
+}
+
+.plugin-config-chevron {
+  transition: transform 0.15s ease;
+}
+
+.plugin-config-chevron--open {
+  transform: rotate(90deg);
+}
+
 /* Config fields */
 .plugin-config {
-  margin-top: 8px;
+  margin-top: 6px;
   display: flex;
   flex-direction: column;
   gap: 6px;
