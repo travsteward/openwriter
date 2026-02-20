@@ -92,6 +92,7 @@
   flex-direction: column;
   font-family: var(--x-font);
   border: 1px solid var(--x-border);
+  border-radius: 16px;
 }
 
 /* --- Tweet context section (holds embedded tweet) --- */
@@ -319,7 +320,7 @@
 .tweet-compose-area {
   display: flex;
   gap: 12px;
-  padding: 12px 16px 0;
+  padding: 16px 16px 0;
 }
 
 .tweet-compose-avatar-wrapper {
@@ -396,7 +397,8 @@
   align-items: center;
   justify-content: flex-end;
   gap: 16px;
-  padding: 12px 16px;
+  padding: 6px 16px;
+  margin-top: 8px;
   border-top: 1px solid var(--x-border);
 }
 
@@ -424,7 +426,7 @@
   font-weight: 700;
   line-height: 20px;
   padding: 0 16px;
-  height: 36px;
+  height: 32px;
   border-radius: 9999px;
   border: none;
   background: var(--x-blue);
