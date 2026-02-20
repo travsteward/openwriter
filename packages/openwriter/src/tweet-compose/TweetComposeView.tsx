@@ -155,16 +155,7 @@ export default function TweetComposeView({ tweetContext, editor, children }: Twe
     return editor.storage.characterCount?.characters?.() ?? editor.getText().length;
   }, [editor]);
 
-  const [charCount, setCharCount] = useState(0);
-
-  // Update character count live on every editor change
-  useEffect(() => {
-    if (!editor) return;
-    const update = () => setCharCount(getCharCount());
-    update(); // initial
-    editor.on('update', update);
-    return () => { editor.off('update', update); };
-  }, [editor, getCharCount]);
+  const charCount = editor ? getCharCount() : 0;
   const hasContext = tweetContext?.url;
   const isReply = tweetContext?.mode === 'reply';
 
