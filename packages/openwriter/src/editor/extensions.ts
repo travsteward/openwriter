@@ -40,6 +40,14 @@ const PadLink = Link.extend({
   },
 });
 
+export function buildExtensions(opts?: { placeholder?: string }) {
+  return padExtensions.map((ext) =>
+    (ext as any).name === 'placeholder'
+      ? Placeholder.configure({ placeholder: opts?.placeholder || 'Start writing...' })
+      : ext,
+  );
+}
+
 export const padExtensions = [
   StarterKit.configure({
     codeBlock: false, // replaced by CodeBlockLowlight

@@ -381,6 +381,7 @@ export default function App() {
                 onUpdate={handleDocUpdate}
                 onReady={handleEditorReady}
                 onLinkClick={handleSwitchDocument}
+                placeholder={metadata.tweetContext.mode === 'reply' ? 'Post your reply' : "What's happening?"}
               />
             </TweetComposeView>
           ) : (
