@@ -1,7 +1,44 @@
 /* =============================================================
-   Tweet Compose View — per-document view styles
+   Tweet Compose View — pixel-accurate X/Twitter design system
    Activated via [data-view="tweet"] on <html>
+
+   Design tokens extracted from live x.com (Feb 2026):
+   - Font: "TwitterChirp", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif
+   - Primary text: #0f1419 (light) / #e7e9ea (dark)
+   - Secondary text: #536471 (light) / #71767b (dark)
+   - X Blue: #1d9bf0
+   - Border: #eff3f4 (light) / #2f3336 (dark)
+   - Card border: #cfd9de (light) / #333639 (dark)
+   - Background: #ffffff (light) / #000000 (dark)
+   - Column width: 600px
    ============================================================= */
+
+/* --- CSS custom properties for X design tokens --- */
+:root {
+  --x-font: "TwitterChirp", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --x-text-primary: #0f1419;
+  --x-text-secondary: #536471;
+  --x-blue: #1d9bf0;
+  --x-red: #f4212e;
+  --x-green: #00ba7c;
+  --x-yellow: #ffd400;
+  --x-bg: #ffffff;
+  --x-bg-hover: rgba(0, 0, 0, 0.03);
+  --x-border: #eff3f4;
+  --x-border-card: #cfd9de;
+  --x-thread-line: #cfd9de;
+  --x-column-width: 600px;
+}
+
+[data-mode="dark"] {
+  --x-text-primary: #e7e9ea;
+  --x-text-secondary: #71767b;
+  --x-bg: #000000;
+  --x-bg-hover: rgba(255, 255, 255, 0.03);
+  --x-border: #2f3336;
+  --x-border-card: #333639;
+  --x-thread-line: #333639;
+}
 
 /* --- Global overrides when in tweet compose mode --- */
 [data-view="tweet"] .editor-container {
@@ -12,175 +49,254 @@
 [data-view="tweet"] .ProseMirror {
   max-width: 100% !important;
   padding: 4px 0 !important;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
-  font-size: 15px !important;
-  line-height: 1.4 !important;
+  font-family: var(--x-font) !important;
+  font-size: 20px !important;
+  line-height: 24px !important;
+  color: var(--x-text-primary) !important;
 }
 
-/* --- Compose wrapper --- */
+[data-view="tweet"] .ProseMirror p.is-editor-empty:first-child::before {
+  color: var(--x-text-secondary) !important;
+  font-size: 20px !important;
+}
+
+/* --- Compose wrapper (main column) --- */
 .tweet-compose-wrapper {
   width: 100%;
-  max-width: 520px;
+  max-width: var(--x-column-width);
   margin: 0 auto;
-  padding: 16px 0;
+  padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 0;
+  font-family: var(--x-font);
+}
+
+/* --- Tweet context section (holds embedded tweet) --- */
+.tweet-context-section {
+  padding: 12px 16px 0;
+}
+
+.tweet-quote-section {
+  padding: 0 16px;
 }
 
 /* --- Tweet embed card --- */
 .tweet-embed-card {
-  border: 1px solid var(--border-light, rgba(128, 128, 128, 0.2));
-  border-radius: 12px;
+  border: 1px solid var(--x-border-card);
+  border-radius: 16px;
   padding: 12px 16px;
-  background: var(--bg-primary, #fff);
-  margin: 0 0 4px;
+  background: var(--x-bg);
+  cursor: default;
 }
 
 .tweet-embed-nested {
   margin-top: 12px;
-  border-color: var(--border-light, rgba(128, 128, 128, 0.25));
 }
 
-/* Author row */
+/* Author row — avatar + name/handle inline */
 .tweet-author-row {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 8px;
+  gap: 8px;
+  margin-bottom: 4px;
 }
 
 .tweet-avatar {
   width: 40px;
   height: 40px;
-  border-radius: 50%;
+  border-radius: 9999px;
   object-fit: cover;
   flex-shrink: 0;
 }
 
 .tweet-embed-nested .tweet-avatar {
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
 }
 
 .tweet-avatar-placeholder {
-  background: var(--border-light, rgba(128, 128, 128, 0.2));
+  background: var(--x-border);
 }
 
+/* Name and handle on same line (X layout) */
 .tweet-author-info {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  gap: 4px;
   min-width: 0;
+  overflow: hidden;
 }
 
 .tweet-author-name {
   font-weight: 700;
   font-size: 15px;
-  line-height: 1.2;
-  color: var(--ink-dark, #0f1419);
+  line-height: 20px;
+  color: var(--x-text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .tweet-author-handle {
-  font-size: 13px;
-  color: var(--ink-muted, #536471);
-  line-height: 1.2;
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--x-text-secondary);
+  line-height: 20px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tweet-author-separator {
+  color: var(--x-text-secondary);
+  font-size: 15px;
+  flex-shrink: 0;
+}
+
+.tweet-author-timestamp {
+  color: var(--x-text-secondary);
+  font-size: 15px;
+  line-height: 20px;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 /* Tweet text */
 .tweet-text {
   font-size: 15px;
-  line-height: 1.4;
-  color: var(--ink-dark, #0f1419);
+  line-height: 20px;
+  color: var(--x-text-primary);
   white-space: pre-wrap;
   word-break: break-word;
 }
 
 .tweet-embed-nested .tweet-text {
-  font-size: 14px;
+  font-size: 15px;
+  line-height: 20px;
 }
 
 /* Media */
 .tweet-media {
   margin-top: 12px;
-  border-radius: 12px;
+  border-radius: 16px;
   overflow: hidden;
+  border: 1px solid var(--x-border);
 }
 
 .tweet-media-img {
   width: 100%;
   display: block;
-  border-radius: 12px;
 }
 
 .tweet-media-video-placeholder {
   width: 100%;
   height: 200px;
-  background: rgba(128, 128, 128, 0.1);
+  background: var(--x-bg-hover);
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 12px;
-  color: var(--ink-muted, #536471);
+  color: var(--x-text-secondary);
   font-size: 14px;
 }
 
-/* Footer / date */
-.tweet-footer {
-  margin-top: 12px;
-  padding-top: 8px;
-}
-
-.tweet-date {
-  font-size: 13px;
-  color: var(--ink-muted, #536471);
-}
-
-/* Metrics row */
-.tweet-metrics-row {
+/* --- Action bar (reply, retweet, like, views, share) --- */
+.tweet-actions-row {
   display: flex;
-  gap: 24px;
-  margin-top: 8px;
-  padding-top: 8px;
-  border-top: 1px solid var(--border-light, rgba(128, 128, 128, 0.15));
+  justify-content: space-between;
+  max-width: 425px;
+  margin-top: 4px;
+  padding: 4px 0;
 }
 
-.tweet-metric {
+.tweet-action {
   display: flex;
   align-items: center;
   gap: 4px;
+  color: var(--x-text-secondary);
   font-size: 13px;
-  color: var(--ink-muted, #536471);
+  line-height: 16px;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: default;
+  font-family: var(--x-font);
+  border-radius: 9999px;
+  transition: color 0.2s;
 }
 
-.tweet-metric svg {
-  opacity: 0.6;
+.tweet-action svg {
+  width: 18.75px;
+  height: 18.75px;
+  flex-shrink: 0;
+}
+
+.tweet-action-reply:hover { color: var(--x-blue); }
+.tweet-action-retweet:hover { color: var(--x-green); }
+.tweet-action-like:hover { color: #f91880; }
+.tweet-action-views:hover { color: var(--x-blue); }
+
+/* --- Reply thread layout --- */
+.tweet-reply-thread {
+  display: flex;
+  gap: 12px;
+  padding: 12px 16px;
+}
+
+.tweet-reply-thread-left {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 40px;
+  flex-shrink: 0;
+}
+
+.tweet-reply-thread-line {
+  width: 2px;
+  flex: 1;
+  background: var(--x-thread-line);
+  margin-top: 4px;
+}
+
+.tweet-reply-thread-right {
+  flex: 1;
+  min-width: 0;
 }
 
 /* --- Replying to indicator --- */
 .tweet-replying-to {
-  font-size: 13px;
-  color: var(--ink-muted, #536471);
-  padding: 8px 0 4px;
+  font-size: 15px;
+  line-height: 20px;
+  color: var(--x-text-secondary);
+  padding: 4px 16px 8px 68px;
 }
 
 .tweet-reply-handle {
-  color: #1d9bf0;
+  color: var(--x-blue);
 }
 
-/* --- Compose box --- */
+/* --- Compose area --- */
+.tweet-compose-area {
+  display: flex;
+  gap: 12px;
+  padding: 12px 16px 0;
+}
+
+.tweet-compose-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 9999px;
+  background: var(--x-border);
+  flex-shrink: 0;
+}
+
+.tweet-compose-content {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Legacy compose box (for when no avatar layout) */
 .tweet-compose-box {
-  border-left: 2px solid var(--border-light, rgba(128, 128, 128, 0.2));
-  padding-left: 16px;
-  margin: 8px 0;
   min-height: 80px;
-}
-
-/* --- Quote section (below compose) --- */
-.tweet-quote-section {
-  margin-top: 4px;
 }
 
 /* --- Compose footer: counter + post button --- */
@@ -188,9 +304,9 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 12px;
-  padding: 8px 0;
-  border-top: 1px solid var(--border-light, rgba(128, 128, 128, 0.15));
+  gap: 16px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--x-border);
 }
 
 /* --- Character counter --- */
@@ -207,48 +323,58 @@
   position: absolute;
   font-size: 11px;
   font-weight: 600;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--x-font);
 }
 
-/* --- Post button placeholder --- */
+/* --- Post button --- */
 .tweet-post-btn {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family: var(--x-font);
   font-size: 15px;
   font-weight: 700;
-  padding: 8px 20px;
+  line-height: 20px;
+  padding: 0 16px;
+  height: 36px;
   border-radius: 9999px;
   border: none;
-  background: #1d9bf0;
-  color: #fff;
+  background: var(--x-blue);
+  color: #ffffff;
   cursor: not-allowed;
   opacity: 0.5;
+  min-width: 72px;
 }
 
 /* --- Error state --- */
 .tweet-embed-error {
-  border: 1px solid var(--border-light, rgba(128, 128, 128, 0.2));
-  border-radius: 12px;
+  border: 1px solid var(--x-border-card);
+  border-radius: 16px;
   padding: 16px;
   text-align: center;
-  color: var(--ink-muted, #536471);
-  font-size: 14px;
+  color: var(--x-text-secondary);
+  font-size: 15px;
+  line-height: 20px;
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
 .tweet-fallback-link {
-  color: #1d9bf0;
+  color: var(--x-blue);
   font-size: 13px;
   word-break: break-all;
 }
 
 /* --- Skeleton loading --- */
+.tweet-skeleton {
+  border: 1px solid var(--x-border-card);
+  border-radius: 16px;
+  padding: 12px 16px;
+}
+
 .tweet-skeleton .tweet-skeleton-line {
   display: block;
   height: 12px;
   border-radius: 4px;
-  background: var(--border-light, rgba(128, 128, 128, 0.15));
+  background: var(--x-border);
 }
 
 .tweet-pulse {
@@ -260,42 +386,14 @@
   50% { opacity: 0.4; }
 }
 
-/* ============================================================
-   Dark mode overrides
-   ============================================================ */
-[data-mode="dark"] .tweet-embed-card {
-  background: rgba(255, 255, 255, 0.03);
-  border-color: rgba(255, 255, 255, 0.12);
+/* --- Date / footer below tweet (used in detail view, not feed) --- */
+.tweet-footer {
+  display: none;
 }
 
-[data-mode="dark"] .tweet-author-name {
-  color: var(--ink-dark, #e7e9ea);
-}
-
-[data-mode="dark"] .tweet-text {
-  color: var(--ink-dark, #e7e9ea);
-}
-
-[data-mode="dark"] .tweet-embed-error {
-  border-color: rgba(255, 255, 255, 0.12);
-}
-
-[data-mode="dark"] .tweet-compose-box {
-  border-left-color: rgba(255, 255, 255, 0.15);
-}
-
-[data-mode="dark"] .tweet-compose-footer {
-  border-top-color: rgba(255, 255, 255, 0.1);
-}
-
-[data-mode="dark"] .tweet-metrics-row {
-  border-top-color: rgba(255, 255, 255, 0.1);
-}
-
-[data-mode="dark"] .tweet-skeleton .tweet-skeleton-line {
-  background: rgba(255, 255, 255, 0.1);
-}
-
-[data-mode="dark"] .tweet-avatar-placeholder {
-  background: rgba(255, 255, 255, 0.1);
+/* --- Separator between tweet and actions in non-card context --- */
+.tweet-detail-separator {
+  height: 1px;
+  background: var(--x-border);
+  margin-top: 12px;
 }

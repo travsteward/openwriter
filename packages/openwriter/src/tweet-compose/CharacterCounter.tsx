@@ -1,6 +1,7 @@
 /**
  * Twitter-style circular character counter.
- * Blue → yellow (260+) → red (280+). Informational, not blocking.
+ * Uses X design tokens: blue → yellow (260+) → red (280+).
+ * Informational — does not block posting.
  */
 
 interface CharacterCounterProps {
@@ -12,33 +13,36 @@ export default function CharacterCounter({ count, softLimit = 280 }: CharacterCo
   const remaining = softLimit - count;
   const progress = Math.min(count / softLimit, 1);
 
-  // Circle geometry
-  const size = 30;
-  const strokeWidth = 2.5;
+  // Circle geometry — matches X's ~26px counter
+  const size = 26;
+  const strokeWidth = 2;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference * (1 - progress);
 
-  // Color thresholds
-  let color = 'var(--tweet-counter-blue, #1d9bf0)';
+  // X color thresholds
+  let color = 'var(--x-blue, #1d9bf0)';
   if (remaining <= 0) {
-    color = 'var(--tweet-counter-red, #f4212e)';
+    color = 'var(--x-red, #f4212e)';
   } else if (remaining <= 20) {
-    color = 'var(--tweet-counter-yellow, #ffd400)';
+    color = 'var(--x-yellow, #ffd400)';
   }
 
   const showNumber = remaining <= 20;
 
+  // Don't show counter when empty
+  if (count === 0) return null;
+
   return (
-    <div className="tweet-char-counter" title={`${count} / ${softLimit}`}>
+    <div className="tweet-char-counter" title={`${count} / ${softLimit}`} style={{ width: size, height: size }}>
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-        {/* Background circle */}
+        {/* Track circle */}
         <circle
           cx={size / 2}
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke="var(--tweet-counter-track, rgba(128,128,128,0.2))"
+          stroke="var(--x-border, #eff3f4)"
           strokeWidth={strokeWidth}
         />
         {/* Progress arc */}

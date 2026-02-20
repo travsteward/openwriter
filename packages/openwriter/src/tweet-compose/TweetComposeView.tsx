@@ -1,6 +1,8 @@
 /**
- * Tweet Compose View — wraps PadEditor with Twitter-like compose experience.
- * Shows embedded tweet above (reply) or below (quote) the compose area.
+ * Tweet Compose View — X/Twitter compose experience.
+ * Reply mode: parent tweet with thread line → "Replying to @user" → compose area
+ * Quote mode: compose area → quoted tweet card below
+ * Matches X's actual layout with thread connecting line and avatar placement.
  */
 
 import { type ReactNode, useCallback } from 'react';
@@ -22,7 +24,7 @@ interface TweetComposeViewProps {
 
 function TweetSkeleton() {
   return (
-    <div className="tweet-embed-card tweet-skeleton">
+    <div className="tweet-skeleton">
       <div className="tweet-author-row">
         <div className="tweet-avatar tweet-avatar-placeholder tweet-pulse" />
         <div className="tweet-author-info">
@@ -50,49 +52,118 @@ export default function TweetComposeView({ tweetContext, editor, children }: Twe
 
   return (
     <div className="tweet-compose-wrapper">
-      {/* Reply mode: tweet above compose */}
+      {/* === Reply mode: threaded layout === */}
       {hasContext && isReply && (
-        <div className="tweet-context-section">
-          {loading && <TweetSkeleton />}
-          {error && (
-            <div className="tweet-embed-error">
-              <span>Could not load tweet</span>
-              <a href={tweetContext.url} target="_blank" rel="noopener noreferrer" className="tweet-fallback-link">
-                {tweetContext.url}
-              </a>
+        <>
+          {/* Parent tweet with thread line */}
+          {loading && (
+            <div className="tweet-context-section">
+              <TweetSkeleton />
             </div>
           )}
-          {tweet && <TweetEmbed tweet={tweet} />}
+          {error && (
+            <div className="tweet-context-section">
+              <div className="tweet-embed-error">
+                <span>Could not load tweet</span>
+                <a href={tweetContext.url} target="_blank" rel="noopener noreferrer" className="tweet-fallback-link">
+                  {tweetContext.url}
+                </a>
+              </div>
+            </div>
+          )}
+          {tweet && (
+            <div className="tweet-reply-thread">
+              <div className="tweet-reply-thread-left">
+                {tweet.author.avatarUrl ? (
+                  <img className="tweet-avatar" src={tweet.author.avatarUrl} alt="" />
+                ) : (
+                  <div className="tweet-avatar tweet-avatar-placeholder" />
+                )}
+                <div className="tweet-reply-thread-line" />
+              </div>
+              <div className="tweet-reply-thread-right">
+                <div className="tweet-author-info" style={{ marginBottom: 4 }}>
+                  <span className="tweet-author-name">{tweet.author.name}</span>
+                  <span className="tweet-author-handle">@{tweet.author.username}</span>
+                </div>
+                <div className="tweet-text">{tweet.text}</div>
+
+                {tweet.media && tweet.media.length > 0 && (
+                  <div className="tweet-media">
+                    {tweet.media.map((m, i) => (
+                      m.type === 'photo' ? (
+                        <img key={i} className="tweet-media-img" src={m.url} alt="" loading="lazy" />
+                      ) : (
+                        <div key={i} className="tweet-media-video-placeholder">
+                          <span>Video</span>
+                        </div>
+                      )
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Replying to indicator */}
           {tweet && (
             <div className="tweet-replying-to">
               Replying to <span className="tweet-reply-handle">@{tweet.author.username}</span>
             </div>
           )}
-        </div>
-      )}
 
-      {/* Compose area */}
-      <div className="tweet-compose-box">
-        {children}
-      </div>
-
-      {/* Quote mode: tweet below compose */}
-      {hasContext && !isReply && (
-        <div className="tweet-context-section tweet-quote-section">
-          {loading && <TweetSkeleton />}
-          {error && (
-            <div className="tweet-embed-error">
-              <span>Could not load tweet</span>
-              <a href={tweetContext.url} target="_blank" rel="noopener noreferrer" className="tweet-fallback-link">
-                {tweetContext.url}
-              </a>
+          {/* Compose area with avatar */}
+          <div className="tweet-compose-area">
+            <div className="tweet-compose-avatar" />
+            <div className="tweet-compose-content">
+              <div className="tweet-compose-box">
+                {children}
+              </div>
             </div>
-          )}
-          {tweet && <TweetEmbed tweet={tweet} />}
+          </div>
+        </>
+      )}
+
+      {/* === Quote mode: compose above, quoted tweet below === */}
+      {hasContext && !isReply && (
+        <>
+          <div className="tweet-compose-area">
+            <div className="tweet-compose-avatar" />
+            <div className="tweet-compose-content">
+              <div className="tweet-compose-box">
+                {children}
+              </div>
+              {/* Quoted tweet card */}
+              <div className="tweet-quote-section">
+                {loading && <TweetSkeleton />}
+                {error && (
+                  <div className="tweet-embed-error">
+                    <span>Could not load tweet</span>
+                    <a href={tweetContext.url} target="_blank" rel="noopener noreferrer" className="tweet-fallback-link">
+                      {tweetContext.url}
+                    </a>
+                  </div>
+                )}
+                {tweet && <TweetEmbed tweet={tweet} />}
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* === No context: plain compose (tweet view without reply/quote) === */}
+      {!hasContext && (
+        <div className="tweet-compose-area">
+          <div className="tweet-compose-avatar" />
+          <div className="tweet-compose-content">
+            <div className="tweet-compose-box">
+              {children}
+            </div>
+          </div>
         </div>
       )}
 
-      {/* Bottom bar: counter + post button */}
+      {/* === Footer: character counter + post button === */}
       <div className="tweet-compose-footer">
         <CharacterCounter count={charCount} />
         <button className="tweet-post-btn" disabled title="Post (coming soon)">
