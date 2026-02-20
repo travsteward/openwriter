@@ -378,7 +378,11 @@ export default function App() {
         )}
         <div className="editor-container">
           {metadata?.articleContext ? (
-            <ArticleComposeView>
+            <ArticleComposeView
+              title={title}
+              onTitleChange={handleTitleChange}
+              coverImage={metadata?.articleContext?.coverImage}
+            >
               <PadEditor
                 key={activeDocKey}
                 initialContent={initialContent}

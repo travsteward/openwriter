@@ -19,7 +19,18 @@ export function useArticleCopy() {
     const clone = editorEl.cloneNode(true) as HTMLElement;
     clone.querySelectorAll('.ProseMirror-widget, [data-widget], .ProseMirror-gapcursor').forEach(el => el.remove());
 
-    const cleanedHtml = clone.innerHTML;
+    // Prepend cover image + title from the article compose view
+    let prefix = '';
+    const coverImg = document.querySelector('.article-cover-img') as HTMLImageElement | null;
+    if (coverImg?.src) {
+      prefix += `<img src="${coverImg.src}" alt="Cover" style="width:100%;border-radius:8px;margin-bottom:16px" />\n`;
+    }
+    const titleInput = document.querySelector('.article-title-input') as HTMLInputElement | null;
+    if (titleInput?.value && titleInput.value !== 'Untitled') {
+      prefix += `<h1>${titleInput.value}</h1>\n`;
+    }
+
+    const cleanedHtml = prefix + clone.innerHTML;
     const plainText = extractPlainText(clone);
 
     try {
