@@ -336,7 +336,7 @@
 
 /* Legacy compose box (for when no avatar layout) */
 .tweet-compose-box {
-  min-height: 80px;
+  min-height: 0;
 }
 
 /* --- Compose footer: counter + post button --- */
