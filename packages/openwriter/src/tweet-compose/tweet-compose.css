@@ -449,6 +449,43 @@
   cursor: not-allowed;
   opacity: 0.5;
   min-width: 72px;
+  transition: opacity 0.15s, background 0.15s;
+}
+
+.tweet-post-btn--active {
+  opacity: 1;
+  cursor: pointer;
+}
+
+.tweet-post-btn--active:hover {
+  background: #1a8cd8;
+}
+
+.tweet-post-btn--active:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.tweet-post-btn--success {
+  background: var(--x-green);
+  opacity: 1;
+  cursor: default;
+}
+
+.tweet-post-btn--error {
+  background: var(--x-red);
+  opacity: 1;
+  cursor: default;
+}
+
+.tweet-post-error {
+  font-family: var(--x-font);
+  font-size: 13px;
+  color: var(--x-red);
+  margin-right: auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* --- Error state --- */
@@ -504,4 +541,128 @@
   height: 1px;
   background: var(--x-border);
   margin-top: 12px;
+}
+
+/* --- XConnectPrompt: contextual activation --- */
+.x-connect-prompt {
+  border-top: 1px solid var(--x-border);
+  padding: 16px;
+  font-family: var(--x-font);
+}
+
+.x-connect-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.x-connect-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--x-text-primary);
+}
+
+.x-connect-cancel {
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  color: var(--x-text-secondary);
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.x-connect-cancel:hover {
+  color: var(--x-text-primary);
+  background: var(--x-bg-hover);
+}
+
+.x-connect-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.x-connect-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.x-connect-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--x-text-secondary);
+}
+
+.x-connect-input {
+  font-family: var(--x-font);
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--x-text-primary);
+  background: transparent;
+  border: 1px solid var(--x-border-card);
+  border-radius: 8px;
+  padding: 8px 12px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.x-connect-input:focus {
+  border-color: var(--x-blue);
+}
+
+.x-connect-input::placeholder {
+  color: var(--x-text-secondary);
+  opacity: 0.5;
+}
+
+.x-connect-error {
+  font-size: 13px;
+  color: var(--x-red);
+  margin-bottom: 8px;
+  line-height: 18px;
+}
+
+.x-connect-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.x-connect-dev-link {
+  font-size: 13px;
+  color: var(--x-blue);
+  text-decoration: none;
+}
+
+.x-connect-dev-link:hover {
+  text-decoration: underline;
+}
+
+.x-connect-btn {
+  font-family: var(--x-font);
+  font-size: 14px;
+  font-weight: 700;
+  padding: 0 20px;
+  height: 32px;
+  border-radius: 9999px;
+  border: none;
+  background: var(--x-blue);
+  color: #ffffff;
+  cursor: pointer;
+  transition: opacity 0.15s, background 0.15s;
+}
+
+.x-connect-btn:hover:not(:disabled) {
+  background: #1a8cd8;
+}
+
+.x-connect-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }

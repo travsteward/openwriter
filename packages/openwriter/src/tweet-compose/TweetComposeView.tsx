@@ -13,6 +13,7 @@ import type { Editor } from '@tiptap/react';
 import { useTweetEmbed } from '../hooks/useTweetEmbed';
 import TweetEmbed from './TweetEmbed';
 import CharacterCounter from './CharacterCounter';
+import XConnectPrompt from './XConnectPrompt';
 
 const LS_KEY = 'ow-x-handle';
 
@@ -107,8 +108,47 @@ function TweetSkeleton() {
   );
 }
 
+/** Extract tweet ID from an x.com or twitter.com status URL */
+function extractTweetId(url?: string): string | undefined {
+  if (!url) return undefined;
+  const match = url.match(/\/status\/(\d+)/);
+  return match?.[1];
+}
+
+type PostState = 'idle' | 'posting' | 'success' | 'error';
+
 export default function TweetComposeView({ tweetContext, editor, children }: TweetComposeViewProps) {
   const { tweet, loading, error } = useTweetEmbed(tweetContext?.url);
+
+  // X connection state
+  const [xConnected, setXConnected] = useState<boolean | null>(null); // null = loading
+  const [xUsername, setXUsername] = useState<string | undefined>();
+  const [showConnect, setShowConnect] = useState(false);
+  const [postState, setPostState] = useState<PostState>('idle');
+  const [postError, setPostError] = useState('');
+  const successTimer = useRef<ReturnType<typeof setTimeout>>();
+
+  // Check X connection on mount
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/x/status');
+        if (cancelled) return;
+        if (res.ok) {
+          const data = await res.json();
+          setXConnected(data.connected);
+          setXUsername(data.username);
+        } else {
+          // Plugin not enabled — routes not registered yet
+          setXConnected(false);
+        }
+      } catch {
+        if (!cancelled) setXConnected(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   const getCharCount = useCallback(() => {
     if (!editor) return 0;
@@ -118,6 +158,70 @@ export default function TweetComposeView({ tweetContext, editor, children }: Twe
   const charCount = editor ? getCharCount() : 0;
   const hasContext = tweetContext?.url;
   const isReply = tweetContext?.mode === 'reply';
+
+  const canPost = xConnected && charCount > 0 && charCount <= 280 && postState === 'idle';
+
+  const handlePost = async () => {
+    if (!xConnected) {
+      setShowConnect(true);
+      return;
+    }
+    if (!canPost || !editor) return;
+
+    setPostState('posting');
+    setPostError('');
+
+    try {
+      const text = editor.getText();
+      const tweetId = extractTweetId(tweetContext?.url);
+
+      const body: Record<string, string> = { text };
+      if (tweetContext?.mode === 'reply' && tweetId) {
+        body.replyTo = tweetId;
+      } else if (tweetContext?.mode === 'quote' && tweetId) {
+        body.quoteTweetId = tweetId;
+      }
+
+      const res = await fetch('/api/x/post', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        setPostState('success');
+        // Clear editor after successful post
+        editor.commands.clearContent();
+        successTimer.current = setTimeout(() => setPostState('idle'), 2500);
+      } else {
+        setPostError(data.error || 'Post failed');
+        setPostState('error');
+        setTimeout(() => setPostState('idle'), 3000);
+      }
+    } catch (err: any) {
+      setPostError(err.message || 'Network error');
+      setPostState('error');
+      setTimeout(() => setPostState('idle'), 3000);
+    }
+  };
+
+  // Cleanup success timer
+  useEffect(() => () => { if (successTimer.current) clearTimeout(successTimer.current); }, []);
+
+  const handleConnected = () => {
+    setXConnected(true);
+    setShowConnect(false);
+    // Re-fetch username
+    fetch('/api/x/status').then((r) => r.json()).then((d) => {
+      if (d.username) setXUsername(d.username);
+    }).catch(() => {});
+  };
+
+  const postBtnLabel = postState === 'posting' ? 'Posting...'
+    : postState === 'success' ? 'Posted!'
+    : postState === 'error' ? 'Failed'
+    : 'Post';
 
   return (
     <div className="tweet-compose-wrapper">
@@ -230,11 +334,27 @@ export default function TweetComposeView({ tweetContext, editor, children }: Twe
 
       {/* === Footer: character counter + post button === */}
       <div className="tweet-compose-footer">
+        {postState === 'error' && postError && (
+          <span className="tweet-post-error">{postError}</span>
+        )}
         <CharacterCounter count={charCount} />
-        <button className="tweet-post-btn" disabled title="Post (coming soon)">
-          Post
+        <button
+          className={`tweet-post-btn${canPost || (!xConnected && xConnected !== null) ? ' tweet-post-btn--active' : ''}${postState === 'success' ? ' tweet-post-btn--success' : ''}${postState === 'error' ? ' tweet-post-btn--error' : ''}`}
+          disabled={xConnected ? !canPost : false}
+          onClick={handlePost}
+          title={xConnected ? (xUsername ? `Post as @${xUsername}` : 'Post to X') : 'Connect X to post'}
+        >
+          {postBtnLabel}
         </button>
       </div>
+
+      {/* === XConnectPrompt: shown when Post clicked without connection === */}
+      {showConnect && (
+        <XConnectPrompt
+          onConnected={handleConnected}
+          onCancel={() => setShowConnect(false)}
+        />
+      )}
     </div>
   );
 }

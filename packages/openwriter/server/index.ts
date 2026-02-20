@@ -333,6 +333,14 @@ export async function startHttpServer(options: { port?: number; noOpen?: boolean
     res.json(result);
   });
 
+  // Check if a specific plugin is enabled
+  app.get('/api/plugins/:name/status', (req, res) => {
+    const fullName = `@openwriter/plugin-${req.params.name}`;
+    const all = pluginManager.getAvailablePlugins();
+    const match = all.find((p) => p.name === fullName || p.name === req.params.name);
+    res.json({ enabled: match?.enabled ?? false });
+  });
+
   // Plugin action dispatch — client sends action payload, routed to correct plugin
   app.post('/api/plugin-action', async (req, res) => {
     try {
