@@ -108,7 +108,7 @@
 
 /* Inner content area — padded inset from card edge (image stays flush) */
 .article-compose-content {
-  padding: 16px 16px 0;
+  padding: 24px 24px 16px;
 }
 
 .article-compose-body {
