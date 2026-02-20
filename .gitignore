@@ -11,3 +11,6 @@ CLAUDE.md
 docs/
 .playwright-mcp/
 TODO.md
+
+# Debug screenshots
+*.png
