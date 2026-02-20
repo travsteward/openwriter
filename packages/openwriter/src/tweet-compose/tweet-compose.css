@@ -93,6 +93,7 @@
   font-family: var(--x-font);
   border: 1px solid var(--x-border);
   border-radius: 16px;
+  height: fit-content;
 }
 
 /* --- Tweet context section (holds embedded tweet) --- */
