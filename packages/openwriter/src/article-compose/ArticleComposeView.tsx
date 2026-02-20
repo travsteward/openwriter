@@ -256,19 +256,21 @@ export default function ArticleComposeView({ children, title, onTitleChange, cov
     <div className="article-compose-wrapper">
       <CoverImage src={coverImage} />
 
-      <input
-        className="article-title-input"
-        type="text"
-        value={DEFAULT_TITLES.has(title || '') ? '' : title || ''}
-        onChange={(e) => onTitleChange?.(e.target.value || 'Untitled')}
-        placeholder="Add a title"
-        spellCheck={false}
-      />
+      <div className="article-compose-content">
+        <input
+          className="article-title-input"
+          type="text"
+          value={DEFAULT_TITLES.has(title || '') ? '' : title || ''}
+          onChange={(e) => onTitleChange?.(e.target.value || 'Untitled')}
+          placeholder="Add a title"
+          spellCheck={false}
+        />
 
-      <ArticleByline />
+        <ArticleByline />
 
-      <div className="article-compose-body">
-        {children}
+        <div className="article-compose-body">
+          {children}
+        </div>
       </div>
 
       <div className="article-compose-footer">

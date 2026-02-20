@@ -95,15 +95,22 @@
   font-size: 18px !important;
 }
 
-/* --- Article compose wrapper --- */
+/* --- Article compose wrapper (card outline like tweet compose) --- */
 .article-compose-wrapper {
   width: 100%;
   max-width: 680px;
   margin: 0 auto;
+  border: 1px solid var(--x-border, #eff3f4);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+/* Inner content area — padded inset from card edge (image stays flush) */
+.article-compose-content {
+  padding: 16px 16px 0;
 }
 
 .article-compose-body {
-  flex: 1;
   min-height: 200px;
 }
 
@@ -114,9 +121,7 @@
 .article-cover {
   width: 100%;
   aspect-ratio: 5 / 2;
-  border-radius: 12px;
   overflow: hidden;
-  margin-bottom: 24px;
   position: relative;
 }
 
@@ -455,16 +460,24 @@
    ============================================================= */
 
 .article-compose-footer {
+  position: relative;
   display: flex;
+  align-items: center;
   justify-content: flex-end;
-  padding: 16px 0;
-  position: sticky;
-  bottom: 0;
-  pointer-events: none;
+  padding: 12px 16px;
+}
+
+.article-compose-footer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 16px;
+  right: 16px;
+  height: 1px;
+  background: var(--x-border, #eff3f4);
 }
 
 .article-copy-btn {
-  pointer-events: auto;
   display: inline-flex;
   align-items: center;
   gap: 8px;
