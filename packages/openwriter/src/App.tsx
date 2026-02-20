@@ -319,16 +319,20 @@ export default function App() {
   }, []);
 
   const handleViewChange = useCallback((view: string | null) => {
-    const newMeta = { ...metadata, view: view ?? undefined };
-    if (!view) delete newMeta.view;
-    setMetadata(newMeta);
-    // Persist to server
+    // Update local state (functional update to avoid stale closure)
+    setMetadata(m => {
+      if (view) return { ...m, view };
+      const { view: _, ...rest } = m;
+      return rest;
+    });
+    // Only POST the view change — don't send full metadata to avoid overwriting
+    // tweetContext or other keys set by MCP agents
     fetch('/api/metadata', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(newMeta),
+      body: JSON.stringify(view ? { view } : { view: null }),
     }).catch(() => {});
-  }, [metadata]);
+  }, []);
 
   const handleSync = useCallback(() => {
     if (syncStatus.state === 'unconfigured') {
