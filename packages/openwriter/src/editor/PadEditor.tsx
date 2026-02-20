@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { EditorContent, useEditor, type Editor } from '@tiptap/react';
 
 import { padExtensions } from './extensions';
+import type { Extensions } from '@tiptap/react';
 import FloatingToolbar from './FloatingToolbar';
 import { createPendingDecorationPlugin } from '../decorations/plugin';
 
@@ -23,17 +24,18 @@ async function uploadAndInsertImage(file: File, view: any) {
 
 interface PadEditorProps {
   initialContent?: any;
+  extensions?: Extensions;
   onUpdate?: (json: any) => void;
   onReady?: (editor: Editor) => void;
   onLinkClick?: (filename: string) => void;
 }
 
-export default function PadEditor({ initialContent, onUpdate, onReady, onLinkClick }: PadEditorProps) {
+export default function PadEditor({ initialContent, extensions, onUpdate, onReady, onLinkClick }: PadEditorProps) {
   const onLinkClickRef = useRef(onLinkClick);
   onLinkClickRef.current = onLinkClick;
 
   const editor = useEditor({
-    extensions: padExtensions,
+    extensions: extensions || padExtensions,
     content: initialContent || '<p></p>',
     onUpdate: ({ editor }) => {
       onUpdate?.(editor.getJSON());

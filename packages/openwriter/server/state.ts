@@ -187,16 +187,18 @@ export function setMetadata(updates: Record<string, any>): void {
   state.metadata = { ...state.metadata, ...updates };
   if (updates.title) state.title = updates.title;
 
-  // Auto-tag: tweetContext ↔ "x" tag
-  if ('tweetContext' in updates) {
-    const filename = state.filePath
-      ? (isExternalDoc(state.filePath) ? state.filePath : state.filePath.split(/[/\\]/).pop() || '')
-      : '';
-    if (filename) {
-      if (updates.tweetContext) {
-        addDocTag(filename, 'x');
-      } else {
-        removeDocTag(filename, 'x');
+  // Auto-tag: tweetContext / articleContext ↔ "x" tag
+  for (const key of ['tweetContext', 'articleContext'] as const) {
+    if (key in updates) {
+      const filename = state.filePath
+        ? (isExternalDoc(state.filePath) ? state.filePath : state.filePath.split(/[/\\]/).pop() || '')
+        : '';
+      if (filename) {
+        if (updates[key]) {
+          addDocTag(filename, 'x');
+        } else {
+          removeDocTag(filename, 'x');
+        }
       }
     }
   }

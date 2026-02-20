@@ -75,3 +75,33 @@ export const padExtensions = [
     generateID: () => crypto.randomUUID().replace(/-/g, '').slice(0, 8),
   }),
 ];
+
+/**
+ * Scoped extension set for X Article compose view.
+ * Only what X Articles actually support: bold, italic, headings (H1-H3),
+ * links, images, lists, blockquotes. No code blocks, tables, tasks, etc.
+ */
+export const articleExtensions = [
+  StarterKit.configure({
+    codeBlock: false,
+    horizontalRule: false,
+    heading: { levels: [1, 2, 3] },
+  }),
+  PadLink.configure({
+    openOnClick: false,
+    HTMLAttributes: {
+      rel: 'noopener noreferrer nofollow',
+    },
+  }),
+  Image,
+  BlurredLoadingNode,
+  PendingAttributes,
+  Placeholder.configure({
+    placeholder: 'Start writing...',
+  }),
+  UniqueID.configure({
+    types: ['paragraph', 'heading', 'bulletList', 'orderedList', 'listItem', 'blockquote', 'image'],
+    attributeName: 'id',
+    generateID: () => crypto.randomUUID().replace(/-/g, '').slice(0, 8),
+  }),
+];

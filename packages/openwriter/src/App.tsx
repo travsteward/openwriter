@@ -13,6 +13,8 @@ import { applyNodeChangeToEditor } from './decorations/bridge';
 import { getSidebarMode } from './themes/appearance-store';
 
 import TweetComposeView from './tweet-compose/TweetComposeView';
+import ArticleComposeView from './article-compose/ArticleComposeView';
+import { articleExtensions } from './editor/extensions';
 import './decorations/styles.css';
 
 export default function App() {
@@ -74,13 +76,15 @@ export default function App() {
   // Fetch saved document from server on mount
   // Set/remove data-view attribute on <html> for CSS targeting
   useEffect(() => {
-    if (metadata?.tweetContext) {
+    if (metadata?.articleContext) {
+      document.documentElement.setAttribute('data-view', 'article');
+    } else if (metadata?.tweetContext) {
       document.documentElement.setAttribute('data-view', 'tweet');
     } else {
       document.documentElement.removeAttribute('data-view');
     }
     return () => document.documentElement.removeAttribute('data-view');
-  }, [metadata?.tweetContext]);
+  }, [metadata?.tweetContext, metadata?.articleContext]);
 
   // Re-render when sidebar mode changes (board mode needs different layout)
   useEffect(() => {
@@ -373,7 +377,18 @@ export default function App() {
           />
         )}
         <div className="editor-container">
-          {metadata?.tweetContext ? (
+          {metadata?.articleContext ? (
+            <ArticleComposeView>
+              <PadEditor
+                key={activeDocKey}
+                initialContent={initialContent}
+                extensions={articleExtensions}
+                onUpdate={handleDocUpdate}
+                onReady={handleEditorReady}
+                onLinkClick={handleSwitchDocument}
+              />
+            </ArticleComposeView>
+          ) : metadata?.tweetContext ? (
             <TweetComposeView tweetContext={metadata.tweetContext} editor={editorInstance}>
               <PadEditor
                 key={activeDocKey}

@@ -1,0 +1,160 @@
+/* =============================================================
+   Article Compose View — X Article writing experience
+   Activated via [data-view="article"] on <html>
+
+   Design: serif body text (matching X's article reading experience),
+   wider content column, article-style paragraph spacing, clean chrome.
+   ============================================================= */
+
+/* --- Reset canvas effects when in article mode --- */
+[data-view="article"] .tiptap {
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  width: auto !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  min-height: auto !important;
+}
+
+[data-view="article"] .editor-container {
+  background: transparent !important;
+  display: flex;
+  justify-content: center;
+}
+
+/* --- Article editor typography --- */
+[data-view="article"] .ProseMirror {
+  max-width: 100% !important;
+  padding: 0 !important;
+  font-family: Georgia, "Times New Roman", Times, serif !important;
+  font-size: 18px !important;
+  line-height: 1.7 !important;
+  color: var(--x-text-primary, var(--ink-dark)) !important;
+}
+
+[data-view="article"] .ProseMirror p {
+  margin-bottom: 1.2em !important;
+}
+
+[data-view="article"] .ProseMirror h1 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  font-size: 32px !important;
+  font-weight: 700 !important;
+  line-height: 1.25 !important;
+  margin-top: 1.5em !important;
+  margin-bottom: 0.5em !important;
+  color: var(--x-text-primary, var(--ink-dark)) !important;
+}
+
+[data-view="article"] .ProseMirror h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  font-size: 24px !important;
+  font-weight: 700 !important;
+  line-height: 1.3 !important;
+  margin-top: 1.5em !important;
+  margin-bottom: 0.5em !important;
+  color: var(--x-text-primary, var(--ink-dark)) !important;
+}
+
+[data-view="article"] .ProseMirror h3 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  font-size: 20px !important;
+  font-weight: 700 !important;
+  line-height: 1.4 !important;
+  margin-top: 1.2em !important;
+  margin-bottom: 0.5em !important;
+  color: var(--x-text-primary, var(--ink-dark)) !important;
+}
+
+[data-view="article"] .ProseMirror h1:first-child {
+  margin-top: 0 !important;
+}
+
+[data-view="article"] .ProseMirror blockquote {
+  font-style: italic !important;
+  border-left: 3px solid var(--x-text-secondary, #536471) !important;
+  padding-left: 1em !important;
+  margin-left: 0 !important;
+  color: var(--x-text-secondary, #536471) !important;
+}
+
+[data-view="article"] .ProseMirror img {
+  max-width: 100% !important;
+  border-radius: 8px !important;
+  margin: 1em 0 !important;
+}
+
+/* Article placeholder */
+[data-view="article"] .ProseMirror p.is-editor-empty:first-child::before {
+  content: "Start writing your article..." !important;
+  color: var(--x-text-secondary, #adb5bd) !important;
+  font-family: Georgia, "Times New Roman", Times, serif !important;
+  font-size: 18px !important;
+}
+
+/* --- Article compose wrapper --- */
+.article-compose-wrapper {
+  width: 100%;
+  max-width: 680px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+}
+
+.article-compose-body {
+  flex: 1;
+  min-height: 200px;
+}
+
+/* --- Article footer: copy button --- */
+.article-compose-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 16px 0;
+  position: sticky;
+  bottom: 0;
+  pointer-events: none;
+}
+
+.article-copy-btn {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 9999px;
+  border: none;
+  background: var(--x-blue, #1d9bf0);
+  color: #ffffff;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+}
+
+.article-copy-btn:hover {
+  background: #1a8cd8;
+}
+
+.article-copy-btn:active {
+  transform: scale(0.97);
+}
+
+.article-copy-btn--copied {
+  background: #00ba7c;
+  cursor: default;
+}
+
+.article-copy-btn--copied:hover {
+  background: #00ba7c;
+}
+
+.article-copy-btn svg {
+  flex-shrink: 0;
+}
