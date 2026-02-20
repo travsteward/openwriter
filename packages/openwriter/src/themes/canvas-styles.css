@@ -3,7 +3,7 @@
 /* Outline: thin border around content column */
 [data-canvas="outline"] .tiptap {
   border: 1px solid var(--border);
-  border-radius: 0;
+  border-radius: 6px;
   padding: 3rem 2.5rem;
 }
 
@@ -14,7 +14,7 @@
 [data-canvas="page"] .tiptap {
   background: var(--bg-primary);
   border: 1px solid var(--border-light);
-  border-radius: 0;
+  border-radius: 6px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
   padding: 3rem 2.5rem;
   margin-top: 0.5rem;
@@ -28,7 +28,7 @@
 [data-canvas="paper"] .tiptap {
   background: var(--bg-primary);
   border: 1px solid var(--border-light);
-  border-radius: 0;
+  border-radius: 6px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
   width: 816px;
   max-width: 100%;
