@@ -162,35 +162,30 @@ function CoverImage({ src }: { src?: string }) {
 }
 
 // ─── Article Byline ─────────────────────────────────────────────
+// Same single-field handle popover as tweet ComposeAvatar.
+// Shares ow-x-handle (+ optional ow-x-name) via localStorage.
 
 function ArticleByline() {
   const [handle, setHandle] = useState(() => localStorage.getItem(LS_HANDLE_KEY) || '');
   const [name, setName] = useState(() => localStorage.getItem(LS_NAME_KEY) || '');
   const [editing, setEditing] = useState(false);
-  const [draftHandle, setDraftHandle] = useState('');
-  const [draftName, setDraftName] = useState('');
+  const [draft, setDraft] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
-  const nameInputRef = useRef<HTMLInputElement>(null);
 
   const save = () => {
-    const cleanHandle = draftHandle.replace(/^@/, '').trim();
-    const cleanName = draftName.trim();
-    if (cleanHandle) {
-      localStorage.setItem(LS_HANDLE_KEY, cleanHandle);
-      setHandle(cleanHandle);
-    }
-    if (cleanName) {
-      localStorage.setItem(LS_NAME_KEY, cleanName);
-      setName(cleanName);
+    const clean = draft.replace(/^@/, '').trim();
+    if (clean) {
+      localStorage.setItem(LS_HANDLE_KEY, clean);
+      setHandle(clean);
     }
     setEditing(false);
   };
 
   const open = () => {
-    setDraftHandle(handle);
-    setDraftName(name);
+    setDraft(handle);
     setEditing(true);
-    setTimeout(() => nameInputRef.current?.focus(), 0);
+    setTimeout(() => inputRef.current?.focus(), 0);
   };
 
   // Close on click outside
@@ -201,14 +196,24 @@ function ArticleByline() {
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
-  }, [editing, draftHandle, draftName]);
+  }, [editing, draft]);
+
+  // Sync handle/name from other views (tweet compose) that share the same LS keys
+  useEffect(() => {
+    const handler = () => {
+      setHandle(localStorage.getItem(LS_HANDLE_KEY) || '');
+      setName(localStorage.getItem(LS_NAME_KEY) || '');
+    };
+    window.addEventListener('storage', handler);
+    return () => window.removeEventListener('storage', handler);
+  }, []);
 
   const avatarUrl = handle ? `https://unavatar.io/twitter/${handle}` : '';
-  const displayName = name || (handle ? `@${handle}` : 'Set your name');
+  const displayName = name || (handle ? handle : 'Set your @handle');
 
   return (
     <div className="article-byline" ref={wrapperRef}>
-      <div className="article-byline-row" onClick={open} title="Click to edit">
+      <div className="article-byline-row" onClick={open} title={handle ? `@${handle} — click to change` : 'Set your @handle'}>
         {handle ? (
           <img className="article-byline-avatar" src={avatarUrl} alt={`@${handle}`} />
         ) : (
@@ -219,21 +224,11 @@ function ArticleByline() {
       </div>
       {editing && (
         <div className="article-byline-popover">
-          <label className="article-byline-label">Display name</label>
           <input
-            ref={nameInputRef}
+            ref={inputRef}
             className="article-byline-input"
-            value={draftName}
-            onChange={(e) => setDraftName(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') save(); if (e.key === 'Escape') setEditing(false); }}
-            placeholder="Your Name"
-            spellCheck={false}
-          />
-          <label className="article-byline-label">Handle</label>
-          <input
-            className="article-byline-input"
-            value={draftHandle}
-            onChange={(e) => setDraftHandle(e.target.value)}
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') save(); if (e.key === 'Escape') setEditing(false); }}
             placeholder="your_handle"
             spellCheck={false}
