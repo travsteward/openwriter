@@ -389,7 +389,7 @@
 
 /* Legacy compose box (for when no avatar layout) */
 .tweet-compose-box {
-  min-height: 120px;
+  min-height: 96px;
 }
 
 /* --- Compose footer: counter + post button --- */
