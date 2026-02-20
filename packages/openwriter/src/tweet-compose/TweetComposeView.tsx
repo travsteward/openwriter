@@ -200,6 +200,12 @@ export default function TweetComposeView({ tweetContext, editor, children }: Twe
 
       if (data.success) {
         setPostState('success');
+        // Mark doc as ephemeral — auto-cleaned on next startup
+        fetch('/api/metadata', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ephemeral: true }),
+        }).catch(() => {});
         // Clear editor after successful post
         editor.commands.clearContent();
         successTimer.current = setTimeout(() => setPostState('idle'), 2500);
