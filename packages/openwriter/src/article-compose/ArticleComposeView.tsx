@@ -12,6 +12,7 @@ import './ArticleComposeView.css';
 
 const LS_HANDLE_KEY = 'ow-x-handle';
 const LS_NAME_KEY = 'ow-x-name';
+const DEFAULT_TITLES = new Set(['Untitled', 'New Document']);
 
 // ─── Cover Image ────────────────────────────────────────────────
 
@@ -258,7 +259,7 @@ export default function ArticleComposeView({ children, title, onTitleChange, cov
       <input
         className="article-title-input"
         type="text"
-        value={title === 'Untitled' ? '' : title || ''}
+        value={DEFAULT_TITLES.has(title || '') ? '' : title || ''}
         onChange={(e) => onTitleChange?.(e.target.value || 'Untitled')}
         placeholder="Add a title"
         spellCheck={false}
