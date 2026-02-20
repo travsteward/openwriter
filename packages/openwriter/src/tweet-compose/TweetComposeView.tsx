@@ -54,7 +54,7 @@ export default function TweetComposeView({ tweetContext, editor, children }: Twe
   const isReply = tweetContext?.mode === 'reply';
 
   return (
-    <div className="tweet-compose-wrapper" data-tweet-mode={tweetContext?.mode || 'none'} data-has-context={hasContext ? 'yes' : 'no'} data-is-reply={isReply ? 'yes' : 'no'}>
+    <div className="tweet-compose-wrapper">
       {/* === Reply mode: unified two-column thread layout === */}
       {hasContext && isReply && (
         <>
