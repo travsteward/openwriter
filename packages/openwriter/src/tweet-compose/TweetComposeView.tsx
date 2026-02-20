@@ -196,7 +196,7 @@ export default function TweetComposeView({ tweetContext, editor, children }: Twe
       {hasContext && !isReply && (
         <div className="tweet-compose-area">
           <ComposeAvatar />
-          <div className="tweet-compose-content">
+          <div className="tweet-compose-content tweet-compose-content--card">
             <div className="tweet-compose-box">
               {children}
             </div>

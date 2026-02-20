@@ -99,7 +99,7 @@
 }
 
 .tweet-quote-section {
-  padding: 20px 0 0;
+  padding: 12px 0 0;
 }
 
 /* --- Tweet embed card --- */
@@ -383,6 +383,13 @@
   min-width: 0;
 }
 
+/* Card outline wrapping compose text + quoted tweet (matches X quote compose) */
+.tweet-compose-content--card {
+  border: 1px solid var(--x-border-card);
+  border-radius: 16px;
+  padding: 12px 16px;
+}
+
 /* Legacy compose box (for when no avatar layout) */
 .tweet-compose-box {
   min-height: 0;
@@ -394,7 +401,7 @@
   align-items: center;
   justify-content: flex-end;
   gap: 16px;
-  padding: 12px 16px;
+  padding: 12px 16px 12px 68px;
   border-top: 1px solid var(--x-border);
 }
 
