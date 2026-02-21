@@ -78,7 +78,7 @@ Now your agent has 24 tools to read, write, and organize documents — and every
 | **Document** | `read_pad`, `write_to_pad`, `edit_text`, `get_pad_status`, + 5 more | Read/write document content, fine-grained text edits, metadata |
 | **Multi-doc** | `list_documents`, `switch_document`, `create_document` | Navigate and manage multiple documents |
 | **Workspace** | `create_workspace`, `get_workspace_structure`, `add_doc`, + 6 more | Organize docs into projects with containers and tags |
-| **Import** | `import_gdoc` | Import Google Docs, auto-split into chapters |
+| **Import** | `import_content` | Import markdown text or Google Docs, auto-split into chapters |
 
 Agents write in markdown or TipTap JSON. The server converts, assigns node IDs, and broadcasts changes to your browser in real-time via WebSocket.
 

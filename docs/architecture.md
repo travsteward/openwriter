@@ -60,7 +60,7 @@
 │  ├── Workspace: list/create/get_structure/get_item_context/     │
 │  │   add_doc/update_context/create_container/tag/untag/move_doc │
 │  ├── Media: generate_image                                      │
-│  ├── Import: import_gdoc                                        │
+│  ├── Import: import_content                                      │
 │  └── Meta: open-writer (launch browser)                         │
 │                                                                 │
 │  Plugin System                                                  │
@@ -265,7 +265,7 @@ AI agent connects via MCP stdio. Agent reads the document, makes changes, user r
 
 | Tool | What It Does |
 |------|-------------|
-| `import_gdoc` | Google Doc JSON → single doc or multi-chapter book with workspace |
+| `import_content` | Markdown text or Google Doc JSON → single doc or multi-chapter book with workspace |
 
 ### Meta tools (1)
 
@@ -470,6 +470,6 @@ Benefits: no CORS issues, API key never exposed to browser, single origin, usage
 - Compact tagged-line wire format for token-efficient agent I/O
 - Server-side document mutations with pending state preservation
 - Ephemeral doc cleanup: docs with `ephemeral: true` frontmatter auto-trashed on startup (tweets flagged after posting)
-- Google Doc import (single doc or multi-chapter book)
+- Content import: markdown text or Google Doc JSON (single doc or multi-chapter book)
 - Author's Voice plugin (voice rewrite, profile management)
 - MCP `generate_image` tool: Gemini Imagen 4 with optional atomic article cover setting
