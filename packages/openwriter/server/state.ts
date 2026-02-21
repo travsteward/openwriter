@@ -11,6 +11,7 @@ import { tiptapToMarkdown, markdownToTiptap } from './markdown.js';
 import { applyTextEditsToNode, type TextEdit } from './text-edit.js';
 import { DATA_DIR, TEMP_PREFIX, ensureDataDir, filePathForTitle, tempFilePath, generateNodeId, LEAF_BLOCK_TYPES, resolveDocPath, isExternalDoc } from './helpers.js';
 import { snapshotIfNeeded, ensureDocId } from './versions.js';
+import trash from 'trash';
 
 export interface NodeChange {
   operation: 'rewrite' | 'insert' | 'delete';
@@ -861,7 +862,7 @@ function cleanupEphemeralDocs(): void {
         const raw = readFileSync(join(DATA_DIR, f), 'utf-8');
         const { data } = matter(raw);
         if (data.ephemeral) {
-          unlinkSync(join(DATA_DIR, f));  // synchronous — must finish before load() continues
+          trash(join(DATA_DIR, f)).catch(() => {});  // move to OS trash, fire-and-forget
         }
       } catch { /* skip unreadable */ }
     }
