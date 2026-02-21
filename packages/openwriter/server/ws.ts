@@ -16,6 +16,7 @@ import {
   onChanges,
   isAgentLocked,
   getPendingDocInfo,
+  updatePendingCacheForActiveDoc,
   stripPendingAttrs,
   saveDocToFile,
   stripPendingAttrsFromFile,
@@ -96,6 +97,7 @@ export function setupWebSocket(server: Server): void {
             saveDocToFile(msg.filename, msg.document);
           } else {
             updateDocument(msg.document);
+            updatePendingCacheForActiveDoc(); // Keep cache in sync after browser edits/reject-all
             debouncedSave();
           }
         }
@@ -299,7 +301,16 @@ export function broadcastAgentStatus(connected: boolean): void {
 
 let lastSyncStatus: any = null;
 
+// Safety net: auto-clear spinner if writing-finished never arrives
+let writingTimer: ReturnType<typeof setTimeout> | null = null;
+const WRITING_TIMEOUT_MS = 60_000;
+
 export function broadcastWritingStarted(title: string, target?: { wsFilename: string; containerId: string | null }): void {
+  if (writingTimer) clearTimeout(writingTimer);
+  writingTimer = setTimeout(() => {
+    console.log('[WS] Writing spinner timed out — auto-clearing');
+    broadcastWritingFinished();
+  }, WRITING_TIMEOUT_MS);
   const msg = JSON.stringify({ type: 'writing-started', title, target: target || null });
   for (const ws of clients) {
     if (ws.readyState === WebSocket.OPEN) ws.send(msg);
@@ -307,6 +318,7 @@ export function broadcastWritingStarted(title: string, target?: { wsFilename: st
 }
 
 export function broadcastWritingFinished(): void {
+  if (writingTimer) { clearTimeout(writingTimer); writingTimer = null; }
   const msg = JSON.stringify({ type: 'writing-finished' });
   for (const ws of clients) {
     if (ws.readyState === WebSocket.OPEN) ws.send(msg);

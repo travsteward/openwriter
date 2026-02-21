@@ -168,8 +168,8 @@ export const TOOL_REGISTRY: ToolDef[] = [
 
       if (!empty) {
         broadcastWritingStarted(title || 'Untitled', wsTarget);
-        // Yield one event loop tick so the browser receives the WS message before we continue
-        await new Promise((resolve) => setImmediate(resolve));
+        // Yield so the browser receives and renders the spinner before heavy work
+        await new Promise((resolve) => setTimeout(resolve, 200));
       }
 
       try {

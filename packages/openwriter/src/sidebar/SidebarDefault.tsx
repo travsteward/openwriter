@@ -111,9 +111,7 @@ export default function SidebarDefault({ docs, workspaces, assignedFiles, pendin
           </div>
         </>
       )}
-      {wsFilename ? (
-        <button className="sidebar-delete-btn" onClick={(e) => { e.stopPropagation(); actions.handleRemoveFromWorkspace(wsFilename, doc.filename); }} title="Remove from workspace">&times;</button>
-      ) : confirmDelete === doc.filename ? (
+      {confirmDelete === doc.filename ? (
         <div className="sidebar-confirm-delete" onClick={(e) => e.stopPropagation()}>
           <span>Delete?</span>
           <button onClick={() => { actions.handleDelete(doc.filename); setConfirmDelete(null); }}>Yes</button>

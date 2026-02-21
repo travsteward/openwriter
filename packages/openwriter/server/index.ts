@@ -21,6 +21,7 @@ import { markdownToTiptap } from './markdown.js';
 import { importGoogleDoc } from './gdoc-import.js';
 import { createVersionRouter } from './version-routes.js';
 import { createSyncRouter } from './sync-routes.js';
+import { removeDocFromAllWorkspaces } from './workspaces.js';
 import { createImageRouter } from './image-upload.js';
 import { createExportRouter } from './export-routes.js';
 import { PluginManager } from './plugin-manager.js';
@@ -187,12 +188,13 @@ export async function startHttpServer(options: { port?: number; noOpen?: boolean
 
   app.delete('/api/documents/:filename', async (req, res) => {
     try {
+      removeDocFromAllWorkspaces(req.params.filename);
       const result = await deleteDocument(req.params.filename);
       if (result.switched && result.newDoc) {
         broadcastDocumentSwitched(result.newDoc.document, result.newDoc.title, result.newDoc.filename);
-      } else {
-        broadcastDocumentsChanged();
       }
+      broadcastDocumentsChanged();
+      broadcastWorkspacesChanged();
       res.json(result);
     } catch (err: any) {
       res.status(400).json({ error: err.message });
