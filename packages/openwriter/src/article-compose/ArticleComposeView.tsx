@@ -12,7 +12,7 @@ import './ArticleComposeView.css';
 
 const LS_HANDLE_KEY = 'ow-x-handle';
 const LS_NAME_KEY = 'ow-x-name';
-const DEFAULT_TITLES = new Set(['Untitled', 'New Document']);
+const DEFAULT_TITLES = new Set(['Untitled', 'New Document', 'Article']);
 
 // ─── Cover Image ────────────────────────────────────────────────
 
