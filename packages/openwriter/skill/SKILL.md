@@ -106,7 +106,7 @@ After editing, tell the user:
 
 | Tool | Description |
 |------|-------------|
-| `import_content` | Import markdown text or Google Doc JSON (auto-splits multi-chapter docs) |
+| `import_gdoc` | Import structured Google Doc JSON (auto-splits multi-chapter docs) |
 
 ### Workspace Management
 

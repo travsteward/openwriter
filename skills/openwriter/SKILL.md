@@ -102,7 +102,7 @@ After editing, tell the user:
 | Tool | Description |
 |------|-------------|
 | `replace_document` | Import external content into a new/blank document |
-| `import_content` | Import markdown text or Google Doc JSON (auto-splits multi-chapter docs) |
+| `import_gdoc` | Import structured Google Doc JSON (auto-splits multi-chapter docs) |
 
 ### Workspace Management
 

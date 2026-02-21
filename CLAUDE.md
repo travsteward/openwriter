@@ -42,7 +42,7 @@ OpenWriter — local TipTap rich text editor for human-agent collaboration. Turb
 - Server entry point is `dist/bin/pad.js` — NOT `dist/server/index.js` (that one exits silently)
 - Buttons don't inherit `font-family` by default — always set `font-family: inherit` on custom buttons
 - MCP `write_to_pad` needs fresh node IDs — always re-read/switch doc before writing changes
-- `import_content` (formerly `import_gdoc`) accepts markdown strings or GDoc JSON — markdown is the preferred path
+- `import_gdoc` accepts raw Google Docs API JSON (body.content) — not plain text or markdown
 
 ## Development Commands
 

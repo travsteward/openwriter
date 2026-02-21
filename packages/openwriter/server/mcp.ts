@@ -33,7 +33,7 @@ import { broadcastDocumentSwitched, broadcastDocumentsChanged, broadcastWorkspac
 import { listWorkspaces, getWorkspace, getDocTitle, getItemContext, addDoc, updateWorkspaceContext, createWorkspace, deleteWorkspace, addContainerToWorkspace, findOrCreateWorkspace, findOrCreateContainer, moveDoc } from './workspaces.js';
 import { addDocTag, removeDocTag, getDocTagsByFilename } from './state.js';
 import type { WorkspaceNode } from './workspace-types.js';
-import { importGoogleDoc, importMarkdown } from './gdoc-import.js';
+import { importGoogleDoc } from './gdoc-import.js';
 import { toCompactFormat, compactNodes, parseMarkdownContent } from './compact.js';
 import { getUpdateInfo } from './update-check.js';
 
@@ -536,19 +536,14 @@ export const TOOL_REGISTRY: ToolDef[] = [
     },
   },
   {
-    name: 'import_content',
-    description: 'Import content into OpenWriter. Accepts either: (1) markdown text — the easy path when importing from Google Drive or any text source, or (2) raw Google Doc JSON for full fidelity import. Multi-section docs (2+ H1 headings) auto-split into chapter files with a workspace.',
+    name: 'import_gdoc',
+    description: 'Import a structured Google Doc into OpenWriter. Pass the raw JSON from the Google Docs API (the object with body.content). Converts headings, bold/italic, links, lists, and tables to markdown. Docs with 2+ HEADING_1 sections auto-split into chapter files with a workspace and "Chapters" container. Single-section docs become one file.',
     schema: {
-      content: z.any().describe('Markdown string (preferred) or raw Google Doc JSON object (body.content array)'),
-      title: z.string().optional().describe('Document/book title. Defaults to auto-detection or "Imported Document".'),
+      document: z.any().describe('Raw Google Doc JSON object from the Docs API (must have body.content)'),
+      title: z.string().optional().describe('Book/document title. Defaults to the Google Doc title.'),
     },
-    handler: async ({ content, title }: { content: any; title?: string }) => {
-      let result;
-      if (typeof content === 'string') {
-        result = importMarkdown(content, title);
-      } else {
-        result = importGoogleDoc(content, title);
-      }
+    handler: async ({ document, title }: { document: any; title?: string }) => {
+      const result = importGoogleDoc(document, title);
       broadcastDocumentsChanged();
       broadcastWorkspacesChanged();
       const lines = result.files.map((f: any, i: number) =>

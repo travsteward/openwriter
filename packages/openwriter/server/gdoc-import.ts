@@ -219,69 +219,6 @@ function writeDocFile(title: string, markdownBody: string): { filename: string; 
 // ============================================================================
 
 /**
- * Import markdown text into OpenWriter.
- * - Single section (0-1 H1 headings) → one .md file
- * - Multi-section (2+ H1 headings) → chapter files + workspace
- */
-export function importMarkdown(markdown: string, title?: string): ImportResult {
-  ensureDataDir();
-
-  const docTitle = title || 'Imported Document';
-
-  // Split by H1 headings (lines starting with "# ")
-  const sections: { title: string; bodyLines: string[] }[] = [];
-  const lines = markdown.split('\n');
-
-  for (const line of lines) {
-    const h1Match = line.match(/^# (.+)$/);
-    if (h1Match) {
-      sections.push({ title: h1Match[1].trim(), bodyLines: [line] });
-    } else if (sections.length > 0) {
-      sections[sections.length - 1].bodyLines.push(line);
-    } else {
-      // Content before any H1 → "Preamble" section
-      sections.push({ title: 'Preamble', bodyLines: [line] });
-    }
-  }
-
-  if (sections.length === 0) {
-    throw new Error('No content found in markdown');
-  }
-
-  // Single section → one document
-  if (sections.length <= 1) {
-    const body = sections[0]?.bodyLines.join('\n').trim() || markdown.trim();
-    const file = writeDocFile(docTitle, body);
-    return {
-      title: docTitle,
-      mode: 'single',
-      files: [{ title: docTitle, filename: file.filename, wordCount: file.wordCount }],
-    };
-  }
-
-  // Multiple H1 sections → chapter files + workspace
-  const fileResults: ImportResult['files'] = [];
-  for (const section of sections) {
-    const body = section.bodyLines.join('\n').trim();
-    const file = writeDocFile(section.title, body);
-    fileResults.push({ title: section.title, filename: file.filename, wordCount: file.wordCount });
-  }
-
-  const wsInfo = createWorkspace({ title: docTitle });
-  const { containerId } = addContainerToWorkspace(wsInfo.filename, null, 'Chapters');
-  for (const fileResult of fileResults) {
-    addDoc(wsInfo.filename, containerId, fileResult.filename, fileResult.title);
-  }
-
-  return {
-    title: docTitle,
-    mode: 'workspace',
-    workspaceFilename: wsInfo.filename,
-    files: fileResults,
-  };
-}
-
-/**
  * Import a Google Doc JSON into OpenWriter.
  * - Single-section doc → one .md file
  * - Multi-section doc (2+ HEADING_1) → chapter files + book manifest
