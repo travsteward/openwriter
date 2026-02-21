@@ -9,7 +9,7 @@ import ReviewPanel from './review/ReviewPanel';
 import Sidebar from './sidebar/Sidebar';
 import SyncSetupModal from './sync/SyncSetupModal';
 import { useWebSocket, type PendingDocsPayload, type SyncStatus } from './ws/client';
-import { applyNodeChangeToEditor } from './decorations/bridge';
+import { applyNodeChangesToEditor } from './decorations/bridge';
 import { getSidebarMode } from './themes/appearance-store';
 
 import TweetComposeView from './tweet-compose/TweetComposeView';
@@ -174,9 +174,7 @@ export default function App() {
     onNodeChanges: (changes) => {
       const editor = editorRef.current;
       if (!editor) return;
-      for (const change of changes) {
-        applyNodeChangeToEditor(editor, change);
-      }
+      applyNodeChangesToEditor(editor, changes);
     },
     onDocumentSwitched: handleDocumentSwitched,
     onDocumentsChanged: handleDocumentsChanged,

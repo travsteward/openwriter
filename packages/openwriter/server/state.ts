@@ -270,7 +270,7 @@ function transferPendingAttrs(source: PadDocument, target: PadDocument): void {
 // AGENT WRITE LOCK
 // ============================================================================
 
-const AGENT_LOCK_MS = 5000; // Block browser doc-updates for 5s after agent write
+const AGENT_LOCK_MS = 1500; // Block browser doc-updates for 1.5s after agent write
 let lastAgentWriteTime = 0;
 
 /** Set the agent write lock (called after agent changes). */
@@ -317,6 +317,9 @@ export function applyChanges(changes: NodeChange[]): { count: number; lastNodeId
 
   // Debounced save — coalesces rapid agent writes into a single disk write
   debouncedSave();
+
+  // Update pending doc cache for the active document
+  updatePendingCacheForActiveDoc();
 
   // Find the last created node ID for chaining inserts
   let lastNodeId: string | null = null;
@@ -384,7 +387,7 @@ function applyChangesToDocument(changes: NodeChange[]): NodeChange[] {
       if (!found) continue;
 
       const contentArray = Array.isArray(change.content) ? change.content : [change.content];
-      const originalNode = JSON.parse(JSON.stringify(found.parent[found.index]));
+      const originalNode = structuredClone(found.parent[found.index]);
 
       // Only store original on first rewrite (preserve baseline for reject)
       const existingOriginal = found.parent[found.index].attrs?.pendingOriginalContent;
@@ -518,6 +521,65 @@ export function setActiveDocument(
 }
 
 // ============================================================================
+// PENDING DOCUMENT CACHE (avoids disk scans on every broadcast)
+// ============================================================================
+
+/** In-memory cache: filename → pending change count. Populated on load(), updated incrementally. */
+const pendingDocCache = new Map<string, number>();
+
+/** Get the active doc's filename identifier (mirrors getActiveFilename in documents.ts). */
+function activeDocFilename(): string {
+  return state.filePath
+    ? (isExternalDoc(state.filePath) ? state.filePath : state.filePath.split(/[/\\]/).pop() || '')
+    : '';
+}
+
+/** Update the pending cache for the active document from in-memory state. */
+export function updatePendingCacheForActiveDoc(): void {
+  const filename = activeDocFilename();
+  if (!filename) return;
+  const count = getPendingChangeCount();
+  if (count > 0) {
+    pendingDocCache.set(filename, count);
+  } else {
+    pendingDocCache.delete(filename);
+  }
+}
+
+/** Remove a filename from the pending cache (after pending attrs are stripped). */
+export function removePendingCacheEntry(filename: string): void {
+  pendingDocCache.delete(filename);
+}
+
+/** Populate the pending cache from a full disk scan. Called once on startup. */
+function populatePendingCache(): void {
+  pendingDocCache.clear();
+  try {
+    const files = readdirSync(DATA_DIR).filter((f) => f.endsWith('.md'));
+    for (const f of files) {
+      try {
+        const raw = readFileSync(join(DATA_DIR, f), 'utf-8');
+        const { data } = matter(raw);
+        if (data.pending && Object.keys(data.pending).length > 0) {
+          pendingDocCache.set(f, Object.keys(data.pending).length);
+        }
+      } catch { /* skip unreadable files */ }
+    }
+  } catch { /* ignore */ }
+  // Scan external docs
+  for (const extPath of externalDocs) {
+    try {
+      if (!existsSync(extPath)) continue;
+      const raw = readFileSync(extPath, 'utf-8');
+      const { data } = matter(raw);
+      if (data.pending && Object.keys(data.pending).length > 0) {
+        pendingDocCache.set(extPath, Object.keys(data.pending).length);
+      }
+    } catch { /* skip unreadable files */ }
+  }
+}
+
+// ============================================================================
 // PENDING DOCUMENT STORE OPERATIONS
 // ============================================================================
 
@@ -549,6 +611,7 @@ export function stripPendingAttrs(): void {
     }
   }
   strip(state.document.content);
+  removePendingCacheEntry(activeDocFilename());
 }
 
 /**
@@ -575,76 +638,15 @@ export function markAllNodesAsPending(doc: PadDocument, status: 'insert' | 'rewr
   markLeafBlocksAsPending(doc.content, status);
 }
 
-/** Get filenames of all docs with pending changes (disk scan + external docs + current in-memory doc). */
-export function getPendingDocFilenames(): string[] {
+/** Read pending doc info from in-memory cache (O(1) instead of disk scan). */
+export function getPendingDocInfo(): { filenames: string[]; counts: Record<string, number> } {
   const filenames: string[] = [];
-  try {
-    const files = readdirSync(DATA_DIR).filter((f) => f.endsWith('.md'));
-    for (const f of files) {
-      try {
-        const raw = readFileSync(join(DATA_DIR, f), 'utf-8');
-        const { data } = matter(raw);
-        if (data.pending && Object.keys(data.pending).length > 0) {
-          filenames.push(f);
-        }
-      } catch { /* skip unreadable files */ }
-    }
-  } catch { /* ignore */ }
-  // Scan external docs for pending frontmatter
-  for (const extPath of externalDocs) {
-    try {
-      if (!existsSync(extPath)) continue;
-      const raw = readFileSync(extPath, 'utf-8');
-      const { data } = matter(raw);
-      if (data.pending && Object.keys(data.pending).length > 0) {
-        filenames.push(extPath);
-      }
-    } catch { /* skip unreadable files */ }
-  }
-  // Check current in-memory doc (may have unsaved pending state)
-  const currentFilename = state.filePath
-    ? (isExternalDoc(state.filePath) ? state.filePath : state.filePath.split(/[/\\]/).pop() || '')
-    : '';
-  if (currentFilename && hasPendingChanges() && !filenames.includes(currentFilename)) {
-    filenames.push(currentFilename);
-  }
-  return filenames;
-}
-
-/** Get pending change counts per filename (disk scan + external docs + current in-memory doc). */
-export function getPendingDocCounts(): Record<string, number> {
   const counts: Record<string, number> = {};
-  try {
-    const files = readdirSync(DATA_DIR).filter((f) => f.endsWith('.md'));
-    for (const f of files) {
-      try {
-        const raw = readFileSync(join(DATA_DIR, f), 'utf-8');
-        const { data } = matter(raw);
-        if (data.pending && Object.keys(data.pending).length > 0) {
-          counts[f] = Object.keys(data.pending).length;
-        }
-      } catch { /* skip unreadable files */ }
-    }
-  } catch { /* ignore */ }
-  // Scan external docs
-  for (const extPath of externalDocs) {
-    try {
-      if (!existsSync(extPath)) continue;
-      const raw = readFileSync(extPath, 'utf-8');
-      const { data } = matter(raw);
-      if (data.pending && Object.keys(data.pending).length > 0) {
-        counts[extPath] = Object.keys(data.pending).length;
-      }
-    } catch { /* skip unreadable files */ }
+  for (const [filename, count] of pendingDocCache) {
+    filenames.push(filename);
+    counts[filename] = count;
   }
-  // Current in-memory doc may have unsaved pending state
-  const currentFilename = state.filePath
-    ? (isExternalDoc(state.filePath) ? state.filePath : state.filePath.split(/[/\\]/).pop() || '')
-    : '';
-  if (currentFilename && hasPendingChanges()) {
-    counts[currentFilename] = getPendingChangeCount();
-  }
-  return counts;
+  return { filenames, counts };
 }
 
 // ============================================================================
@@ -759,6 +761,11 @@ export function load(): void {
     state.filePath = tempFilePath();
     state.isTemp = true;
   }
+
+  // Populate pending doc cache from disk (single scan on startup)
+  populatePendingCache();
+  // Overlay active doc's in-memory state (may have unsaved pending changes)
+  updatePendingCacheForActiveDoc();
 
   // Startup lock: block browser doc-updates briefly to prevent stale reconnect pushes
   setAgentLock();
@@ -1012,5 +1019,6 @@ export function stripPendingAttrsFromFile(filename: string, clearAgentCreated?: 
     }
     const markdown = tiptapToMarkdown(parsed.document, parsed.title, parsed.metadata);
     writeFileSync(targetPath, markdown, 'utf-8');
+    removePendingCacheEntry(filename);
   } catch { /* best-effort */ }
 }

@@ -26,6 +26,7 @@ import {
   save,
   markAllNodesAsPending,
   setAgentLock,
+  updatePendingCacheForActiveDoc,
   type NodeChange,
 } from './state.js';
 import { listDocuments, switchDocument, createDocument, deleteDocument, openFile, getActiveFilename } from './documents.js';
@@ -78,7 +79,7 @@ export const TOOL_REGISTRY: ToolDef[] = [
         return resolved;
       });
       const { count: appliedCount, lastNodeId } = applyChanges(processed as NodeChange[]);
-      broadcastPendingDocsChanged();
+      // broadcastPendingDocsChanged() already fires via onChanges listener in ws.ts
       return {
         content: [{
           type: 'text',
@@ -167,8 +168,8 @@ export const TOOL_REGISTRY: ToolDef[] = [
 
       if (!empty) {
         broadcastWritingStarted(title || 'Untitled', wsTarget);
-        // Yield so the browser receives and renders the placeholder before heavy work
-        await new Promise((resolve) => setTimeout(resolve, 200));
+        // Yield one event loop tick so the browser receives the WS message before we continue
+        await new Promise((resolve) => setImmediate(resolve));
       }
 
       try {
@@ -239,6 +240,7 @@ export const TOOL_REGISTRY: ToolDef[] = [
         setAgentLock(); // Block browser doc-updates during population
         markAllNodesAsPending(doc, 'insert');
         updateDocument(doc);
+        updatePendingCacheForActiveDoc();
         save();
 
         // Broadcast sidebar updates first (deferred from create_document) so the doc

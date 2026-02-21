@@ -15,8 +15,7 @@ import {
   save,
   onChanges,
   isAgentLocked,
-  getPendingDocFilenames,
-  getPendingDocCounts,
+  getPendingDocInfo,
   stripPendingAttrs,
   saveDocToFile,
   stripPendingAttrsFromFile,
@@ -81,10 +80,7 @@ export function setupWebSocket(server: Server): void {
     // Send pending docs info on connect
     ws.send(JSON.stringify({
       type: 'pending-docs-changed',
-      pendingDocs: {
-        filenames: getPendingDocFilenames(),
-        counts: getPendingDocCounts(),
-      },
+      pendingDocs: getPendingDocInfo(),
     }));
 
     ws.on('message', async (data) => {
@@ -266,8 +262,7 @@ export function broadcastTitleChanged(title: string): void {
   }
 }
 
-// Debounced: getPendingDocCounts() scans all files on disk + parses YAML.
-// Rapid agent writes would trigger this scan on every change batch.
+// Debounced: coalesces rapid agent writes into a single broadcast.
 let pendingDocsTimer: ReturnType<typeof setTimeout> | null = null;
 const PENDING_DOCS_DEBOUNCE_MS = 500;
 
@@ -277,10 +272,7 @@ export function broadcastPendingDocsChanged(): void {
     pendingDocsTimer = null;
     const msg = JSON.stringify({
       type: 'pending-docs-changed',
-      pendingDocs: {
-        filenames: getPendingDocFilenames(),
-        counts: getPendingDocCounts(),
-      },
+      pendingDocs: getPendingDocInfo(),
     });
     for (const ws of clients) {
       if (ws.readyState === WebSocket.OPEN) ws.send(msg);

@@ -12,7 +12,7 @@ import { setupWebSocket, broadcastAgentStatus, broadcastDocumentSwitched, broadc
 import { TOOL_REGISTRY } from './mcp.js';
 import { z } from 'zod';
 import { zodToJsonSchema } from 'zod-to-json-schema';
-import { save, getDocument, getTitle, getFilePath, getDocId, getMetadata, getStatus, updateDocument, setMetadata, applyTextEdits, isAgentLocked, getPendingDocFilenames, getPendingDocCounts, getDocTagsByFilename, addDocTag, removeDocTag } from './state.js';
+import { save, getDocument, getTitle, getFilePath, getDocId, getMetadata, getStatus, updateDocument, setMetadata, applyTextEdits, isAgentLocked, getPendingDocInfo, getDocTagsByFilename, addDocTag, removeDocTag } from './state.js';
 import { listDocuments, switchDocument, createDocument, deleteDocument, reloadDocument, updateDocumentTitle, openFile } from './documents.js';
 import { createWorkspaceRouter } from './workspace-routes.js';
 import { createLinkRouter } from './link-routes.js';
@@ -72,10 +72,7 @@ export async function startHttpServer(options: { port?: number; noOpen?: boolean
   });
 
   app.get('/api/pending-docs', (_req, res) => {
-    res.json({
-      filenames: getPendingDocFilenames(),
-      counts: getPendingDocCounts(),
-    });
+    res.json(getPendingDocInfo());
   });
 
   // Mount image upload + static serving
