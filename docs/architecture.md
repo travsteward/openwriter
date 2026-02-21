@@ -60,7 +60,7 @@
 │  ├── Workspace: list/create/get_structure/get_item_context/     │
 │  │   add_doc/update_context/create_container/tag/untag/move_doc │
 │  ├── Media: generate_image                                      │
-│  ├── Import: import_content                                      │
+│  ├── Import: import_gdoc                                        │
 │  └── Meta: open-writer (launch browser)                         │
 │                                                                 │
 │  Plugin System                                                  │
@@ -265,7 +265,7 @@ AI agent connects via MCP stdio. Agent reads the document, makes changes, user r
 
 | Tool | What It Does |
 |------|-------------|
-| `import_content` | Markdown text or Google Doc JSON → single doc or multi-chapter book with workspace |
+| `import_gdoc` | Import structured Google Doc JSON → single doc or multi-chapter book with workspace |
 
 ### Meta tools (1)
 
@@ -326,6 +326,7 @@ Key functions in `state.ts`:
 - `findNodeInDoc()` — recursive search by node ID, returns parent array + index
 - `generateNodeId()` — 8-char hex from `crypto.randomUUID()`
 - `transferPendingAttrs()` — preserves pending state through browser doc-updates
+- `getPendingDocInfo()` — reads from in-memory cache (populated on startup, updated incrementally by applyChanges/strip)
 
 ---
 
@@ -470,6 +471,7 @@ Benefits: no CORS issues, API key never exposed to browser, single origin, usage
 - Compact tagged-line wire format for token-efficient agent I/O
 - Server-side document mutations with pending state preservation
 - Ephemeral doc cleanup: docs with `ephemeral: true` frontmatter auto-trashed on startup (tweets flagged after posting)
-- Content import: markdown text or Google Doc JSON (single doc or multi-chapter book)
+- Google Doc import (single doc or multi-chapter book)
 - Author's Voice plugin (voice rewrite, profile management)
 - MCP `generate_image` tool: Gemini Imagen 4 with optional atomic article cover setting
+- MCP pipeline Phase 1 perf: in-memory pending doc cache (no disk scans per broadcast), batched ProseMirror transactions (N changes = 1 render), agent lock reduced to 1.5s, `structuredClone` for deep copies
