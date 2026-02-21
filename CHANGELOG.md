@@ -4,6 +4,37 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.3.0] - 2026-02-20
+
+### Added
+- X Article compose view — scoped editor matching X's article format with HTML copy for pasting
+- Templates dropdown in titlebar for creating tweets, replies, quote tweets, and articles
+- `generate_image` MCP tool — generate images via Gemini Imagen 4, optionally set as article cover atomically
+- Image generation plugin (`@openwriter/plugin-image-gen`) — right-click empty paragraphs to generate AI images inline
+- Plugin category system with `empty-node` context menu condition for category-specific actions
+- Tweet Post button wired to X API via plugin system
+- Canvas Paper mode with rounded/square corner options
+- Live character counter and contextual placeholder text for tweet compose
+- Ephemeral doc cleanup — posted tweets auto-trashed on next startup
+- Built-in update check with global install recommendation
+- Theme-aware scrollbar styling for dark mode
+
+### Changed
+- Tweet compose redesigned as document type (metadata-driven) instead of appearance style
+- Pixel-accurate X/Twitter CSS overhaul for tweet compose — reply threads, quote cards, action bar
+- `create_document` gains `empty` flag for instant template docs that skip the writing spinner
+- Article title input shows placeholder instead of default text ("Article", "Untitled", "New Document")
+- Ephemeral docs now move to OS trash instead of permanent delete
+- MCP server renamed from `open-writer` to `openwriter`
+- MCP stdio transport starts before Express/plugin setup for faster agent connection
+- 25 core MCP tools (was 24)
+
+### Fixed
+- Floating toolbar hanging after text deselection
+- Article footer clipped by flex stretch + overflow hidden
+- Empty `articleContext` no longer incorrectly triggers article view
+- Tweet compose wrapper no longer stretches full page height
+
 ## [0.2.2] - 2026-02-18
 
 ### Fixed
