@@ -17,7 +17,7 @@ import { nodeText } from './markdown-serialize.js';
 // Markdown -> TipTap
 // ============================================================================
 
-const md = new MarkdownIt({ linkify: false });
+const md = new MarkdownIt({ html: true, linkify: false });
 md.enable('strikethrough');
 md.use(markdownItIns);
 md.use(markdownItMark);
