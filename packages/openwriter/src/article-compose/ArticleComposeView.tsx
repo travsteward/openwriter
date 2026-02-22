@@ -48,11 +48,11 @@ function CoverImage({ src, coverImages }: { src?: string; coverImages?: string[]
     const newSrc = images[index];
     if (!newSrc) return;
     setImageSrc(newSrc);
-    // Persist active cover to metadata
+    // Persist active cover to metadata (include coverImages to prevent shallow-merge loss)
     fetch('/api/metadata', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ articleContext: { coverImage: newSrc } }),
+      body: JSON.stringify({ articleContext: { coverImage: newSrc, coverImages: images } }),
     }).catch(() => {});
   }, [images]);
 

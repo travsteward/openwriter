@@ -603,7 +603,11 @@ export const TOOL_REGISTRY: ToolDef[] = [
       if (set_cover) {
         const meta = getMetadata();
         const articleContext = (meta.articleContext as Record<string, any>) || {};
-        const existing: string[] = Array.isArray(articleContext.coverImages) ? articleContext.coverImages : [];
+        let existing: string[] = Array.isArray(articleContext.coverImages) ? articleContext.coverImages : [];
+        // Seed with current coverImage if array is empty (first carousel entry)
+        if (existing.length === 0 && articleContext.coverImage) {
+          existing = [articleContext.coverImage];
+        }
         existing.push(src);
         articleContext.coverImage = src;
         articleContext.coverImages = existing;
