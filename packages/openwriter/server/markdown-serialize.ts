@@ -91,7 +91,9 @@ function nodeToMarkdown(node: any, indent: string): string {
     }
     case 'paragraph': {
       const text = inlineToMarkdown(node.content);
-      return text ? `${indent}${text}\n\n` : '\n';
+      // Empty paragraphs use an HTML comment marker to survive markdown round-trips.
+      // MarkdownIt collapses bare blank lines, so <!-- --> preserves intentional spacing.
+      return text ? `${indent}${text}\n\n` : `${indent}<!-- -->\n\n`;
     }
     case 'bulletList':
       return listToMarkdown(node.content, '- ', indent);

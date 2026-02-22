@@ -170,6 +170,10 @@ function tokensToTiptap(tokens: Token[]): any[] {
     } else if (token.type === 'hr') {
       nodes.push({ type: 'horizontalRule', attrs: { id: generateNodeId() } });
       i += 1;
+    } else if (token.type === 'html_block' && token.content.trim() === '<!-- -->') {
+      // Empty paragraph marker — restores intentional spacing that survives markdown round-trips
+      nodes.push({ type: 'paragraph', attrs: { id: generateNodeId() }, content: [] });
+      i += 1;
     } else if (token.type === 'table_open') {
       const end = findClosingToken(tokens, i, 'table');
       const tableNode = parseTableTokens(tokens.slice(i + 1, end));
