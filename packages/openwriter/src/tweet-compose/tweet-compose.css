@@ -76,6 +76,13 @@
   margin-bottom: 0 !important;
 }
 
+/* Empty paragraphs act as blank-line spacers (like pressing Enter on an empty line in X).
+   ProseMirror renders empty <p> as <p><br class="ProseMirror-trailingBreak"></p>.
+   Without min-height they collapse to 0 when margin is stripped. */
+[data-view="tweet"] .ProseMirror p:not(.is-editor-empty):has(> br.ProseMirror-trailingBreak:only-child) {
+  min-height: 24px;
+}
+
 /* Base placeholder styling for all tweet modes */
 [data-view="tweet"] .ProseMirror p.is-editor-empty:first-child::before {
   content: "Add a comment" !important;
