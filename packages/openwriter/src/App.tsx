@@ -14,7 +14,7 @@ import { getSidebarMode } from './themes/appearance-store';
 
 import TweetComposeView from './tweet-compose/TweetComposeView';
 import ArticleComposeView from './article-compose/ArticleComposeView';
-import { articleExtensions, tweetExtensions } from './editor/extensions';
+import { articleExtensions } from './editor/extensions';
 import './decorations/styles.css';
 
 /** articleContext: {} is truthy but meaningless — require at least one real key */
@@ -409,7 +409,6 @@ export default function App() {
               <PadEditor
                 key={activeDocKey}
                 initialContent={initialContent}
-                extensions={tweetExtensions}
                 onUpdate={handleDocUpdate}
                 onReady={handleEditorReady}
                 onLinkClick={handleSwitchDocument}

@@ -17,7 +17,7 @@ import { nodeText } from './markdown-serialize.js';
 // Markdown -> TipTap
 // ============================================================================
 
-const md = new MarkdownIt({ html: true, linkify: false });
+const md = new MarkdownIt({ linkify: false });
 md.enable('strikethrough');
 md.use(markdownItIns);
 md.use(markdownItMark);
@@ -169,10 +169,6 @@ function tokensToTiptap(tokens: Token[]): any[] {
       i += 1;
     } else if (token.type === 'hr') {
       nodes.push({ type: 'horizontalRule', attrs: { id: generateNodeId() } });
-      i += 1;
-    } else if (token.type === 'html_block' && token.content.trim() === '<!-- -->') {
-      // Empty paragraph marker — restores intentional spacing that survives markdown round-trips
-      nodes.push({ type: 'paragraph', attrs: { id: generateNodeId() }, content: [] });
       i += 1;
     } else if (token.type === 'table_open') {
       const end = findClosingToken(tokens, i, 'table');
@@ -385,8 +381,6 @@ function inlineTokensToTiptap(tokens: Token[]): any[] {
         attrs: { id: generateNodeId(), src, alt },
       });
     } else if (token.type === 'hardbreak') {
-      nodes.push({ type: 'hardBreak' });
-    } else if (token.type === 'html_inline' && /^<br\s*\/?>$/i.test(token.content)) {
       nodes.push({ type: 'hardBreak' });
     } else if (token.type === 'softbreak') {
       nodes.push({ type: 'text', text: ' ' });
