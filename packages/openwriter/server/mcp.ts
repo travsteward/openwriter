@@ -5,7 +5,7 @@
  */
 
 import { join } from 'path';
-import { existsSync, mkdirSync, writeFileSync } from 'fs';
+import { existsSync, mkdirSync, writeFileSync, readFileSync } from 'fs';
 import { randomUUID } from 'crypto';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
@@ -27,6 +27,8 @@ import {
   markAllNodesAsPending,
   setAgentLock,
   updatePendingCacheForActiveDoc,
+  getDocId,
+  getFilePath,
   type NodeChange,
 } from './state.js';
 import { listDocuments, switchDocument, createDocument, deleteDocument, openFile, getActiveFilename } from './documents.js';
@@ -37,6 +39,8 @@ import type { WorkspaceNode } from './workspace-types.js';
 import { importGoogleDoc } from './gdoc-import.js';
 import { toCompactFormat, compactNodes, parseMarkdownContent } from './compact.js';
 import { getUpdateInfo } from './update-check.js';
+import { listVersions, forceSnapshot, restoreVersion } from './versions.js';
+import { markdownToTiptap } from './markdown.js';
 
 
 export type ToolResult = { content: { type: 'text'; text: string }[] };
@@ -622,6 +626,79 @@ export const TOOL_REGISTRY: ToolDef[] = [
           text: JSON.stringify({ success: true, src, ...(set_cover ? { coverSet: true } : {}) }),
         }],
       };
+    },
+  },
+  {
+    name: 'list_versions',
+    description: 'List version history for the active document. Returns timestamps, word counts, and sizes. Use to find a timestamp for restore_version.',
+    schema: {},
+    handler: async () => {
+      const docId = getDocId();
+      if (!docId) return { content: [{ type: 'text', text: 'Error: No active document.' }] };
+      const versions = listVersions(docId);
+      if (versions.length === 0) return { content: [{ type: 'text', text: 'No versions found for this document.' }] };
+      const lines = versions.map((v, i) =>
+        `  ${i + 1}. ${v.date}  ts:${v.timestamp}  ${v.wordCount.toLocaleString()} words  ${(v.size / 1024).toFixed(1)}KB`
+      );
+      return { content: [{ type: 'text', text: `versions (${versions.length}):\n${lines.join('\n')}` }] };
+    },
+  },
+  {
+    name: 'create_checkpoint',
+    description: 'Force a version snapshot of the active document right now. Use before risky operations as a safety net.',
+    schema: {},
+    handler: async () => {
+      const docId = getDocId();
+      const filePath = getFilePath();
+      if (!docId || !filePath) return { content: [{ type: 'text', text: 'Error: No active document.' }] };
+      forceSnapshot(docId, filePath);
+      return { content: [{ type: 'text', text: `Checkpoint created at ${new Date().toISOString()}` }] };
+    },
+  },
+  {
+    name: 'restore_version',
+    description: 'Restore the active document to a previous version by timestamp. Automatically creates a safety checkpoint of the current state first. Get timestamps from list_versions.',
+    schema: {
+      timestamp: z.number().describe('Version timestamp to restore (from list_versions)'),
+    },
+    handler: async ({ timestamp }: { timestamp: number }) => {
+      const docId = getDocId();
+      const filePath = getFilePath();
+      if (!docId || !filePath) return { content: [{ type: 'text', text: 'Error: No active document.' }] };
+
+      // Safety net: snapshot current state before restoring
+      try { forceSnapshot(docId, filePath); } catch { /* best effort */ }
+
+      const parsed = restoreVersion(docId, timestamp);
+      if (!parsed) return { content: [{ type: 'text', text: `Error: Version ${timestamp} not found.` }] };
+
+      updateDocument(parsed.document);
+      save();
+
+      const filename = filePath.split(/[/\\]/).pop() || '';
+      broadcastDocumentSwitched(parsed.document, parsed.title, filename);
+
+      return { content: [{ type: 'text', text: `Restored version from ${new Date(timestamp).toISOString()} — "${parsed.title}"` }] };
+    },
+  },
+  {
+    name: 'reload_from_disk',
+    description: 'Re-read the active document from its file on disk. Use when the file was modified externally and the editor needs to pick up changes. Does NOT rescan the full document list.',
+    schema: {},
+    handler: async () => {
+      const filePath = getFilePath();
+      if (!filePath) return { content: [{ type: 'text', text: 'Error: No active document.' }] };
+      if (!existsSync(filePath)) return { content: [{ type: 'text', text: `Error: File not found: ${filePath}` }] };
+
+      const markdown = readFileSync(filePath, 'utf-8');
+      const parsed = markdownToTiptap(markdown);
+      updateDocument(parsed.document);
+      save();
+
+      const filename = filePath.split(/[/\\]/).pop() || '';
+      broadcastDocumentSwitched(parsed.document, parsed.title, filename);
+
+      return { content: [{ type: 'text', text: `Reloaded "${parsed.title}" from disk` }] };
     },
   },
 ];
