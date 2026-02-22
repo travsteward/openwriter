@@ -393,6 +393,7 @@ export default function App() {
               title={title}
               onTitleChange={handleTitleChange}
               coverImage={metadata?.articleContext?.coverImage}
+              coverImages={metadata?.articleContext?.coverImages}
             >
               <PadEditor
                 key={activeDocKey}

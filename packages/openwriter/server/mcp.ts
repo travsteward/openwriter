@@ -599,11 +599,14 @@ export const TOOL_REGISTRY: ToolDef[] = [
 
       const src = `/_images/${filename}`;
 
-      // Optionally set as article cover
+      // Optionally set as article cover + append to carousel history
       if (set_cover) {
         const meta = getMetadata();
         const articleContext = (meta.articleContext as Record<string, any>) || {};
+        const existing: string[] = Array.isArray(articleContext.coverImages) ? articleContext.coverImages : [];
+        existing.push(src);
         articleContext.coverImage = src;
+        articleContext.coverImages = existing;
         setMetadata({ articleContext });
         save();
         broadcastMetadataChanged(getMetadata());

@@ -18,20 +18,51 @@ const DEFAULT_TITLES = new Set(['Untitled', 'New Document', 'Article']);
 
 type CoverState = 'empty' | 'prompt' | 'loading' | 'display';
 
-function CoverImage({ src }: { src?: string }) {
+function CoverImage({ src, coverImages }: { src?: string; coverImages?: string[] }) {
   const [state, setState] = useState<CoverState>(src ? 'display' : 'empty');
   const [imageSrc, setImageSrc] = useState(src || '');
+  const [images, setImages] = useState<string[]>(coverImages || (src ? [src] : []));
   const [prompt, setPrompt] = useState('');
   const [error, setError] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Sync from prop if parent changes it
+  // Sync from props when parent changes them
   useEffect(() => {
     if (src) {
       setImageSrc(src);
       setState('display');
     }
   }, [src]);
+
+  useEffect(() => {
+    if (coverImages && coverImages.length > 0) {
+      setImages(coverImages);
+    }
+  }, [coverImages]);
+
+  const currentIndex = imageSrc ? images.indexOf(imageSrc) : -1;
+  const totalImages = images.length;
+  const hasMultiple = totalImages > 1;
+
+  const navigateTo = useCallback((index: number) => {
+    const newSrc = images[index];
+    if (!newSrc) return;
+    setImageSrc(newSrc);
+    // Persist active cover to metadata
+    fetch('/api/metadata', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ articleContext: { coverImage: newSrc } }),
+    }).catch(() => {});
+  }, [images]);
+
+  const goPrev = useCallback(() => {
+    if (currentIndex > 0) navigateTo(currentIndex - 1);
+  }, [currentIndex, navigateTo]);
+
+  const goNext = useCallback(() => {
+    if (currentIndex < totalImages - 1) navigateTo(currentIndex + 1);
+  }, [currentIndex, totalImages, navigateTo]);
 
   const generate = useCallback(async () => {
     if (!prompt.trim()) return;
@@ -45,14 +76,16 @@ function CoverImage({ src }: { src?: string }) {
       });
       const data = await res.json();
       if (data.success && data.src) {
+        const newImages = [...images, data.src];
+        setImages(newImages);
         setImageSrc(data.src);
         setState('display');
         setPrompt('');
-        // Save to metadata
+        // Save both coverImage and coverImages to metadata
         fetch('/api/metadata', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ articleContext: { coverImage: data.src } }),
+          body: JSON.stringify({ articleContext: { coverImage: data.src, coverImages: newImages } }),
         }).catch(() => {});
       } else {
         setError(data.error || 'Generation failed');
@@ -62,7 +95,7 @@ function CoverImage({ src }: { src?: string }) {
       setError(err.message || 'Network error');
       setState('prompt');
     }
-  }, [prompt]);
+  }, [prompt, images]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') generate();
@@ -75,14 +108,27 @@ function CoverImage({ src }: { src?: string }) {
   };
 
   const remove = () => {
-    setImageSrc('');
-    setState('empty');
-    // Clear from metadata
-    fetch('/api/metadata', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ articleContext: { coverImage: null } }),
-    }).catch(() => {});
+    const newImages = images.filter((img) => img !== imageSrc);
+    setImages(newImages);
+    if (newImages.length > 0) {
+      // Show next image, or previous if we removed the last one
+      const nextIndex = Math.min(currentIndex, newImages.length - 1);
+      const nextSrc = newImages[nextIndex];
+      setImageSrc(nextSrc);
+      fetch('/api/metadata', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ articleContext: { coverImage: nextSrc, coverImages: newImages } }),
+      }).catch(() => {});
+    } else {
+      setImageSrc('');
+      setState('empty');
+      fetch('/api/metadata', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ articleContext: { coverImage: null, coverImages: null } }),
+      }).catch(() => {});
+    }
   };
 
   const regenerate = () => {
@@ -90,19 +136,45 @@ function CoverImage({ src }: { src?: string }) {
     setTimeout(() => inputRef.current?.focus(), 0);
   };
 
+  const download = () => {
+    const a = document.createElement('a');
+    a.href = imageSrc;
+    a.download = `cover-${currentIndex + 1}.png`;
+    a.click();
+  };
+
   if (state === 'display' && imageSrc) {
     return (
       <div className="article-cover article-cover--display">
         <img className="article-cover-img" src={imageSrc} alt="Cover" />
         <div className="article-cover-overlay">
-          <button className="article-cover-overlay-btn" onClick={regenerate}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10" /><polyline points="1 20 1 14 7 14" /><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15" /></svg>
-            Regenerate
-          </button>
-          <button className="article-cover-overlay-btn article-cover-overlay-btn--danger" onClick={remove}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-            Remove
-          </button>
+          {hasMultiple && (
+            <button className="article-cover-arrow article-cover-arrow--left" onClick={goPrev} disabled={currentIndex <= 0}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
+            </button>
+          )}
+          <div className="article-cover-overlay-center">
+            <button className="article-cover-overlay-btn" onClick={regenerate}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10" /><polyline points="1 20 1 14 7 14" /><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15" /></svg>
+              Regenerate
+            </button>
+            <button className="article-cover-overlay-btn" onClick={download}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
+              Save
+            </button>
+            <button className="article-cover-overlay-btn article-cover-overlay-btn--danger" onClick={remove}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+              Remove
+            </button>
+          </div>
+          {hasMultiple && (
+            <button className="article-cover-arrow article-cover-arrow--right" onClick={goNext} disabled={currentIndex >= totalImages - 1}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
+            </button>
+          )}
+          {hasMultiple && (
+            <div className="article-cover-counter">{currentIndex + 1} / {totalImages}</div>
+          )}
         </div>
       </div>
     );
@@ -247,14 +319,15 @@ interface ArticleComposeViewProps {
   title?: string;
   onTitleChange?: (title: string) => void;
   coverImage?: string;
+  coverImages?: string[];
 }
 
-export default function ArticleComposeView({ children, title, onTitleChange, coverImage }: ArticleComposeViewProps) {
+export default function ArticleComposeView({ children, title, onTitleChange, coverImage, coverImages }: ArticleComposeViewProps) {
   const { copyAsHtml, copyState } = useArticleCopy();
 
   return (
     <div className="article-compose-wrapper">
-      <CoverImage src={coverImage} />
+      <CoverImage src={coverImage} coverImages={coverImages} />
 
       <div className="article-compose-content">
         <input

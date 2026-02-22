@@ -347,6 +347,66 @@
   background: #f4212e;
 }
 
+/* Center cluster for buttons (sits between arrows) */
+.article-cover-overlay-center {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Carousel arrow buttons — left/right edges, vertically centered */
+.article-cover-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 36px;
+  height: 36px;
+  border-radius: 9999px;
+  border: none;
+  background: rgba(0, 0, 0, 0.55);
+  color: #ffffff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, opacity 0.15s;
+  z-index: 2;
+  padding: 0;
+}
+
+.article-cover-arrow:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 0.75);
+}
+
+.article-cover-arrow:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.article-cover-arrow--left {
+  left: 12px;
+}
+
+.article-cover-arrow--right {
+  right: 12px;
+}
+
+/* Counter pill — bottom center of image */
+.article-cover-counter {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--x-font, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif);
+  font-size: 12px;
+  font-weight: 600;
+  color: #ffffff;
+  background: rgba(0, 0, 0, 0.55);
+  padding: 3px 10px;
+  border-radius: 9999px;
+  letter-spacing: 0.5px;
+}
+
 /* =============================================================
    Title Input
    ============================================================= */
