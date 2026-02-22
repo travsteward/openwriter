@@ -168,7 +168,8 @@ export default function TweetComposeView({ tweetContext, editor, children }: Twe
   const hasContext = tweetContext?.url;
   const isReply = tweetContext?.mode === 'reply';
 
-  const canPost = xConnected && charCount > 0 && charCount <= 280 && postState === 'idle';
+  // X supports longform posts — 280 is a soft limit (visual indicator only), not a gate
+  const canPost = xConnected && charCount > 0 && postState === 'idle';
 
   const handlePost = async () => {
     if (!xConnected) {
