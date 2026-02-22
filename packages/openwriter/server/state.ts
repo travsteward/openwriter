@@ -11,7 +11,6 @@ import { tiptapToMarkdown, markdownToTiptap } from './markdown.js';
 import { applyTextEditsToNode, type TextEdit } from './text-edit.js';
 import { DATA_DIR, TEMP_PREFIX, ensureDataDir, filePathForTitle, tempFilePath, generateNodeId, LEAF_BLOCK_TYPES, resolveDocPath, isExternalDoc } from './helpers.js';
 import { snapshotIfNeeded, ensureDocId } from './versions.js';
-import trash from 'trash';
 
 export interface NodeChange {
   operation: 'rewrite' | 'insert' | 'delete';
@@ -711,9 +710,6 @@ export function load(): void {
   // Clean up empty temp files from previous sessions
   cleanupEmptyTempFiles();
 
-  // Trash docs marked as ephemeral from previous sessions
-  cleanupEphemeralDocs();
-
   // Find most recently modified .md file
   const files = readdirSync(DATA_DIR)
     .filter((f) => f.endsWith('.md'))
@@ -858,23 +854,6 @@ function cleanupEmptyTempFiles(): void {
   } catch { /* ignore errors during cleanup */ }
 }
 
-/** Delete docs marked as ephemeral from previous sessions */
-function cleanupEphemeralDocs(): void {
-  try {
-    const wsRefs = getWorkspaceReferencedFiles();
-    const files = readdirSync(DATA_DIR).filter(f => f.endsWith('.md'));
-    for (const f of files) {
-      if (wsRefs.has(f)) continue;  // protect workspace-referenced docs
-      try {
-        const raw = readFileSync(join(DATA_DIR, f), 'utf-8');
-        const { data } = matter(raw);
-        if (data.ephemeral) {
-          trash(join(DATA_DIR, f)).catch(() => {});  // move to OS trash, fire-and-forget
-        }
-      } catch { /* skip unreadable */ }
-    }
-  } catch { /* ignore */ }
-}
 
 // ============================================================================
 // DOCUMENT-LEVEL TAG OPERATIONS
