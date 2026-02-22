@@ -386,6 +386,8 @@ function inlineTokensToTiptap(tokens: Token[]): any[] {
       });
     } else if (token.type === 'hardbreak') {
       nodes.push({ type: 'hardBreak' });
+    } else if (token.type === 'html_inline' && /^<br\s*\/?>$/i.test(token.content)) {
+      nodes.push({ type: 'hardBreak' });
     } else if (token.type === 'softbreak') {
       nodes.push({ type: 'text', text: ' ' });
     }

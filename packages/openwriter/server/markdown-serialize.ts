@@ -209,7 +209,7 @@ export function inlineToMarkdown(nodes: any[]): string {
     if (node.type === 'hardBreak') {
       result += closeAllMarks(openMarks);
       openMarks = [];
-      result += '\n';
+      result += '<br>';
       continue;
     }
     if (node.type !== 'text') continue;
