@@ -562,7 +562,7 @@ export const TOOL_REGISTRY: ToolDef[] = [
     description: 'Generate an image using Gemini Imagen 4. Saves to ~/.openwriter/_images/. Optionally sets it as the active article\'s cover image atomically. Requires GEMINI_API_KEY env var.',
     schema: {
       prompt: z.string().max(1000).describe('Image generation prompt (max 1000 chars)'),
-      aspect_ratio: z.string().optional().describe('Aspect ratio (default "16:9"). Use "5:2" for article covers.'),
+      aspect_ratio: z.string().optional().describe('Aspect ratio (default "16:9"). Supported: 1:1, 9:16, 16:9, 4:3, 3:4.'),
       set_cover: z.boolean().optional().describe('If true, atomically set the generated image as the article cover (articleContext.coverImage in metadata).'),
     },
     handler: async ({ prompt, aspect_ratio, set_cover }: { prompt: string; aspect_ratio?: string; set_cover?: boolean }) => {
