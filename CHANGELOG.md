@@ -4,6 +4,26 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.3.1] - 2026-02-22
+
+### Added
+- 4 version MCP tools: `list_versions`, `create_checkpoint`, `restore_version`, `reload_from_disk` — agent self-recovery without browser UI
+- Article cover image carousel with save button
+- Longform tweets — 280 char limit is now soft, not a gate
+
+### Fixed
+- Markdown round-trip preserving hardBreaks and empty paragraphs
+- Tweet compose Enter now produces `<br>` not `<p>`
+- Empty paragraphs visible in tweet compose mode
+- Sidebar title updates live on article title change
+- Reject-all cache desync, stuck spinner, workspace doc delete
+- `populate_document` desync with `import_gdoc` clarification
+- Ephemeral auto-delete removed for tweet/article templates
+
+### Changed
+- MCP pipeline speed optimizations (Phase 1)
+- 29 core MCP tools (was 25)
+
 ## [0.3.0] - 2026-02-20
 
 ### Added
