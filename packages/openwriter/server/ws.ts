@@ -38,6 +38,15 @@ function debouncedSave(): void {
   }, 2000);
 }
 
+// Debounced sidebar refresh: notify clients after title changes settle
+let docsChangedTimer: ReturnType<typeof setTimeout> | null = null;
+function debouncedBroadcastDocumentsChanged(): void {
+  if (docsChangedTimer) clearTimeout(docsChangedTimer);
+  docsChangedTimer = setTimeout(() => {
+    broadcastDocumentsChanged();
+  }, 2100);
+}
+
 export function setupWebSocket(server: Server): void {
   const wss = new WebSocketServer({ server });
 
@@ -119,6 +128,7 @@ export function setupWebSocket(server: Server): void {
         if (msg.type === 'title-update' && msg.title) {
           setMetadata({ title: msg.title });
           debouncedSave();
+          debouncedBroadcastDocumentsChanged();
         }
 
         if (msg.type === 'save') {
