@@ -17,7 +17,7 @@ import { nodeText } from './markdown-serialize.js';
 // Markdown -> TipTap
 // ============================================================================
 
-const md = new MarkdownIt({ linkify: false });
+const md = new MarkdownIt({ linkify: false, html: true });
 md.enable('strikethrough');
 md.use(markdownItIns);
 md.use(markdownItMark);
@@ -169,6 +169,12 @@ function tokensToTiptap(tokens: Token[]): any[] {
       i += 1;
     } else if (token.type === 'hr') {
       nodes.push({ type: 'horizontalRule', attrs: { id: generateNodeId() } });
+      i += 1;
+    } else if (token.type === 'html_block') {
+      // <!-- --> is our sentinel for empty paragraphs
+      if (token.content.trim() === '<!-- -->') {
+        nodes.push({ type: 'paragraph', attrs: { id: generateNodeId() }, content: [] });
+      }
       i += 1;
     } else if (token.type === 'table_open') {
       const end = findClosingToken(tokens, i, 'table');
@@ -380,6 +386,11 @@ function inlineTokensToTiptap(tokens: Token[]): any[] {
         type: 'image',
         attrs: { id: generateNodeId(), src, alt },
       });
+    } else if (token.type === 'html_inline') {
+      // <br> is our serialized form of hardBreak
+      if (/^<br\s*\/?>$/i.test(token.content.trim())) {
+        nodes.push({ type: 'hardBreak' });
+      }
     } else if (token.type === 'hardbreak') {
       nodes.push({ type: 'hardBreak' });
     } else if (token.type === 'softbreak') {

@@ -1,4 +1,4 @@
-import { mergeAttributes } from '@tiptap/core';
+import { Extension, mergeAttributes } from '@tiptap/core';
 import Highlight from '@tiptap/extension-highlight';
 import Image from '@tiptap/extension-image';
 import Link from '@tiptap/extension-link';
@@ -101,6 +101,49 @@ export const articleExtensions = [
   }),
   UniqueID.configure({
     types: ['paragraph', 'heading', 'bulletList', 'orderedList', 'listItem', 'blockquote', 'image'],
+    attributeName: 'id',
+    generateID: () => crypto.randomUUID().replace(/-/g, '').slice(0, 8),
+  }),
+];
+
+/**
+ * Tweet compose: Enter produces hardBreak (line break within a single paragraph),
+ * matching X/Twitter behavior where Enter = newline, not new paragraph.
+ */
+const TweetEnterHardBreak = Extension.create({
+  name: 'tweetEnterHardBreak',
+  addKeyboardShortcuts() {
+    return {
+      Enter: () => this.editor.commands.setHardBreak(),
+    };
+  },
+});
+
+export const tweetExtensions = [
+  StarterKit.configure({
+    codeBlock: false,
+    horizontalRule: false,
+    heading: false,
+    blockquote: false,
+    bulletList: false,
+    orderedList: false,
+    listItem: false,
+  }),
+  PadLink.configure({
+    openOnClick: false,
+    HTMLAttributes: {
+      rel: 'noopener noreferrer nofollow',
+    },
+  }),
+  Image,
+  BlurredLoadingNode,
+  PendingAttributes,
+  TweetEnterHardBreak,
+  Placeholder.configure({
+    placeholder: 'What is happening?!',
+  }),
+  UniqueID.configure({
+    types: ['paragraph', 'image'],
     attributeName: 'id',
     generateID: () => crypto.randomUUID().replace(/-/g, '').slice(0, 8),
   }),

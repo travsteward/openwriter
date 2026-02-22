@@ -91,7 +91,7 @@ function nodeToMarkdown(node: any, indent: string): string {
     }
     case 'paragraph': {
       const text = inlineToMarkdown(node.content);
-      return text ? `${indent}${text}\n\n` : '\n';
+      return text ? `${indent}${text}\n\n` : `${indent}<!-- -->\n\n`;
     }
     case 'bulletList':
       return listToMarkdown(node.content, '- ', indent);
@@ -207,7 +207,7 @@ export function inlineToMarkdown(nodes: any[]): string {
     if (node.type === 'hardBreak') {
       result += closeAllMarks(openMarks);
       openMarks = [];
-      result += '\n';
+      result += '<br>';
       continue;
     }
     if (node.type !== 'text') continue;
@@ -233,7 +233,7 @@ export function inlineToMarkdown(nodes: any[]): string {
       result += markSyntax(targetMarks[i], true);
     }
 
-    result += node.text || '';
+    result += escapeInlineHtml(node.text || '');
     openMarks = [...targetMarks];
   }
 
@@ -272,6 +272,11 @@ function closeAllMarks(marks: any[]): string {
     result += markSyntax(marks[i], false);
   }
   return result;
+}
+
+/** Escape `<` in inline text so MarkdownIt (html:true) won't parse user text as HTML. */
+function escapeInlineHtml(text: string): string {
+  return text.replace(/</g, '&lt;');
 }
 
 function extractPlainText(nodes: any[]): string {
