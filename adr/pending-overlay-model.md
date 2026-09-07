@@ -1165,3 +1165,9 @@ PadEditor now resets document-scoped EditorState on identity changes while keepi
 the view mounted. Same-document updates preserve history. See
 [document-editor-session.md](document-editor-session.md) for the cross-document
 Undo reproduction and correction.
+
+### 2026-09-07 — archive module extraction
+
+Moved archive/unarchive into document-archive.ts with the existing exports and
+sidecar behavior preserved. Server compilation and the 20 lifecycle assertions
+passed before the placement changes began.
