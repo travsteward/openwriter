@@ -23,6 +23,7 @@ import ArticleComposeView from './article-compose/ArticleComposeView';
 import BlogComposeView from './blog-compose/BlogComposeView';
 import { TextNewsletterView } from './newsletter-compose/NewsletterComposeView';
 import ManuscriptComposeView from './manuscript-compose/ManuscriptComposeView';
+import EditingDraftNavigation from './manuscript-compose/EditingDraftNavigation';
 import { articleExtensions } from './editor/extensions';
 import type { ParsedLinkHref } from './editor/link-href';
 import './decorations/styles.css';
@@ -134,7 +135,7 @@ export default function App() {
     return SIDEBAR_DEFAULT_WIDTH;
   });
   const { open: railOpen, width: railWidth, visible: railVisible, setOverlay: setRailOverlay, closeRail } = useRightRail();
-  const isBoardMode = getSidebarMode() === 'board';
+  const isBoardMode = getSidebarMode() === 'board' && !metadata?.editingDraft?.sourceDocId;
 
   // Track .app width.
   useEffect(() => {
@@ -1114,6 +1115,13 @@ export default function App() {
           writingTarget={writingTarget}
           pendingWriteFilenames={pendingWriteFilenames}
           activeFilename={activeFilename}
+          documentNavigation={contentType === 'document' && metadata?.editingDraft?.sourceDocId ? (
+            <EditingDraftNavigation
+              key={activeFilename}
+              editor={editorInstance}
+              onOpenOriginal={() => handleLinkClick({ docId: metadata.editingDraft.sourceDocId, filename: null, nodeId: null, quote: null })}
+            />
+          ) : undefined}
           onClose={() => (overlay ? setSidebarDrawer(false) : setSidebarOpen(false))}
         />
       )}
@@ -1213,6 +1221,7 @@ export default function App() {
               autoplug={metadata?.autoplug as boolean | undefined}
             >
               <PadEditor
+                documentId={activeFilename}
                 initialContent={initialContent}
                 extensions={articleExtensions}
                 onUpdate={handleDocUpdate}
@@ -1230,6 +1239,7 @@ export default function App() {
               docId={(metadata?.docId as string) || undefined}
             >
               <PadEditor
+                documentId={activeFilename}
                 initialContent={initialContent}
                 onUpdate={handleDocUpdate}
                 onReady={handleEditorReady}
@@ -1245,6 +1255,7 @@ export default function App() {
               onBeforeSend={syncContentToServer}
             >
               <PadEditor
+                documentId={activeFilename}
                 initialContent={initialContent}
                 onUpdate={handleDocUpdate}
                 onReady={handleEditorReady}
@@ -1258,6 +1269,7 @@ export default function App() {
               title={title}
             >
               <PadEditor
+                documentId={activeFilename}
                 initialContent={initialContent}
                 onUpdate={handleDocUpdate}
                 onReady={handleEditorReady}
@@ -1279,6 +1291,7 @@ export default function App() {
             />
           ) : (
             <PadEditor
+              documentId={activeFilename}
               initialContent={initialContent}
               onUpdate={handleDocUpdate}
               onReady={handleEditorReady}

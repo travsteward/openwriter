@@ -123,3 +123,7 @@ Full design + the multi-agent design pass that produced it: `chip-notes/author-a
   Versions panel shows the commit list (time + author badge + changeset), expands to
   trigger + per-actor breakdown + Restore, with a Save-version button; manual no-op
   guard + commit-detail confirmed. 55 unit assertions green.
+
+### 2026-09-07 — Manuscript editing drafts
+
+Manuscript copies capture their initial text as unknown origin and create an Original manuscript copy commit through existing attribution/history APIs, preserving a visible restore point without claiming fresh authorship.

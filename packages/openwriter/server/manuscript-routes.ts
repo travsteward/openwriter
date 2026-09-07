@@ -16,9 +16,22 @@ import {
   renderDocx,
 } from './manuscript/index.js';
 import { listManuscripts, loadManifest, safeName } from './manuscript/load.js';
+import { createEditingDraft } from './manuscript/editing-draft.js';
 
 export function createManuscriptRouter(): Router {
   const router = Router();
+
+  router.post('/api/manuscript/editing-draft', (req, res) => {
+    try {
+      const { docId, title } = req.body || {};
+      if (typeof docId !== 'string' || (title !== undefined && typeof title !== 'string')) {
+        return res.status(400).json({ error: 'Choose a manuscript and a valid draft title.' });
+      }
+      res.status(201).json(createEditingDraft(docId, title));
+    } catch (err: any) {
+      res.status(400).json({ error: err.message });
+    }
+  });
 
   // Always-on launcher list for the right rail — every manuscript in the profile.
   router.get('/api/manuscripts', (_req, res) => {

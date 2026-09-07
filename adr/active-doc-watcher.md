@@ -108,3 +108,7 @@ else in the WS handler needs to change.
     external write fires reload (with version bump), self-write
     doesn't, pending overlay survives reload, watcher swaps on doc
     switch, burst writes coalesce into one event.
+
+### 2026-09-07 — Manuscript editing drafts
+
+Creating a manuscript editing draft leaves the active document untouched. The UI explicitly switches afterward through the existing document-switch path and watcher lifecycle.

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, type ReactNode } from 'react';
 import type { PendingDocsPayload } from '../ws/client';
 import { useSidebarData } from './sidebar-data';
 import { useSidebarActions } from './sidebar-actions';
@@ -15,6 +15,7 @@ import ProfileSwitcher from './ProfileSwitcher';
 import './Sidebar.css';
 
 interface SidebarProps {
+  documentNavigation?: ReactNode;
   open: boolean;
   onSwitchDocument: (filename: string) => void;
   onCreateDocument: () => void;
@@ -50,7 +51,9 @@ export const SIDEBAR_MIN_WIDTH = 200;
 export const SIDEBAR_MAX_WIDTH = 600;
 export const SIDEBAR_DEFAULT_WIDTH = 260;
 
-export default function Sidebar({ open, onSwitchDocument, onCreateDocument, refreshKey, docTagsRefreshKey, workspacesRefreshKey, pendingDocs, writingTitle, writingTarget, pendingWriteFilenames, activeFilename, onClose, width, onWidthChange, floating }: SidebarProps) {
+export default function Sidebar({ open, onSwitchDocument, onCreateDocument, refreshKey, docTagsRefreshKey, workspacesRefreshKey, pendingDocs, writingTitle, writingTarget, pendingWriteFilenames, activeFilename, onClose, width, onWidthChange, floating, documentNavigation }: SidebarProps) {
+  const [showFiles, setShowFiles] = useState(false);
+  useEffect(() => { setShowFiles(false); }, [activeFilename]);
   const { docs, setDocs, workspaces, setWorkspaces, assignedFiles, fetchDocs, fetchWorkspaces, scrollRef, markPendingDelete } = useSidebarData(refreshKey, workspacesRefreshKey);
   const actions = useSidebarActions(fetchDocs, fetchWorkspaces, setDocs, setWorkspaces, docs, markPendingDelete);
   const mode = getSidebarMode();
@@ -262,7 +265,7 @@ export default function Sidebar({ open, onSwitchDocument, onCreateDocument, refr
   ) : null;
 
   // Board mode uses horizontal layout — rendered differently in App
-  if (mode === 'board') {
+  if (mode === 'board' && !documentNavigation) {
     return (
       <div className={`sidebar sidebar-board-mode ${open ? 'open' : ''}`} style={sidebarStyle}>
         {renderMode()}
@@ -316,11 +319,17 @@ export default function Sidebar({ open, onSwitchDocument, onCreateDocument, refr
           )}
         </div>
       </div>
+      {documentNavigation && (
+        <div className="sidebar-document-tabs" aria-label="Sidebar navigation">
+          <button type="button" aria-pressed={!showFiles && !tasksView && !scheduleView} onClick={() => { setShowFiles(false); setTasksView(false); setScheduleView(false); }}>Chapters</button>
+          <button type="button" aria-pressed={showFiles && !tasksView && !scheduleView} onClick={() => { setShowFiles(true); setTasksView(false); setScheduleView(false); }}>Files</button>
+        </div>
+      )}
       {tasksView ? (
         <SidebarTasks onBack={() => setTasksView(false)} />
       ) : scheduleView ? (
         <SidebarSchedule onBack={() => setScheduleView(false)} />
-      ) : (
+      ) : documentNavigation && !showFiles ? documentNavigation : (
         <>
           {searchBar}
           {renderMode()}

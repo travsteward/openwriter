@@ -124,3 +124,7 @@ sibling paths.
   was (A) make `content_type` govern the surface so a blog body never mounts a
   narrower schema, and (B) consolidate the invariant onto the browser-write
   boundary so no sibling path can bypass it.
+
+### 2026-09-07 — Manuscript editing drafts
+
+Editing drafts explicitly use content_type document and the full PadEditor schema; their provenance changes navigation only.

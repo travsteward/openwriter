@@ -54,12 +54,9 @@ export function outline(doc: PadDocument, opts: OutlineOptions = {}): string {
     lines = renderSection(content, opts.underHeading);
   } else {
     const headings = collectHeadings(content, depth);
-    // In OpenWriter convention the first h1 IS the doc title (already
-    // surfaced by every other read tool — read_pad header, search_docs,
-    // browse_docs). Drop it from the outline so we don't waste a line
-    // restating what the caller already knows. Subsequent h1s (rare —
-    // would be a multi-chapter doc) are kept; they're real structure.
-    const filtered = headings.length > 0 && headings[0].level === 1
+    // A sole h1 follows the document-title convention. Multiple h1s are
+    // chapter structure: keep every one, including the first chapter.
+    const filtered = headings.filter(h => h.level === 1).length === 1 && headings[0].level === 1
       ? headings.slice(1)
       : headings;
     if (filtered.length > 0) {

@@ -1156,3 +1156,12 @@ through their own pathway.
 ### 2026-09-07 — sidebar intent accompanies document switches
 
 The document-switched envelope now carries navigation intent separately from its document and pending metadata. Browser deletion fallbacks preserve sidebar location; ordinary opens retain reveal behavior. The existing document, version, and pending-metadata fields remain intact. See [sidebar navigation intent](sidebar-navigation-intent.md).
+
+### 2026-09-07 — Manuscript editing drafts
+
+An editing draft starts with already-accepted compiled prose, new identity, and autoAccept false. Later edits use the existing pending overlay and restore paths; source proposals never enter the copy.
+
+PadEditor now resets document-scoped EditorState on identity changes while keeping
+the view mounted. Same-document updates preserve history. See
+[document-editor-session.md](document-editor-session.md) for the cross-document
+Undo reproduction and correction.

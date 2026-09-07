@@ -49,3 +49,7 @@ ResizeObserver on `.app`; `.app--overlay` switches panel CSS to
   user-resized panels are respected; chose one shared flip for both panels
   over staggered breakpoints (one jump, one state). RightRailProvider hoisted
   to `main.tsx` so App can read rail intent/width and push the mode down.
+
+### 2026-09-07 — Manuscript editing drafts
+
+Editing drafts reuse the controlled sidebar for a compact chapter outline. They use the ordinary document layout even when the library preference is Board; library and drawer preferences remain unchanged.

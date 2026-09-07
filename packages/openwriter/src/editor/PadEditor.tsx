@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { EditorContent, useEditor, type Editor } from '@tiptap/react';
+import { EditorState } from '@tiptap/pm/state';
 
 import { padExtensions } from './extensions';
 import type { Extensions } from '@tiptap/react';
@@ -14,6 +15,7 @@ import { parseLinkHref, type ParsedLinkHref } from './link-href';
 import './footnotes.css';
 
 interface PadEditorProps {
+  documentId?: string;
   initialContent?: any;
   extensions?: Extensions;
   onUpdate?: (json: any) => void;
@@ -21,7 +23,7 @@ interface PadEditorProps {
   onLinkClick?: (target: ParsedLinkHref) => void;
 }
 
-export default function PadEditor({ initialContent, extensions, onUpdate, onReady, onLinkClick }: PadEditorProps) {
+export default function PadEditor({ documentId, initialContent, extensions, onUpdate, onReady, onLinkClick }: PadEditorProps) {
   const onLinkClickRef = useRef(onLinkClick);
   onLinkClickRef.current = onLinkClick;
 
@@ -59,12 +61,27 @@ export default function PadEditor({ initialContent, extensions, onUpdate, onRead
   // Strict equality on the reference is enough: the WS layer hands us the
   // same object across re-renders unless the doc actually changed.
   const lastContentRef = useRef<any>(initialContent);
+  const lastDocumentRef = useRef(documentId);
   useEffect(() => {
     if (!editor || !initialContent) return;
-    if (lastContentRef.current === initialContent) return;
+    const documentChanged = lastDocumentRef.current !== documentId;
+    if (lastContentRef.current === initialContent && !documentChanged) return;
+    lastDocumentRef.current = documentId;
     lastContentRef.current = initialContent;
     const tStart = performance.now();
     editor.commands.setContent(initialContent, { emitUpdate: false });
+    if (documentChanged) {
+      // The view is reusable; document history and plugin state are not.
+      // A content replacement alone leaves the prior document in Undo.
+      // adr: adr/document-editor-session.md
+      editor.view.updateState(EditorState.create({
+        schema: editor.state.schema,
+        doc: editor.state.doc,
+        plugins: editor.state.plugins,
+      }));
+      // Refresh selection/toolbar subscribers without a document write.
+      editor.view.dispatch(editor.state.tr.setMeta('addToHistory', false));
+    }
     const tEnd = performance.now();
     const ls = (window as any).__lastSwitch;
     if (ls && ls.tClick) {
@@ -72,7 +89,7 @@ export default function PadEditor({ initialContent, extensions, onUpdate, onRead
     } else {
       console.log(`[Editor] setContent t=${tEnd.toFixed(0)} duration=${(tEnd - tStart).toFixed(1)}ms (no matching switch)`);
     }
-  }, [editor, initialContent]);
+  }, [editor, initialContent, documentId]);
 
   // First-mount log (for correlation with [Switch] CLICK on initial page load).
   useEffect(() => {

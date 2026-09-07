@@ -101,3 +101,14 @@ containers and calls them chapters), the engine doesn't know what a "book" is.
   chapter-level (book-h1) by choice; sub-sections render in the book + EPUB nav.
 
 - **2026-09-07** — Extracted manuscript MCP tools into the manuscript module, preserving their behavior before adding the editing-draft action.
+
+- **2026-09-07** — Added **Create editing draft**: compile accepted manuscript
+  content into a new ordinary document with fresh identity, independent body,
+  source reference, and an original-copy commit in Versions. This is an explicit
+  editorial edition; assembly and source beats retain their existing identities
+  and never receive copy edits. Pending source proposals are excluded, unresolved
+  pointers stop creation, and later source edits cannot change the copy.
+  HTTP and MCP share one creation function. MCP returns identity and chapter
+  headings without returning the manuscript body. The copy opens with a compact
+  chapter outline in the existing sidebar; Files remains available on demand.
+  Existing bounded reads, pending review, and version restores serve the edition.

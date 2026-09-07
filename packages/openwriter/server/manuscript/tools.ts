@@ -6,8 +6,20 @@ import { ROOT_DIR } from '../helpers.js';
 import { compileManuscript, renderBookHtml, renderEpub, renderDocx } from './index.js';
 import { loadManifest, safeName } from './load.js';
 import type { ToolDef } from '../mcp.js';
+import { createEditingDraft } from './editing-draft.js';
 
 export const manuscriptTools: ToolDef[] = [
+  {
+    name: 'create_editing_draft',
+    description: 'Copy a compiled manuscript into an independent, ordinary editable document. Preserves the original manuscript and source docs, copies accepted text only, and saves a restorable original version. Returns the new document identity and chapter outline, never the full book. Does not change the active document. Use outline_doc / peek_doc for section reads and normal editing tools for revisions.',
+    schema: {
+      docId: z.string().describe('Source manuscript docId.'),
+      title: z.string().optional().describe('Optional name for the independent editing draft.'),
+    },
+    handler: async ({ docId, title }: { docId: string; title?: string }) => ({
+      content: [{ type: 'text', text: JSON.stringify(createEditingDraft(docId, title)) }],
+    }),
+  },
   {
     name: 'compile_manuscript',
     description: 'Compile a manuscript doc (content_type "manuscript") into the assembled master book and report its structure + any problems — WITHOUT writing a file. Resolves every `doc:` pointer in the manifest, concatenates the canonical (accepted) bodies in manifest order under their chapter headings, namespaces footnotes, then returns: title, per-chapter word counts, chapter count, total word count, and warnings. Warnings flag unresolved pointers — a beat that points at a missing/renamed/archived doc — so this is the build-time feedback loop: run it to confirm the binding resolves and see how each chapter is sizing up. Pass includeMarkdown:true to also return the full assembled markdown (large for a real book). Target the manifest by docId (8-char hex).',

@@ -6,7 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ## [Unreleased]
 
+### Added
+- Create an independent editing draft from a manuscript, with compact chapter navigation and an original-copy version to restore. The source manuscript and its documents remain unchanged.
+
 ### Fixed
+- Undo history stays within the document being edited when switching between documents.
 - Deleting the open document keeps the sidebar at your current folder while the editor opens the remaining document, avoiding jumps through nested folders.
 
 ## [0.40.3] - 2026-07-09
