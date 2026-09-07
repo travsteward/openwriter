@@ -986,7 +986,9 @@ export async function startHttpServer(options: { port?: number; noOpen?: boolean
       removeDocFromAllWorkspaces(req.params.filename);
       const result = await deleteDocument(req.params.filename);
       if (result.switched && result.newDoc) {
-        broadcastDocumentSwitched(result.newDoc.document, result.newDoc.title, result.newDoc.filename);
+        // Deletion changes editor focus, not the user's sidebar location.
+        // adr: adr/sidebar-navigation-intent.md
+        broadcastDocumentSwitched(result.newDoc.document, result.newDoc.title, result.newDoc.filename, undefined, 'fallback');
       }
       broadcastDocumentsChanged();
       broadcastWorkspacesChanged();

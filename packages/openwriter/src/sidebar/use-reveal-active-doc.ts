@@ -46,10 +46,14 @@ export function useRevealActiveDoc(
   // actually found, so a request made before the tree loaded still lands.
   const directedRef = useRef<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Editor focus and sidebar navigation are separate: a deletion fallback
+  // keeps the user's tree location, including subsequent tree refreshes.
+  // adr: adr/sidebar-navigation-intent.md
+  const preservedFilenameRef = useRef<string | null>(null);
 
   const reveal = useCallback((filename: string | undefined) => {
     const target = filename || docsRef.current.find((d) => d.isActive)?.filename;
-    if (!target) return;
+    if (!target || target === preservedFilenameRef.current) return;
     // Expand ancestors first so the row becomes renderable.
     expandRef.current?.(target);
     // One pending attempt at a time — the latest call wins, so calm + directed +
@@ -94,12 +98,27 @@ export function useRevealActiveDoc(
     reveal(activeFilename);
   }, [activeFilename, treeSignal, reveal]);
 
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const { filename, navigation } = (e as CustomEvent).detail;
+      preservedFilenameRef.current = navigation === 'fallback' ? filename : null;
+      // Cancel an unfinished reveal of the deleted doc as well as its pulse.
+      if (navigation === 'fallback') {
+        directedRef.current = null;
+        if (timerRef.current) clearTimeout(timerRef.current);
+      }
+    };
+    window.addEventListener('ow-document-navigation', handler);
+    return () => window.removeEventListener('ow-document-navigation', handler);
+  }, []);
+
   // Directed open: mark the pending pulse, then attempt. If the tree isn't
   // loaded yet, the effect above retries when treeSignal changes.
   useEffect(() => {
     const handler = (e: Event) => {
       const fn = (e as CustomEvent).detail?.filename || docsRef.current.find((d) => d.isActive)?.filename;
       if (!fn) return;
+      preservedFilenameRef.current = null;
       directedRef.current = fn;
       reveal(fn);
     };

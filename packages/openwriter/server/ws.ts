@@ -597,9 +597,10 @@ export function setupWebSocket(server: Server): void {
   });
 }
 
-export function broadcastDocumentSwitched(document: any, title: string, filename: string, metadata?: Record<string, any>): void {
+export function broadcastDocumentSwitched(document: any, title: string, filename: string, metadata?: Record<string, any>, navigation: 'open' | 'fallback' = 'open'): void {
   const resolvedMeta = metadata ?? getMetadata();
-  const msg = JSON.stringify(buildDocumentSwitchedPayload(document, title, filename, resolvedMeta));
+  // adr: adr/sidebar-navigation-intent.md
+  const msg = JSON.stringify({ ...buildDocumentSwitchedPayload(document, title, filename, resolvedMeta), navigation });
   for (const ws of clients) {
     if (ws.readyState === WebSocket.OPEN) {
       ws.send(msg);

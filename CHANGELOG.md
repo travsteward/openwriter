@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ## [Unreleased]
 
+### Fixed
+- Deleting the open document keeps the sidebar at your current folder while the editor opens the remaining document, avoiding jumps through nested folders.
+
 ## [0.40.3] - 2026-07-09
 
 ### Fixed

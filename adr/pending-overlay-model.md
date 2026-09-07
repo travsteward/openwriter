@@ -1152,3 +1152,7 @@ through their own pathway.
 - **Invariant.** Any new persistence layer for pending state must also be
   read by the startup scan — sidecar writes alone don't make pending survive
   a restart from the user's point of view; the index has to rehydrate too.
+
+### 2026-09-07 — sidebar intent accompanies document switches
+
+The document-switched envelope now carries navigation intent separately from its document and pending metadata. Browser deletion fallbacks preserve sidebar location; ordinary opens retain reveal behavior. The existing document, version, and pending-metadata fields remain intact. See [sidebar navigation intent](sidebar-navigation-intent.md).

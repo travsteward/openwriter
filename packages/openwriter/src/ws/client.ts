@@ -194,6 +194,11 @@ export function useWebSocket({ onNodeChanges, onAgentStatus, onDocumentSwitched,
           }
 
           if (msg.type === 'document-switched') {
+            // Deliver navigation intent before React adopts the new active doc.
+            // adr: adr/sidebar-navigation-intent.md
+            window.dispatchEvent(new CustomEvent('ow-document-navigation', {
+              detail: { filename: msg.filename, navigation: msg.navigation ?? 'open' },
+            }));
             // Adopt the server's docVersion as our autosave baseline. For a
             // normal switch the server reset it to 0 (fresh lineage), so this
             // is 0 as before. For an auto-title rename — which reaches us via
