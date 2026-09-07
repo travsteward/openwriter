@@ -99,3 +99,5 @@ containers and calls them chapters), the engine doesn't know what a "book" is.
   manifests render byte-identically (verified on the live book: 8 chapters
   unchanged); deeper levels are purely additive. Nav (TOC + tick-rail) stays
   chapter-level (book-h1) by choice; sub-sections render in the book + EPUB nav.
+
+- **2026-09-07** — Extracted manuscript MCP tools into the manuscript module, preserving their behavior before adding the editing-draft action.
