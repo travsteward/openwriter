@@ -1171,3 +1171,7 @@ Undo reproduction and correction.
 Moved archive/unarchive into document-archive.ts with the existing exports and
 sidecar behavior preserved. Server compilation and the 20 lifecycle assertions
 passed before the placement changes began.
+
+### 2026-09-07 — UX audit closure
+
+Archive placement is captured before active-tree removal and restored independently of sidecars. The HTTP route no longer removes placement before the archive service can capture it. Pending sidecar lifecycle remains unchanged.

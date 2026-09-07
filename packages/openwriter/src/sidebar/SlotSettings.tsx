@@ -69,9 +69,9 @@ function detectTimezone(slots: Slot[]): string {
   if (slots.length > 0) return slots[0].timezone;
   try {
     const local = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    if (TIMEZONES.includes(local)) return local;
+    if (local) return local;
   } catch { /* ignore */ }
-  return 'America/New_York';
+  return 'UTC';
 }
 
 export default function SlotSettings({ slots: initialSlots, onBack }: SlotSettingsProps) {
@@ -177,7 +177,7 @@ export default function SlotSettings({ slots: initialSlots, onBack }: SlotSettin
         </button>
         {tzOpen && (
           <div className="slot-tz-dropdown">
-            {TIMEZONES.map(tz => (
+            {[...new Set([timezone, ...TIMEZONES])].map(tz => (
               <div
                 key={tz}
                 className={`slot-tz-option ${tz === timezone ? 'active' : ''}`}

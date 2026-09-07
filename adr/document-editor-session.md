@@ -10,7 +10,8 @@ manuscript editing drafts.
 
 ## Current invariants
 
-- App supplies document identity to every PadEditor surface.
+- App supplies stable metadata docId to every PadEditor surface, using filename
+  only when old metadata has no ID.
 - On an identity change, the editor view stays mounted but receives a fresh
   EditorState containing the new document and the same plugin definitions.
   History, selection, and other document-scoped plugin state start fresh.
@@ -24,3 +25,9 @@ manuscript editing drafts.
   a history event alone would leave document-specific plugin state coupled to
   the previous body; resetting the state preserves the performance benefit of
   the stable view while giving each document its own editing session.
+
+- **2026-09-07 — Rename safety.** Browser verification caught the initial caller
+  passing filename as identity. Auto-title promotion changed it while the silent
+  rename retained the old initialContent prop, resetting the view to its initial
+  empty body. All five PadEditor surfaces now use stable docId. New-document
+  typing, promotion, Undo to empty, and Redo to the typed text passed together.

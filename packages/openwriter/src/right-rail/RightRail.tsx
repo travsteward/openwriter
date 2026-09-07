@@ -19,6 +19,7 @@
  * adr: adr/right-rail.md
  */
 import { useCallback, useEffect, useRef } from 'react';
+import { usePanelVisibility } from '../hooks/usePanelVisibility';
 import './RightRail.css';
 import { useRightRail } from './RightRailContext';
 import RailIconStrip from './RailIconStrip';
@@ -46,6 +47,7 @@ export default function RightRail(props: RightRailProps) {
   const { syncStatus, onSync, onToggleToolbar, toolbarOpen, focusMode, onToggleFocusMode, heatmapOn, onToggleHeatmap, heatmapAvailable, heatmapTitle, ...tabProps } = props;
   const { open, visible, overlay, activeTab, width, setWidth, closeRail, openTab } = useRightRail();
   const ref = useRef<HTMLElement>(null);
+  usePanelVisibility(ref, visible, '[aria-label="Show right rail"]');
 
   // Snapshot of the rail's pre-focus-mode state so we can restore it on
   // exit. Lives here (not in App.tsx) because App is outside the rail
@@ -123,6 +125,7 @@ export default function RightRail(props: RightRailProps) {
       className={`right-rail-column${collapsed ? '' : ' open'}`}
       style={collapsed ? undefined : { width, minWidth: width }}
       aria-label="Right rail"
+      aria-hidden={!visible}
     >
       {/* Drag-to-resize is docked-only; in overlay the drawer uses its saved width. */}
       {!overlay && !collapsed && <div className="right-rail-resize-handle" onPointerDown={startResize} aria-hidden="true" />}

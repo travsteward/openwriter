@@ -34,10 +34,8 @@ export function findNode(
       if (found) return found;
     }
     if (node.type === 'doc' && node.children) {
-      for (const child of node.children) {
-        const found = findNode(child.items, predicate, child);
-        if (found) return found;
-      }
+      const found = findNode(node.children, predicate);
+      if (found) return found;
     }
   }
   return null;

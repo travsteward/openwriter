@@ -128,3 +128,7 @@ sibling paths.
 ### 2026-09-07 — Manuscript editing drafts
 
 Editing drafts explicitly use content_type document and the full PadEditor schema; their provenance changes navigation only.
+
+### 2026-09-07 — UX audit closure
+
+All five PadEditor surfaces receive stable metadata docId; auto-title rename preserves current editor text and history. Reading views render accepted text without joining the writing session.

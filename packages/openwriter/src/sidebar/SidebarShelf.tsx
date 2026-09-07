@@ -4,6 +4,7 @@ import { formatDate } from './sidebar-utils';
 import { useRevealActiveDoc } from './use-reveal-active-doc';
 import SearchResults from './SearchResults';
 import './SidebarShelf.css';
+import { sidebarRowProps } from './sidebar-keyboard';
 
 interface PathEntry {
   type: 'workspace' | 'container';
@@ -12,14 +13,14 @@ interface PathEntry {
   wsFilename: string;
 }
 
-export default function SidebarShelf({ docs, workspaces, assignedFiles, pendingDocs, onSwitchDocument, actions, scrollRef, searchQuery, searchResults }: SidebarModeProps) {
+export default function SidebarShelf({ docs, workspaces, assignedFiles, pendingDocs, onSwitchDocument, actions, scrollRef, searchQuery, searchResults, searchLoading, searchError }: SidebarModeProps) {
   const [path, setPath] = useState<PathEntry[]>([]);
   // Flat mode — no folders to expand; just center + pulse the active row.
   useRevealActiveDoc(scrollRef, docs, workspaces.length);
 
   // Search mode
   if (searchResults !== null) {
-    return <SearchResults results={searchResults} query={searchQuery} onSwitchDocument={onSwitchDocument} />;
+    return <SearchResults results={searchResults} query={searchQuery} onSwitchDocument={onSwitchDocument} actions={actions} loading={searchLoading} error={searchError} />;
   }
 
   // Find a container in a workspace tree by id
@@ -92,6 +93,7 @@ export default function SidebarShelf({ docs, workspaces, assignedFiles, pendingD
             {workspaces.map(ws => (
               <div
                 key={ws.filename}
+                {...sidebarRowProps()}
                 className="shelf-section-spine"
                 onClick={() => drillIn({ type: 'workspace', key: ws.filename, title: ws.title, wsFilename: ws.filename })}
                 title={ws.title}
@@ -108,6 +110,7 @@ export default function SidebarShelf({ docs, workspaces, assignedFiles, pendingD
         {path.length > 0 && currentContainers.map(c => (
           <div
             key={c.id}
+            {...sidebarRowProps()}
             className="shelf-section-spine shelf-section-container"
             onClick={() => drillIn({
               type: 'container',
@@ -130,6 +133,8 @@ export default function SidebarShelf({ docs, workspaces, assignedFiles, pendingD
           {currentDocs.map(doc => (
             <div
               key={doc.filename}
+              {...sidebarRowProps()}
+              aria-current={doc.isActive ? 'page' : undefined}
               className={`shelf-doc-item ${doc.isActive ? 'active' : ''}`}
               onClick={() => onSwitchDocument(doc.filename)}
             >

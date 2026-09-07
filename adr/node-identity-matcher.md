@@ -172,3 +172,7 @@ For full design context: `docs/node-identity.md`.
 ### 2026-09-07 — Manuscript editing drafts
 
 Compiled editing copies receive fresh paragraph identities through the normal parser/serializer. Chapter navigation reads live editor positions; copied paragraphs do not reuse source-beat identities.
+
+### 2026-09-07 — UX audit closure
+
+Editor sessions and canonical document URLs now use stable docId. Filename promotion no longer resets history or replays stale initial content.

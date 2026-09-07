@@ -13,6 +13,7 @@ import CreateDocDropdown from './CreateDocDropdown';
 import NewsletterAnalyticsModal from '../newsletter/NewsletterAnalyticsModal';
 import SearchResults from './SearchResults';
 import './SidebarFiles.css';
+import { sidebarRowProps } from './sidebar-keyboard';
 
 // ─── Icons (monochrome, inherit currentColor) ───
 
@@ -158,7 +159,7 @@ export default function SidebarFiles({
   docs, workspaces, assignedFiles, pendingDocs,
   onSwitchDocument, onCreateDocument, actions, scrollRef,
   writingTitle, writingTarget, pendingWriteFilenames,
-  searchQuery, searchResults, onSearchChange,
+  searchQuery, searchResults, searchLoading, searchError, onSearchChange,
 }: SidebarModeProps) {
   const isPending = (filename: string) => !!pendingWriteFilenames && pendingWriteFilenames.has(filename);
   const [collapsed, setCollapsed] = useState<Set<string>>(() => {
@@ -486,7 +487,7 @@ export default function SidebarFiles({
   }, [actions]);
 
   if (searchResults !== null) {
-    return <SearchResults results={searchResults} query={searchQuery} onSwitchDocument={onSwitchDocument} actions={actions} />;
+    return <SearchResults results={searchResults} query={searchQuery} onSwitchDocument={onSwitchDocument} actions={actions} loading={searchLoading} error={searchError} />;
   }
 
   const renderRenameInput = (onCommit: () => void) => (
@@ -504,6 +505,8 @@ export default function SidebarFiles({
   const renderDoc = (doc: DocumentInfo, indent: number, wsFilename?: string, containerId?: string | null, hasVariants?: boolean, inheritedAutoAccept: boolean = false) => (
     <div
       key={doc.filename}
+      {...sidebarRowProps()}
+      aria-current={doc.isActive ? 'page' : undefined}
       className={`files-row${doc.isActive ? ' active' : ''}${doc.docId && activeTrail?.masterDocId === doc.docId && collapsed.has(`variants-${doc.docId}`) ? ' active-within' : ''}${selection.has(doc.filename) ? ' selected' : ''} ${isDragging(doc.filename) ? 'dragging' : ''} ${dropClass(doc.filename)}${doc.masterDocId ? ' is-variant' : ''}`}
       style={{ paddingLeft: indent, ...dropIndentStyle(doc.filename) }}
       data-drag-id={doc.filename}
@@ -593,6 +596,7 @@ export default function SidebarFiles({
         <div
           className={`files-row is-container${isCollapsed && activeTrail?.containerKeys.has(key) ? ' active-within' : ''} ${isDragging(container.id) ? 'dragging' : ''} ${dropClass(container.id)}`}
           style={{ paddingLeft: indent, ...dropIndentStyle(container.id) }}
+          {...sidebarRowProps(!isCollapsed)}
           data-drag-id={container.id}
           data-drag-type="container-header"
           data-drag-ws={wsFilename}
@@ -641,7 +645,7 @@ export default function SidebarFiles({
       <div className="files-section">
         <div className={`files-row is-section${collapsed.has('docs') && activeTrail !== null && activeTrail.wsFilename === null ? ' active-within' : ''}`} data-section-key="docs" onClick={() => toggle('docs')}>
           <span className={`files-row-chevron leading${collapsed.has('docs') ? ' collapsed' : ''}`}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
-          <span className="files-row-label">Documents</span>
+          <span {...sidebarRowProps(!collapsed.has('docs'))} className="files-row-label">Documents</span>
           <button className="files-section-btn" onClick={(e) => { e.stopPropagation(); setCreateDropdown({ anchor: (e.target as HTMLElement).getBoundingClientRect() }); }} title="New document">+</button>
         </div>
         <div className={`files-section-list files-children${collapsed.has('docs') ? ' collapsed' : ''}`} data-drop-ws="__docs__">
@@ -689,7 +693,7 @@ export default function SidebarFiles({
               ) : (
                 <>
                   <span className={`files-row-chevron leading${isCollapsedWs ? ' collapsed' : ''}`}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
-                  <span className="files-row-label">{ws.title}</span>
+                  <span {...sidebarRowProps(!isCollapsedWs)} className="files-row-label">{ws.title}</span>
                   {((ws as any).workspace?.autoAccept === true || (ws as any).autoAccept === true) && <span className="sidebar-auto-accept-dot" title="Auto-accept on for this workspace" />}
                   <span className="files-row-count">{count}</span>
                   <div className="files-section-actions">

@@ -19,6 +19,7 @@ interface WebSocketMessage {
 }
 
 export interface DocumentSwitchedPayload {
+  navigation?: 'open' | 'fallback' | 'create';
   document: any;
   title: string;
   filename: string;
@@ -207,6 +208,7 @@ export function useWebSocket({ onNodeChanges, onAgentStatus, onDocumentSwitched,
             // stale (which would drop text typed during the rename).
             docVersionRef.current = typeof msg.version === 'number' ? msg.version : 0;
             onDocumentSwitchedRef.current?.({
+              navigation: msg.navigation ?? 'open',
               document: msg.document,
               title: msg.title,
               filename: msg.filename,

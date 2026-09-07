@@ -535,12 +535,50 @@ export function renameDocInAllWorkspaces(oldFile: string, newFile: string, newTi
 }
 
 /** Remove a document from every workspace that references it. */
+export interface ArchivedPlacement {
+  workspace: string;
+  containerId: string | null;
+  index: number;
+  item: DocItem;
+}
+
+// Archive removes a doc from active trees but retains its recoverable position.
+// adr: adr/archive-placement.md
+export function captureArchivePlacements(file: string): ArchivedPlacement[] {
+  return listWorkspaces().flatMap(info => {
+    const ws = readWorkspace(info.filename);
+    const found = findDocNode(ws.root, file);
+    return found ? [{
+      workspace: info.filename,
+      containerId: Array.isArray(found.parent) ? null : found.parent.id,
+      index: found.index,
+      item: structuredClone(found.node),
+    }] : [];
+  });
+}
+
+export function restoreArchivePlacements(file: string, title: string, placements: ArchivedPlacement[]): boolean {
+  const available = new Set(listWorkspaces().map(w => w.filename));
+  let originalLocation = true;
+  for (const placement of placements) {
+    if (!available.has(placement.workspace)) { originalLocation = false; continue; }
+    const ws = readWorkspace(placement.workspace);
+    if (findDocNode(ws.root, file)) continue;
+    const container = placement.containerId ? findContainer(ws.root, placement.containerId) : null;
+    if (placement.containerId && !container) originalLocation = false;
+    const items = container ? container.node.items : ws.root;
+    items.splice(Math.max(0, Math.min(placement.index, items.length)), 0, { ...placement.item, file, title });
+    writeWorkspace(placement.workspace, ws);
+  }
+  return originalLocation;
+}
+
 export function removeDocFromAllWorkspaces(file: string): void {
   const workspaces = listWorkspaces();
   for (const info of workspaces) {
     try {
       const ws = readWorkspace(info.filename);
-      if (collectAllFiles(ws.root).includes(file)) {
+      if (findDocNode(ws.root, file)) {
         removeDoc(info.filename, file);
       }
     } catch { /* skip corrupt manifests */ }

@@ -114,6 +114,8 @@ export interface SidebarModeProps {
   pendingWriteFilenames?: Set<string>;
   searchQuery: string;
   searchResults: SearchResult[] | null;
+  searchLoading?: boolean;
+  searchError?: string | null;
   onSearchChange: (query: string) => void;
 }
 
@@ -121,7 +123,7 @@ export interface SidebarActions {
   fetchDocs: () => void;
   handleDelete: (filename: string) => void;
   handleArchive: (filename: string) => void;
-  handleUnarchive: (filename: string) => void;
+  handleUnarchive: (filename: string) => Promise<boolean>;
   handleRename: (filename: string, originalTitle: string, newTitle: string) => void;
   handleCreateWorkspace: () => void;
   handleDeleteWorkspace: (wsFilename: string) => void;

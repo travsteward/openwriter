@@ -1,0 +1,6 @@
+.sidebar [data-sidebar-row]:focus-visible,
+.sidebar [data-search-action]:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.search-result-open { display: block; width: 100%; padding: 0; border: 0; background: none; color: inherit; text-align: left; font: inherit; cursor: pointer; }
+.search-result-restore { margin-top: 8px; padding: 5px 10px; border: 1px solid var(--border); border-radius: 5px; background: var(--bg-surface); color: var(--ink-dark); cursor: pointer; }
+.search-result-open > span { display: block; }
+.search-result-archived { cursor: default; }

@@ -4,15 +4,16 @@ import { formatDate, dateGroup, isExternal, parentDir } from './sidebar-utils';
 import { useRevealActiveDoc } from './use-reveal-active-doc';
 import SearchResults from './SearchResults';
 import './SidebarTimeline.css';
+import { sidebarRowProps } from './sidebar-keyboard';
 
-export default function SidebarTimeline({ docs, workspaces, assignedFiles, pendingDocs, onSwitchDocument, onCreateDocument, actions, scrollRef, searchQuery, searchResults }: SidebarModeProps) {
+export default function SidebarTimeline({ docs, workspaces, assignedFiles, pendingDocs, onSwitchDocument, onCreateDocument, actions, scrollRef, searchQuery, searchResults, searchLoading, searchError }: SidebarModeProps) {
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   // Flat mode — no folders to expand; just center + pulse the active row.
   useRevealActiveDoc(scrollRef, docs, workspaces.length);
 
   // Search mode
   if (searchResults !== null) {
-    return <SearchResults results={searchResults} query={searchQuery} onSwitchDocument={onSwitchDocument} />;
+    return <SearchResults results={searchResults} query={searchQuery} onSwitchDocument={onSwitchDocument} actions={actions} loading={searchLoading} error={searchError} />;
   }
 
   // Sort all docs by lastModified, most recent first
@@ -61,6 +62,8 @@ export default function SidebarTimeline({ docs, workspaces, assignedFiles, pendi
             return (
               <div
                 key={doc.filename}
+                {...sidebarRowProps()}
+                aria-current={doc.isActive ? 'page' : undefined}
                 className={`tl-item ${doc.isActive ? 'active' : ''}`}
                 onClick={() => !doc.isActive && onSwitchDocument(doc.filename)}
               >

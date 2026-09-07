@@ -1,0 +1,4 @@
+.version-save-form { display: grid; gap: 8px; padding: 12px; border-bottom: 1px solid var(--border); }
+.version-save-form label { font-size: 12px; color: var(--ink-dark); }
+.version-save-form input { min-width: 0; padding: 8px; background: var(--bg-surface); color: var(--ink-dark); border: 1px solid var(--border); border-radius: 6px; font: inherit; }
+.version-save-form > div { display: flex; gap: 8px; }

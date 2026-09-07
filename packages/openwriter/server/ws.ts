@@ -476,7 +476,8 @@ export function setupWebSocket(server: Server): void {
         if (msg.type === 'create-document') {
           try {
             const result = createDocument(msg.title);
-            broadcastDocumentSwitched(result.document, result.title, result.filename);
+            broadcastDocumentSwitched(result.document, result.title, result.filename, undefined, 'create');
+            broadcastDocumentsChanged();
           } catch (err: any) {
             console.error('[WS] Create document failed:', err.message);
           }
@@ -597,7 +598,7 @@ export function setupWebSocket(server: Server): void {
   });
 }
 
-export function broadcastDocumentSwitched(document: any, title: string, filename: string, metadata?: Record<string, any>, navigation: 'open' | 'fallback' = 'open'): void {
+export function broadcastDocumentSwitched(document: any, title: string, filename: string, metadata?: Record<string, any>, navigation: 'open' | 'fallback' | 'create' = 'open'): void {
   const resolvedMeta = metadata ?? getMetadata();
   // adr: adr/sidebar-navigation-intent.md
   const msg = JSON.stringify({ ...buildDocumentSwitchedPayload(document, title, filename, resolvedMeta), navigation });

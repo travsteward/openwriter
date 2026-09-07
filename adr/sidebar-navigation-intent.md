@@ -26,3 +26,7 @@ The shared sidebar reveal hook owns the policy across all sidebar modes and
 cancels any pending reveal of the removed document. This replaces the assumption
 that every active-document change should navigate the tree; it does not infer
 deletion from timing or a transiently missing document-list entry.
+
+### 2026-09-07 — UX audit closure
+
+Creation carries explicit intent for foreground caret focus and always refreshes the document list. Stable document URLs survive refresh; explicit passage navigation also works when the target is already open.

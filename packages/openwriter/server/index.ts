@@ -28,6 +28,8 @@ import { removeDocFromAllWorkspaces } from './workspaces.js';
 import { resolveDocPath, getActiveProfile, setActiveProfile, listProfiles, createProfile, deleteProfile, listTrashedProfiles, restoreProfile, saveConfig, readConfig } from './helpers.js';
 import { createImageRouter } from './image-upload.js';
 import { createExportRouter } from './export-routes.js';
+import { createReadingRouter } from './reading-routes.js';
+import { buildInfo } from './build-info.js';
 import { createManuscriptRouter } from './manuscript-routes.js';
 import { createConnectionRouter } from './connection-routes.js';
 import { createSchedulerRouter } from './scheduler-routes.js';
@@ -168,6 +170,10 @@ export async function startHttpServer(options: { port?: number; noOpen?: boolean
   // /api/plugins/config, and the universal /api/mcp-call dispatcher. MCP-5.
   app.use(securityGate(port));
   app.use(express.json({ limit: '10mb' }));
+  app.get('/__build.json', (_req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    res.json(buildInfo);
+  });
 
   // API routes for direct HTTP access (fallback if WS not available)
   app.get('/api/status', (_req, res) => {
@@ -246,6 +252,7 @@ export async function startHttpServer(options: { port?: number; noOpen?: boolean
 
   // Mount export routes
   app.use(createExportRouter());
+  app.use(createReadingRouter());
 
   // Mount manuscript compile/render routes (book binding -> epub/docx/html/md)
   app.use(createManuscriptRouter());
@@ -805,9 +812,9 @@ export async function startHttpServer(options: { port?: number; noOpen?: boolean
         markAsAgentStub(result.filename);
       }
 
-      broadcastDocumentSwitched(result.document, result.title, result.filename);
+      broadcastDocumentSwitched(result.document, result.title, result.filename, undefined, req.body.agentCreated ? 'open' : 'create');
+      broadcastDocumentsChanged();
       if (req.body.markPending || req.body.agentCreated) {
-        broadcastDocumentsChanged();
         broadcastPendingDocsChanged();
       }
       res.json(result);
@@ -939,7 +946,6 @@ export async function startHttpServer(options: { port?: number; noOpen?: boolean
 
   app.post('/api/documents/:filename/archive', (req, res) => {
     try {
-      removeDocFromAllWorkspaces(req.params.filename);
       const result = archiveDocument(req.params.filename);
       if (result.switched && result.newDoc) {
         broadcastDocumentSwitched(result.newDoc.document, result.newDoc.title, result.newDoc.filename);
@@ -956,6 +962,7 @@ export async function startHttpServer(options: { port?: number; noOpen?: boolean
     try {
       const result = unarchiveDocument(req.params.filename);
       broadcastDocumentsChanged();
+      broadcastWorkspacesChanged();
       res.json(result);
     } catch (err: any) {
       res.status(400).json({ error: err.message });
@@ -983,8 +990,8 @@ export async function startHttpServer(options: { port?: number; noOpen?: boolean
 
   app.delete('/api/documents/:filename', async (req, res) => {
     try {
-      removeDocFromAllWorkspaces(req.params.filename);
       const result = await deleteDocument(req.params.filename);
+      removeDocFromAllWorkspaces(req.params.filename);
       if (result.switched && result.newDoc) {
         // Deletion changes editor focus, not the user's sidebar location.
         // adr: adr/sidebar-navigation-intent.md

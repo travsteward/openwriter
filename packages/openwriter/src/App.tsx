@@ -263,6 +263,7 @@ export default function App() {
   // rename-stable identity the client mistakes the rename for navigation to
   // a different doc and remounts the editor, destroying focus mid-edit.
   const currentDocId = useRef<string>('');
+  const focusCreatedDoc = useRef(false);
   const [activeFilename, setActiveFilename] = useState('');
   const [canGoBack, setCanGoBack] = useState(false);
   const [canGoForward, setCanGoForward] = useState(false);
@@ -368,7 +369,7 @@ export default function App() {
     }
   }, []);
 
-  const handleDocumentSwitched = useCallback((payload: { document: any; title: string; filename: string; docId?: string; metadata?: Record<string, any>; pendingMetadata?: { title?: { from: string; to: string } } | null }) => {
+  const handleDocumentSwitched = useCallback((payload: { document: any; title: string; filename: string; docId?: string; metadata?: Record<string, any>; navigation?: 'open' | 'fallback' | 'create'; pendingMetadata?: { title?: { from: string; to: string } } | null }) => {
     const tReceive = performance.now();
     const ls = (window as any).__lastSwitch;
     if (ls && ls.filename === payload.filename) {
@@ -393,6 +394,8 @@ export default function App() {
     // resetting the baseline here would strand keystrokes typed during the
     // rename window. Only the filename/title/metadata actually changed.
     const isSilentRename = isSameDoc && !wasEmpty && payload.filename !== prevFilename;
+    if (!isSameDoc) setReloadNotice(null);
+    if (!isSameDoc) focusCreatedDoc.current = payload.navigation === 'create' && document.hasFocus();
     if (!isSilentRename) {
       // Cancel any pending debounced doc-update — the server just sent
       // authoritative state, so a stale closure from a prior edit must not
@@ -463,7 +466,7 @@ export default function App() {
     // Mirror to browser history so the browser back button stays in OpenWriter.
     // skipBrowserPush is set when this switch was itself triggered by popstate.
     if (!skipBrowserPush.current) {
-      const url = `#${encodeURIComponent(payload.filename)}`;
+      const url = `${payload.docId ? `/d/${payload.docId}` : '/'}#${encodeURIComponent(payload.filename)}`;
       const state = { ow: { filename: payload.filename, navIndex: navIndex.current } };
       if (navStack.current.length === 1 || isSameDoc) {
         window.history.replaceState(state, '', url);
@@ -703,6 +706,18 @@ export default function App() {
     sendMessage({ type: 'create-document' });
   }, [flushCurrentDoc, sendMessage]);
 
+  useEffect(() => {
+    if (!focusCreatedDoc.current) return;
+    const frame = requestAnimationFrame(() => {
+      const editor = editorRef.current;
+      if (editor && !editor.isDestroyed) {
+        editor.commands.focus('start');
+        focusCreatedDoc.current = false;
+      }
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [activeFilename, editorInstance]);
+
   const handleSwitchDocument = useCallback((filename: string) => {
     if (filename === currentFilename.current) return;
     const tClick = performance.now();
@@ -727,7 +742,8 @@ export default function App() {
   // the editor container would keep whatever scrollTop the previous doc had,
   // landing the user mid-doc or at the bottom. Setting toTop forces a clean
   // scroll-to-top after the new doc mounts.
-  const pendingScroll = useRef<{ nodeId?: string; quote?: string; toTop?: boolean } | null>(null);
+  const pendingScroll = useRef<{ filename: string; nodeId?: string; quote?: string; toTop?: boolean } | null>(null);
+  const [scrollRequest, setScrollRequest] = useState(0);
 
   /**
    * Resolve a parsed doc: link href to a filename, then switch.
@@ -760,12 +776,14 @@ export default function App() {
     // the prior doc left behind, which lands the user mid-doc or at the bottom.
     if (target.nodeId || target.quote) {
       pendingScroll.current = {
+        filename,
         nodeId: target.nodeId || undefined,
         quote: target.quote || undefined,
       };
     } else {
-      pendingScroll.current = { toTop: true };
+      pendingScroll.current = { filename, toTop: true };
     }
+    setScrollRequest(n => n + 1);
     handleSwitchDocument(filename);
     // Directed open (deep link / backlink / wikilink) — relocate the filetree to
     // this doc. The sidebar hook holds this intent until the doc is active and
@@ -808,7 +826,7 @@ export default function App() {
   // Consume pendingScroll after a doc loads. Tries nodeId first, then quote
   // fallback, then scroll-to-top (the default for doc-level links).
   useEffect(() => {
-    if (!editorInstance || !pendingScroll.current) return;
+    if (!editorInstance || !pendingScroll.current || pendingScroll.current.filename !== activeFilename) return;
     const scroll = pendingScroll.current;
     pendingScroll.current = null;
     // Defer a tick so the editor's DOM is fully laid out
@@ -839,7 +857,7 @@ export default function App() {
         editorInstance.state.doc.descendants((node: any, pos: number) => {
           if (targetPos !== null) return false;
           if (node.isTextblock) {
-            const idx = node.textContent.indexOf(needle);
+            const idx = node.textContent.toLocaleLowerCase().indexOf(needle.toLocaleLowerCase());
             if (idx >= 0) {
               targetPos = pos + 1 + idx;
               return false;
@@ -849,9 +867,15 @@ export default function App() {
         });
       }
       if (targetPos === null) return;
-      editorInstance.chain().focus().setTextSelection({ from: targetPos, to: targetPos }).scrollIntoView().run();
+      editorInstance.chain().focus().setTextSelection({ from: targetPos, to: targetPos + (scroll.quote?.length ?? 0) }).scrollIntoView().run();
+      const container = document.querySelector<HTMLElement>('.editor-container');
+      if (container) {
+        const position = editorInstance.view.coordsAtPos(targetPos);
+        container.scrollTop += position.top - container.getBoundingClientRect().top - container.clientHeight / 3;
+      }
       // Briefly flash the target so the eye finds it
-      const dom = editorInstance.view.nodeDOM(targetPos - 1) as HTMLElement | null;
+      const located = editorInstance.view.domAtPos(targetPos).node;
+      const dom = (located.nodeType === Node.ELEMENT_NODE ? located as HTMLElement : located.parentElement)?.closest('p,h1,h2,h3,h4,h5,h6,li,blockquote');
       if (dom?.classList) {
         dom.classList.add('scroll-target-flash');
         setTimeout(() => dom.classList.remove('scroll-target-flash'), 1200);
@@ -860,7 +884,7 @@ export default function App() {
     // activeFilename, not activeDocKey: with the stable-editor refactor the
     // doc-key only bumps for tweet compose. Scroll-after-switch should fire
     // on every filename change.
-  }, [editorInstance, activeFilename]);
+  }, [editorInstance, activeFilename, scrollRequest]);
 
   // Top-bar back/forward delegate to the browser. The browser fires popstate,
   // which triggers our internal switch — so browser back, top-bar back, and
@@ -1139,6 +1163,7 @@ export default function App() {
           toolbarOpen={showToolbar}
           focusMode={focusMode}
           onToggleFocusMode={toggleFocusMode}
+          readingViewUrl={currentDocId.current ? `/read/${currentDocId.current}` : undefined}
         />
         {showToolbar && editorInstance && (
           <FormatToolbar editor={activeEditor || editorInstance} />
@@ -1221,7 +1246,7 @@ export default function App() {
               autoplug={metadata?.autoplug as boolean | undefined}
             >
               <PadEditor
-                documentId={activeFilename}
+                documentId={(metadata?.docId as string) || activeFilename}
                 initialContent={initialContent}
                 extensions={articleExtensions}
                 onUpdate={handleDocUpdate}
@@ -1239,7 +1264,7 @@ export default function App() {
               docId={(metadata?.docId as string) || undefined}
             >
               <PadEditor
-                documentId={activeFilename}
+                documentId={(metadata?.docId as string) || activeFilename}
                 initialContent={initialContent}
                 onUpdate={handleDocUpdate}
                 onReady={handleEditorReady}
@@ -1255,7 +1280,7 @@ export default function App() {
               onBeforeSend={syncContentToServer}
             >
               <PadEditor
-                documentId={activeFilename}
+                documentId={(metadata?.docId as string) || activeFilename}
                 initialContent={initialContent}
                 onUpdate={handleDocUpdate}
                 onReady={handleEditorReady}
@@ -1269,7 +1294,7 @@ export default function App() {
               title={title}
             >
               <PadEditor
-                documentId={activeFilename}
+                documentId={(metadata?.docId as string) || activeFilename}
                 initialContent={initialContent}
                 onUpdate={handleDocUpdate}
                 onReady={handleEditorReady}
@@ -1291,7 +1316,7 @@ export default function App() {
             />
           ) : (
             <PadEditor
-              documentId={activeFilename}
+              documentId={(metadata?.docId as string) || activeFilename}
               initialContent={initialContent}
               onUpdate={handleDocUpdate}
               onReady={handleEditorReady}

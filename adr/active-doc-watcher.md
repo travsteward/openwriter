@@ -112,3 +112,7 @@ else in the WS handler needs to change.
 ### 2026-09-07 — Manuscript editing drafts
 
 Creating a manuscript editing draft leaves the active document untouched. The UI explicitly switches afterward through the existing document-switch path and watcher lifecycle.
+
+### 2026-09-07 — UX audit closure
+
+Reload notices clear when document identity changes; same-document external reloads retain their notice.

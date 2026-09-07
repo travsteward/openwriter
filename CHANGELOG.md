@@ -9,10 +9,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 ### Added
 - Optional Compact sidebar style with smaller rows and text, preserving navigation icons and hierarchy. Switch back to Original in Appearance at any time.
 - Create an independent editing draft from a manuscript, with compact chapter navigation and an original-copy version to restore. The source manuscript and its documents remain unchanged.
+- Independent reading views let you compare documents without moving the shared editor.
 
 ### Fixed
 - Undo history stays within the document being edited when switching between documents.
 - Deleting the open document keeps the sidebar at your current folder while the editor opens the remaining document, avoiding jumps through nested folders.
+- Automatic document naming preserves text and Undo history; new documents appear immediately and accept typing.
+- Refresh keeps the current document. Passage searches reveal their matches, support keyboard navigation, and ignore stale responses.
+- Failed sidebar actions report errors without hiding documents. Restore is explicit and returns archived documents to their original folders.
+- Reload notices stay with their document, hidden panels leave keyboard navigation, local timezones are retained, and cancelling a version saves nothing.
 
 ## [0.40.3] - 2026-07-09
 

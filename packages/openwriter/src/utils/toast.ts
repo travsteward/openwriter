@@ -55,6 +55,8 @@ export interface ToastAction {
 export function showToast(message: string, kind: ToastKind = 'info', durationMs = 3500, action?: ToastAction): void {
   const root = ensureContainer();
   const el = document.createElement('div');
+  el.setAttribute('role', kind === 'error' ? 'alert' : 'status');
+  el.setAttribute('aria-atomic', 'true');
   // Match the context-menu popout: --bg-surface, --border, 8px radius, the same shadow,
   // --font-body, --ink-dark. Global :root / [data-mode="dark"] tokens auto-adapt to theme.
   // Error variant adds a left accent in the standard pending-delete red, surface stays neutral.

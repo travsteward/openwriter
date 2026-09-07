@@ -3,6 +3,8 @@ import type { SidebarModeProps, DocumentInfo, WorkspaceNode, ContainerItem, Sear
 import { formatDate, collectFiles } from './sidebar-utils';
 import { useRevealActiveDoc } from './use-reveal-active-doc';
 import './SidebarBoard.css';
+import SearchResults from './SearchResults';
+import { sidebarRowProps, searchInputKeyDown } from './sidebar-keyboard';
 
 interface PathEntry {
   type: 'workspace' | 'container';
@@ -11,7 +13,7 @@ interface PathEntry {
   wsFilename: string;
 }
 
-export default function SidebarBoard({ docs, workspaces, assignedFiles, pendingDocs, onSwitchDocument, actions, scrollRef, searchQuery, searchResults, onSearchChange }: SidebarModeProps) {
+export default function SidebarBoard({ docs, workspaces, assignedFiles, pendingDocs, onSwitchDocument, actions, scrollRef, searchQuery, searchResults, searchLoading, searchError, onSearchChange }: SidebarModeProps) {
   const [path, setPath] = useState<PathEntry[]>([]);
   const [dropdownKey, setDropdownKey] = useState<string | null>(null);
   // Flat mode — no folders to expand; just center + pulse the active row.
@@ -183,6 +185,8 @@ export default function SidebarBoard({ docs, workspaces, assignedFiles, pendingD
           placeholder="Search..."
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
+          onKeyDown={e => searchInputKeyDown(e, () => onSearchChange(''))}
+          aria-label="Search documents"
           onFocus={handleSearchFocus}
         />
         {searchQuery && (
@@ -272,6 +276,7 @@ export default function SidebarBoard({ docs, workspaces, assignedFiles, pendingD
             {docList.map(doc => (
               <div
                 key={doc.filename}
+                {...sidebarRowProps()}
                 className={`board-dropdown-item ${doc.isActive ? 'active' : ''}`}
                 onClick={() => handleDocClick(doc.filename)}
               >
@@ -296,25 +301,7 @@ export default function SidebarBoard({ docs, workspaces, assignedFiles, pendingD
           ref={searchDropdownRef}
           style={{ position: 'fixed', top: searchDropdownPos.top, left: searchDropdownPos.left }}
         >
-          {searchResults.map(r => (
-            <div
-              key={r.filename}
-              className={`board-dropdown-item ${r.isActive ? 'active' : ''}`}
-              onClick={() => { onSwitchDocument(r.filename); onSearchChange(''); }}
-            >
-              <span className="board-dropdown-title">{r.title}</span>
-              {r.matchType === 'tag' && r.matchedTag && (
-                <span className="board-dropdown-meta">Tag: {r.matchedTag}</span>
-              )}
-              {r.matchType === 'content' && r.snippet && (
-                <span className="board-dropdown-meta board-search-snippet">{r.snippet}</span>
-              )}
-              <span className="board-dropdown-meta">
-                {r.wordCount.toLocaleString()} words &middot; {formatDate(r.lastModified)}
-              </span>
-            </div>
-          ))}
-          {searchResults.length === 0 && <div className="board-dropdown-empty">No results</div>}
+          <SearchResults results={searchResults} query={searchQuery} onSwitchDocument={onSwitchDocument} actions={actions} loading={searchLoading} error={searchError} />
         </div>
       )}
     </div>

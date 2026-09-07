@@ -53,3 +53,7 @@ ResizeObserver on `.app`; `.app--overlay` switches panel CSS to
 ### 2026-09-07 — Manuscript editing drafts
 
 Editing drafts reuse the controlled sidebar for a compact chapter outline. They use the ordinary document layout even when the library preference is Board; library and drawer preferences remain unchanged.
+
+### 2026-09-07 — UX audit closure
+
+Hidden sidebar and rail controls are inert; closing a focused panel returns focus to the opener. Layout widths and overlay thresholds are unchanged.

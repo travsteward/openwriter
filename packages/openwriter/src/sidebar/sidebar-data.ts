@@ -1,73 +1,41 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { DocumentInfo, WorkspaceWithData, WorkspaceInfo, WorkspaceFull } from './sidebar-types';
 import { collectFiles } from './sidebar-utils';
+import { checkedFetch } from '../utils/request';
 
 export function useSidebarData(refreshKey: number, workspacesRefreshKey: number) {
   const [docs, setDocs] = useState<DocumentInfo[]>([]);
   const [workspaces, setWorkspaces] = useState<WorkspaceWithData[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const docsRequest = useRef(0);
+  const workspacesRequest = useRef(0);
 
-  // Filenames the user has optimistically deleted but the server may not yet
-  // have processed. fetchDocs filters its result through this set so bulk-delete
-  // broadcasts don't cause docs to flicker back in. Self-heals: when the server
-  // confirms a doc is gone, its entry here clears.
-  const pendingDeletesRef = useRef<Set<string>>(new Set());
-  const markPendingDelete = useCallback((filename: string) => {
-    pendingDeletesRef.current.add(filename);
-  }, []);
-
-  // Derived from workspaces — stays in sync with optimistic updates automatically
   const assignedFiles = useMemo(() => {
     const assigned = new Set<string>();
-    for (const w of workspaces) {
-      if (w.workspace) collectFiles(w.workspace.root, assigned);
-    }
+    for (const w of workspaces) if (w.workspace) collectFiles(w.workspace.root, assigned);
     return assigned;
   }, [workspaces]);
 
-  const fetchDocs = useCallback(() => {
-    fetch('/api/documents')
-      .then((res) => res.json())
-      .then((data) => {
-        if (!Array.isArray(data)) return;
-        const pending = pendingDeletesRef.current;
-        // Self-heal: any pending entry NOT in the fresh response is confirmed gone
-        if (pending.size > 0) {
-          const fresh = new Set(data.map((d: DocumentInfo) => d.filename));
-          for (const fn of [...pending]) if (!fresh.has(fn)) pending.delete(fn);
-        }
-        // Filter: hide docs the user has optimistically deleted but server still has on disk
-        const filtered = pending.size > 0
-          ? data.filter((d: DocumentInfo) => !pending.has(d.filename))
-          : data;
-        setDocs(filtered);
-      })
-      .catch(() => {});
+  // Only the newest read can replace the last acknowledged projection.
+  // adr: adr/sidebar-action-contract.md
+  const fetchDocs = useCallback(async () => {
+    const request = ++docsRequest.current;
+    const data = await (await checkedFetch('/api/documents')).json();
+    if (request === docsRequest.current && Array.isArray(data)) setDocs(data);
   }, []);
 
-  const fetchWorkspaces = useCallback(() => {
-    fetch('/api/workspaces')
-      .then((res) => res.json())
-      .then(async (wsList: WorkspaceInfo[]) => {
-        if (!Array.isArray(wsList)) return;
-        const detailed = await Promise.all(wsList.map(async (w) => {
-          try {
-            const res = await fetch(`/api/workspaces/${encodeURIComponent(w.filename)}`);
-            const workspace: WorkspaceFull = await res.json();
-            return { ...w, workspace } as WorkspaceWithData;
-          } catch { return w as WorkspaceWithData; }
-        }));
-        setWorkspaces(detailed);
-      })
-      .catch(() => {});
+  const fetchWorkspaces = useCallback(async () => {
+    const request = ++workspacesRequest.current;
+    const list: WorkspaceInfo[] = await (await checkedFetch('/api/workspaces')).json();
+    if (!Array.isArray(list)) return;
+    const detailed = await Promise.all(list.map(async w => {
+      const workspace: WorkspaceFull = await (await checkedFetch(`/api/workspaces/${encodeURIComponent(w.filename)}`)).json();
+      return { ...w, workspace };
+    }));
+    if (request === workspacesRequest.current) setWorkspaces(detailed);
   }, []);
 
-  useEffect(() => { fetchDocs(); }, [fetchDocs, refreshKey]);
-  useEffect(() => { fetchWorkspaces(); }, [fetchWorkspaces, workspacesRefreshKey]);
-
-  // Keeping the active doc visible is now owned per-mode by useRevealActiveDoc
-  // (mode-agnostic: targets [data-drag-id], works in files mode too — the old
-  // effect here only matched the default tree's `.sidebar-item`).
-
-  return { docs, setDocs, workspaces, setWorkspaces, assignedFiles, fetchDocs, fetchWorkspaces, scrollRef, markPendingDelete };
+  useEffect(() => { void fetchDocs().catch(() => {}); }, [fetchDocs, refreshKey]);
+  useEffect(() => { void fetchWorkspaces().catch(() => {}); }, [fetchWorkspaces, workspacesRefreshKey]);
+  return { docs, setDocs, workspaces, assignedFiles, fetchDocs, fetchWorkspaces, scrollRef };
 }

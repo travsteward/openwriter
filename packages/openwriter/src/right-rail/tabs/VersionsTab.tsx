@@ -10,6 +10,9 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import type { RightRailTabProps } from '../types';
+import { checkedFetch, jsonRequest } from '../../utils/request';
+import { showToast } from '../../utils/toast';
+import './VersionsTab.css';
 
 type Actor = 'human' | 'agent' | 'unknown';
 interface ActorTally { added: number; edited: number; removed: number; }
@@ -50,6 +53,9 @@ export default function VersionsTab({ docId }: RightRailTabProps) {
   const [commits, setCommits] = useState<CommitRow[]>([]);
   const [expanded, setExpanded] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
+  const [noteOpen, setNoteOpen] = useState(false);
+  const [note, setNote] = useState('');
+  useEffect(() => { setNoteOpen(false); setNote(''); }, [docId]);
 
   const fetchCommits = useCallback(() => {
     if (!docId) { setCommits([]); return; }
@@ -63,23 +69,17 @@ export default function VersionsTab({ docId }: RightRailTabProps) {
 
   const handleSaveVersion = useCallback(async () => {
     if (!docId || busy) return;
-    const note = window.prompt('Save version — optional note (e.g. "first full draft"):') ?? undefined;
     setBusy(true);
     try {
-      const res = await fetch('/api/commit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ docId, note: note || undefined }),
-      });
+      const res = await checkedFetch('/api/commit', jsonRequest('POST', { docId, note: note.trim() || undefined }));
       const data = await res.json().catch(() => ({}));
-      if (!data.committed) {
-        // Nothing changed since the last commit — surface gently, no error.
-        window.setTimeout(() => {}, 0);
-      }
+      showToast(data.committed ? 'Version saved' : 'No changes since the last version');
+      setNoteOpen(false);
+      setNote('');
       fetchCommits();
-    } catch { /* ignore */ }
+    } catch (error) { showToast(error instanceof Error ? error.message : 'Could not save version', 'error'); }
     setBusy(false);
-  }, [docId, busy, fetchCommits]);
+  }, [docId, busy, note, fetchCommits]);
 
   const handleRestore = useCallback(async (snapshotTs: number) => {
     if (busy) return;
@@ -98,14 +98,25 @@ export default function VersionsTab({ docId }: RightRailTabProps) {
   return (
     <div className="versions-tab">
       <div className="versions-tab__actions">
-        <button className="versions-tab__save-btn" disabled={!docId || busy} onClick={handleSaveVersion}>
+        <button className="versions-tab__save-btn" disabled={!docId || busy} onClick={() => setNoteOpen(true)}>
           + Save version
         </button>
       </div>
+      {noteOpen && (
+        <form className="version-save-form" onSubmit={e => { e.preventDefault(); void handleSaveVersion(); }}>
+          <label htmlFor="version-note">Note (optional)</label>
+          <input id="version-note" value={note} onChange={e => setNote(e.target.value)} autoFocus disabled={busy}
+            onKeyDown={e => { if (e.key === 'Escape' && !busy) { setNoteOpen(false); setNote(''); } }} />
+          <div>
+            <button type="submit" className="versions-tab__save-btn" disabled={busy}>{busy ? 'Saving…' : 'Save'}</button>
+            <button type="button" className="versions-tab__save-btn" disabled={busy} onClick={() => { setNoteOpen(false); setNote(''); }}>Cancel</button>
+          </div>
+        </form>
+      )}
       <div className="versions-tab__list">
         {commits.length === 0 ? (
           <div className="versions-tab__empty">
-            No versions yet. A version is committed when an agent finishes writing,
+            No versions yet. A version is saved when an agent finishes writing,
             when you accept changes, or when you hit "Save version."
           </div>
         ) : (

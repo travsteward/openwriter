@@ -13,6 +13,10 @@ import SidebarSchedule from './SidebarSchedule';
 import SidebarTasks from './SidebarTasks';
 import ProfileSwitcher from './ProfileSwitcher';
 import './Sidebar.css';
+import './sidebar-keyboard.css';
+import { useDocumentSearch } from './use-document-search';
+import { moveSidebarFocus, searchInputKeyDown } from './sidebar-keyboard';
+import { usePanelVisibility } from '../hooks/usePanelVisibility';
 
 interface SidebarProps {
   documentNavigation?: ReactNode;
@@ -53,9 +57,11 @@ export const SIDEBAR_DEFAULT_WIDTH = 260;
 
 export default function Sidebar({ open, onSwitchDocument, onCreateDocument, refreshKey, docTagsRefreshKey, workspacesRefreshKey, pendingDocs, writingTitle, writingTarget, pendingWriteFilenames, activeFilename, onClose, width, onWidthChange, floating, documentNavigation }: SidebarProps) {
   const [showFiles, setShowFiles] = useState(false);
+  const panelRef = useRef<HTMLDivElement>(null);
+  usePanelVisibility(panelRef, open, '[title="Open sidebar"]');
   useEffect(() => { setShowFiles(false); }, [activeFilename]);
-  const { docs, setDocs, workspaces, setWorkspaces, assignedFiles, fetchDocs, fetchWorkspaces, scrollRef, markPendingDelete } = useSidebarData(refreshKey, workspacesRefreshKey);
-  const actions = useSidebarActions(fetchDocs, fetchWorkspaces, setDocs, setWorkspaces, docs, markPendingDelete);
+  const { docs, setDocs, workspaces, assignedFiles, fetchDocs, fetchWorkspaces, scrollRef } = useSidebarData(refreshKey, workspacesRefreshKey);
+  const actions = useSidebarActions(fetchDocs, fetchWorkspaces, docs);
   const mode = getSidebarMode();
 
   // Sidebar width is owned by App (controlled via `width`/`onWidthChange`) so
@@ -190,35 +196,14 @@ export default function Sidebar({ open, onSwitchDocument, onCreateDocument, refr
     } catch { /* ignore */ }
   }, [fetchProfiles, fetchTrashedProfiles]);
 
-  // Search state
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<SearchResult[] | null>(null);
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const { query: searchQuery, results: searchResults, loading: searchLoading, error: searchError, search: onSearchChange } = useDocumentSearch(refreshKey);
   const searchInputRef = useRef<HTMLInputElement>(null);
-
-  const onSearchChange = useCallback((query: string) => {
-    setSearchQuery(query);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    if (!query.trim()) {
-      setSearchResults(null);
-      return;
-    }
-    debounceRef.current = setTimeout(async () => {
-      try {
-        const res = await fetch(`/api/documents/search?q=${encodeURIComponent(query.trim())}&archived=true`);
-        if (res.ok) setSearchResults(await res.json());
-      } catch { /* ignore */ }
-    }, 250);
-  }, []);
-
-  // Cleanup debounce on unmount
-  useEffect(() => () => { if (debounceRef.current) clearTimeout(debounceRef.current); }, []);
 
   const modeProps = {
     docs, archivedDocs: [] as DocumentInfo[], workspaces, assignedFiles, pendingDocs, writingTitle, writingTarget,
     pendingWriteFilenames,
     onSwitchDocument: optimisticSwitchDocument, onCreateDocument, actions, scrollRef,
-    searchQuery, searchResults, onSearchChange,
+    searchQuery, searchResults, searchLoading, searchError, onSearchChange,
   };
 
   const renderMode = () => {
@@ -244,6 +229,8 @@ export default function Sidebar({ open, onSwitchDocument, onCreateDocument, refr
         placeholder="Search..."
         value={searchQuery}
         onChange={(e) => onSearchChange(e.target.value)}
+        onKeyDown={e => searchInputKeyDown(e, () => onSearchChange(''))}
+        aria-label="Search documents"
       />
       {searchQuery && (
         <button className="sidebar-search-clear" onClick={() => onSearchChange('')} title="Clear search">
@@ -267,7 +254,7 @@ export default function Sidebar({ open, onSwitchDocument, onCreateDocument, refr
   // Board mode uses horizontal layout — rendered differently in App
   if (mode === 'board' && !documentNavigation) {
     return (
-      <div className={`sidebar sidebar-board-mode ${open ? 'open' : ''}`} style={sidebarStyle}>
+      <div ref={panelRef} aria-hidden={!open} onKeyDown={moveSidebarFocus} className={`sidebar sidebar-board-mode ${open ? 'open' : ''}`} style={sidebarStyle}>
         {renderMode()}
         {resizeHandle}
       </div>
@@ -275,7 +262,11 @@ export default function Sidebar({ open, onSwitchDocument, onCreateDocument, refr
   }
 
   return (
-    <div className={`sidebar ${open ? 'open' : ''}`} style={sidebarStyle}>
+    <div ref={panelRef} aria-hidden={!open} onKeyDown={e => {
+      if (!e.defaultPrevented && e.key === 'Escape' && searchQuery) {
+        e.preventDefault(); onSearchChange(''); searchInputRef.current?.focus();
+      } else moveSidebarFocus(e);
+    }} className={`sidebar ${open ? 'open' : ''}`} style={sidebarStyle}>
       <div className="sidebar-topbar">
         <div className="sidebar-logo">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none">

@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "git": {
+    "defaultBranch": "main",
+    "remote": "origin",
+    "integrationStrategy": "ff-only",
+    "pushDeploys": false
+  },
+  "deploy": {
+    "source": ".greprag/deploy.md",
+    "canonicalRoot": "C:/openwriter",
+    "targets": [{ "id": "local-app" }, { "id": "npm" }]
+  },
+  "release": { "source": ".greprag/release.md" }
+}

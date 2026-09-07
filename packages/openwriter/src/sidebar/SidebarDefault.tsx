@@ -8,6 +8,7 @@ import type { SidebarMenuItem } from './SidebarContextMenu';
 import { transformExceedsSizeCap } from './transform-guard';
 import FocusInstructionsModal from './FocusInstructionsModal';
 import SearchResults from './SearchResults';
+import { sidebarRowProps } from './sidebar-keyboard';
 import NewsletterAnalyticsModal from '../newsletter/NewsletterAnalyticsModal';
 import SchedulePostModal from './SchedulePostModal';
 import CreateDocDropdown from './CreateDocDropdown';
@@ -32,7 +33,7 @@ function findDocPath(nodes: WorkspaceNode[], filename: string): string[] | null 
   return null;
 }
 
-export default function SidebarDefault({ docs, archivedDocs, workspaces, assignedFiles, pendingDocs, onSwitchDocument, onCreateDocument, actions, scrollRef, writingTitle, writingTarget, pendingWriteFilenames, searchQuery, searchResults, onSearchChange }: SidebarModeProps) {
+export default function SidebarDefault({ docs, archivedDocs, workspaces, assignedFiles, pendingDocs, onSwitchDocument, onCreateDocument, actions, scrollRef, writingTitle, writingTarget, pendingWriteFilenames, searchQuery, searchResults, searchLoading, searchError, onSearchChange }: SidebarModeProps) {
   const isPending = (filename: string) => !!pendingWriteFilenames && pendingWriteFilenames.has(filename);
   const [editingFilename, setEditingFilename] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
@@ -230,7 +231,7 @@ export default function SidebarDefault({ docs, archivedDocs, workspaces, assigne
 
   // Search mode: replace normal content with search results
   if (searchResults !== null) {
-    return <SearchResults results={searchResults} query={searchQuery} onSwitchDocument={onSwitchDocument} actions={actions} />;
+    return <SearchResults results={searchResults} query={searchQuery} onSwitchDocument={onSwitchDocument} actions={actions} loading={searchLoading} error={searchError} />;
   }
 
   const unassignedDocs = docs.filter((d) => !assignedFiles.has(d.filename) && !variantFilenames.has(d.filename));
@@ -242,6 +243,8 @@ export default function SidebarDefault({ docs, archivedDocs, workspaces, assigne
   ) => (
     <div
       key={doc.filename}
+      {...sidebarRowProps()}
+      aria-current={doc.isActive ? 'page' : undefined}
       className={`sidebar-item ${doc.isActive ? 'active' : ''} ${isDragging(doc.filename) ? 'dragging' : ''} ${dropClass(doc.filename)}`}
       data-drag-id={doc.filename}
       data-drag-type="doc"
@@ -271,12 +274,12 @@ export default function SidebarDefault({ docs, archivedDocs, workspaces, assigne
             <span className="sidebar-item-title-text">{doc.title}</span>
             {doc.variantType && <span className="files-badge-variant">{doc.variantType}</span>}
             {actions.getDocTags(doc.filename).includes('✓') && (
-              <svg className="sidebar-approved-icon" title="Approved" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <svg className="sidebar-approved-icon" aria-label="Approved" role="img" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="20 6 9 17 4 12" />
               </svg>
             )}
             {doc.lastSent && (
-              <svg className="sidebar-sent-icon" title="Sent" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <svg className="sidebar-sent-icon" aria-label="Sent" role="img" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="20 6 9 17 4 12" />
               </svg>
             )}
@@ -404,6 +407,7 @@ export default function SidebarDefault({ docs, archivedDocs, workspaces, assigne
       <div key={container.id} className={`sidebar-container ${depthClass} ${isCollapsed ? 'collapsed' : ''} ${dropClass(container.id)} ${isContainerDropTarget(container.id) ? 'drop-inside' : ''}`}>
         <div
           className={`sidebar-container-header${isCollapsed && activeTrail?.containerKeys.has(containerKey) ? ' active-within' : ''} ${dropIndicator?.itemId === container.id && dropIndicator.position === 'inside' ? 'drop-inside' : ''}`}
+          {...sidebarRowProps(!isCollapsed)}
           data-drag-id={container.id}
           data-drag-type="container-header"
           data-drag-ws={wsFilename}
@@ -472,7 +476,7 @@ export default function SidebarDefault({ docs, archivedDocs, workspaces, assigne
       <div className={`sidebar-section sidebar-docs-section ${collapsedSections.has('docs') ? 'docs-collapsed' : ''}`}>
         <div className={`sidebar-section-header${collapsedSections.has('docs') && activeTrail !== null && activeTrail.wsFilename === null ? ' active-within' : ''}`} data-section-key="docs" onClick={() => toggleSection('docs')} onContextMenu={handleSectionContextMenu}>
           <span className={`sidebar-chevron ${collapsedSections.has('docs') ? 'collapsed' : ''}`}>&#9662;</span>
-          <span className="sidebar-label">Documents</span>
+          <span {...sidebarRowProps(!collapsedSections.has('docs'))} className="sidebar-label">Documents</span>
           <button className="sidebar-new-btn" onClick={(e) => { e.stopPropagation(); setCreateDropdown({ anchor: (e.target as HTMLElement).getBoundingClientRect() }); }} title="New document">+</button>
         </div>
         {!collapsedSections.has('docs') && (
@@ -528,7 +532,7 @@ export default function SidebarDefault({ docs, archivedDocs, workspaces, assigne
                   onClick={(e) => e.stopPropagation()}
                 />
               ) : (
-                <span className="sidebar-label sidebar-workspace-label" onDoubleClick={(e) => { e.stopPropagation(); setEditingWorkspaceFilename(wsInfo.filename); setWorkspaceEditValue(wsInfo.title); }}>
+                <span {...sidebarRowProps(!isCollapsed)} className="sidebar-label sidebar-workspace-label" onDoubleClick={(e) => { e.stopPropagation(); setEditingWorkspaceFilename(wsInfo.filename); setWorkspaceEditValue(wsInfo.title); }}>
                   {wsInfo.title}
                 </span>
               )}

@@ -4,7 +4,7 @@ import matter from 'gray-matter';
 import { getDataDir, ensureDataDir, resolveDocPath, atomicWriteFileSync, TEMP_PREFIX } from './helpers.js';
 import { getFilePath, getDocument, getTitle, invalidateDocCache, setActiveDocument, type PadDocument } from './state.js';
 import { markdownToTiptap } from './markdown.js';
-import { removeDocFromAllWorkspaces } from './workspaces.js';
+import { removeDocFromAllWorkspaces, captureArchivePlacements, restoreArchivePlacements } from './workspaces.js';
 
 export function archiveDocument(filename: string): { switched: boolean; newDoc?: { document: PadDocument; title: string; filename: string } } {
   ensureDataDir();
@@ -13,8 +13,12 @@ export function archiveDocument(filename: string): { switched: boolean; newDoc?:
     throw new Error(`Document not found: ${filename}`);
   }
 
+  const placements = captureArchivePlacements(filename);
   const raw = readFileSync(targetPath, 'utf-8');
   const { data, content } = matter(raw);
+  // Repeated archive requests must retain the original filing information.
+  // adr: adr/archive-placement.md
+  if (!data.archivedAt) data.archivePlacements = placements;
   data.archivedAt = new Date().toISOString();
   atomicWriteFileSync(targetPath, matter.stringify(content, data));
 
@@ -54,7 +58,7 @@ export function archiveDocument(filename: string): { switched: boolean; newDoc?:
   return { switched: false };
 }
 
-export function unarchiveDocument(filename: string): { filename: string; title: string } {
+export function unarchiveDocument(filename: string): { filename: string; title: string; locationWarning?: string } {
   ensureDataDir();
   const targetPath = resolveDocPath(filename);
   if (!existsSync(targetPath)) {
@@ -63,10 +67,14 @@ export function unarchiveDocument(filename: string): { filename: string; title: 
 
   const raw = readFileSync(targetPath, 'utf-8');
   const { data, content } = matter(raw);
+  const title = (data.title as string) || 'Untitled';
+  const originalLocation = restoreArchivePlacements(filename, title, Array.isArray(data.archivePlacements) ? data.archivePlacements : []);
   delete data.archivedAt;
+  delete data.archivePlacements;
   atomicWriteFileSync(targetPath, matter.stringify(content, data));
+  invalidateDocCache(targetPath);
 
-  return { filename, title: (data.title as string) || 'Untitled' };
+  return { filename, title, ...(!originalLocation ? { locationWarning: 'Restored outside its original folder because that folder or workspace no longer exists.' } : {}) };
 }
 
 // ============================================================================
