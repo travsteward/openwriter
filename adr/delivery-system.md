@@ -2,7 +2,7 @@
 
 ## Context
 
-OpenWriter relied on legacy prose and ad-hoc restarts. GrepRAG's recorded delivery
+OpenWriter relied on legacy prose and ad-hoc restarts. The recorded delivery
 system separates merge serialization, provenance, target-held deployment locks,
 repo-owned artifact checks, and live acceptance proof.
 
@@ -24,7 +24,11 @@ repo-owned artifact checks, and live acceptance proof.
 
 ### 2026-09-07
 
-Adopted the GrepRAG-owned locks, merge guard/provenance, gate, verification, and
+Adopted the shared locks, merge guard/provenance, gate, verification, and
 ledger instead of copying another repo's shared gate code. OpenWriter owns its
 build input check, process restart, build stamp, and npm artifact verification.
 The user confirmed main is the intended default branch; no branch rename occurs.
+
+Privacy checking recognizes operational tool/path tokens without excluding a
+whole file or line. Remaining content still passes all deny rules; plain venture
+references remain subject to the personal denylist. PowerShell files are scanned.

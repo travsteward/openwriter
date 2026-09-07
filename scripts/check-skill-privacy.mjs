@@ -21,7 +21,7 @@ import { execSync } from 'node:child_process';
 import { join, sep } from 'node:path';
 
 const ROOT = process.cwd();
-const EXTENSIONS = ['.md', '.js', '.mjs', '.cjs', '.ts', '.tsx', '.json', '.txt', '.html', '.css'];
+const EXTENSIONS = ['.md', '.js', '.mjs', '.cjs', '.ts', '.tsx', '.json', '.txt', '.html', '.css', '.ps1'];
 
 // The privacy machinery itself legitimately contains the terms we hunt for.
 const SKIP_FILES = new Set([
@@ -48,6 +48,12 @@ const LINE_ALLOW = [
 // shield a denylisted term that happens to share the line.
 const SPAN_ALLOW = [
   /travsteward/, /c:[\\/]users[\\/]me\b/, /av_api_key/, /user@example/, /name@example/,
+  // Operational namespaces and actual CLI invocations are dependencies, not
+  // personal worked examples. Only the tool token is stripped; arguments and
+  // the rest of each line still pass every generic/personal check.
+  /\.greprag\//i,
+  /\bgreprag\b(?=\s+(?:delivery|merge-lock|deploy-gate|deploy-lock|deploy-record|deploy-verify)\b)/i,
+  /\bgreprag\b(?=\s+-Arguments\b)/i,
 ];
 const GENERIC_DENY = [
   /@gmail\.com/, /@outlook\.com/, /@icloud\.com/, /@proton(mail)?\.(com|me)/,

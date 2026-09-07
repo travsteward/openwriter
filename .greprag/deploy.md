@@ -12,7 +12,7 @@ The user confirmed that “master” meant this existing main branch.
 3. Fetch origin, rebase the source worktree onto the latest canonical main, and
    rerun affected checks. Never rebase the shared main checkout.
 4. In the canonical root, run the merge wrapper with the prepared branch. It
-   holds the GrepRAG merge lock, fast-forwards only, and records the landed SHA.
+   holds the shared merge lock, fast-forwards only, and records the landed SHA.
 5. Push origin/main once, then deploy the local-app target. Push alone does not
    update the linked desktop editor.
 
@@ -27,7 +27,7 @@ git push origin main
 
 [deploy.ps1](../scripts/deploy.ps1) owns the complete action:
 
-- GrepRAG checks canonical location, primary checkout, branch, merge state,
+- The shared gate checks canonical location, primary checkout, branch, merge state,
   provenance claims, and the target lock.
 - The repo checks that build inputs match committed HEAD, then acquires a
   process-held deploy lock. Unrelated notes, local configuration, and old
