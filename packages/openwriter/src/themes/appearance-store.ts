@@ -1,7 +1,7 @@
 export type Typeface = 'charter' | 'source-serif' | 'plex-mono' | 'crimson' | 'inter' | 'baskerville' | 'grotesk' | 'literata' | 'dm-sans';
 export type ThemeMode = 'light' | 'dark';
 export type SidebarMode = 'default' | 'timeline' | 'board' | 'shelf' | 'files';
-export type SidebarStyle = 'cards';
+export type SidebarStyle = 'cards' | 'compact';
 export type SidebarDensity = 'full' | 'compact' | 'minimal';
 export type CanvasStyle = 'seamless' | 'outline' | 'page' | 'paper';
 export type SpacingPreset = 'default' | 'butterick' | 'web' | 'blog';
@@ -32,7 +32,8 @@ export const SIDEBAR_MODES: { id: SidebarMode; label: string; icon: string }[] =
 ];
 
 export const SIDEBAR_STYLES: { id: SidebarStyle; label: string }[] = [
-  { id: 'cards', label: 'Cards' },
+  { id: 'cards', label: 'Original' },
+  { id: 'compact', label: 'Compact' },
 ];
 
 export const CANVAS_STYLES: { id: CanvasStyle; label: string }[] = [
@@ -110,6 +111,8 @@ export function getSidebarMode(): SidebarMode {
 }
 
 export function getSidebarStyle(): SidebarStyle {
+  const stored = localStorage.getItem(KEYS.sidebarStyle);
+  if (stored && SIDEBAR_STYLES.some(style => style.id === stored)) return stored as SidebarStyle;
   return 'cards';
 }
 

@@ -8,6 +8,7 @@ import './themes/colors-base.css';
 import './themes/colors-extra.css';
 import './themes/typefaces.css';
 import './sidebar/sidebar-styles.css';
+import './sidebar/sidebar-compact.css';
 import './themes/canvas-styles.css';
 import './themes/spacing-presets.css';
 import './tweet-compose/tweet-compose.css';

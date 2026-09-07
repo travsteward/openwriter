@@ -1,0 +1,73 @@
+/* Optional presentation variant. Original rules and navigation behavior stay
+ * in their existing stylesheets; every selector here requires explicit opt-in. */
+
+[data-sidebar-style="compact"] .sidebar-logo { gap: 6px; }
+[data-sidebar-style="compact"] .sidebar-logo-text { font-size: 14px; }
+[data-sidebar-style="compact"] .sidebar-collapse-btn { width: 26px; height: 26px; }
+
+/* Files: a shared row rhythm for workspaces, parents, documents, and variants. */
+[data-sidebar-style="compact"] .files-section + .files-section {
+  border-top: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+  padding-top: 4px;
+}
+[data-sidebar-style="compact"] .files-row { height: 26px; padding-right: 10px; }
+[data-sidebar-style="compact"] .files-row-label {
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 18px;
+}
+[data-sidebar-style="compact"] .files-row.is-section { height: 28px; }
+[data-sidebar-style="compact"] .files-row.is-section .files-row-label { font-weight: 600; }
+[data-sidebar-style="compact"] .files-row.is-container .files-row-label { font-weight: 500; }
+[data-sidebar-style="compact"] .files-row-icon { width: 16px; height: 16px; margin-right: 6px; }
+[data-sidebar-style="compact"] .files-row-icon svg { width: 14px; height: 14px; }
+[data-sidebar-style="compact"] .files-row-chevron { width: 16px; height: 24px; }
+[data-sidebar-style="compact"] .files-row-count { font-size: 10px; }
+[data-sidebar-style="compact"] .files-section-btn { width: 24px; height: 24px; }
+[data-sidebar-style="compact"] .files-row:focus-within .files-section-btn { opacity: .8; }
+[data-sidebar-style="compact"] .files-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+/* Tree: unboxed parent rows, restrained indentation, existing state markers. */
+[data-sidebar-style="compact"] .sidebar-section-header {
+  min-height: 28px;
+  padding: 4px 10px;
+  border-left: 0;
+}
+[data-sidebar-style="compact"] .sidebar-label {
+  font-size: 12px;
+  text-transform: none;
+  letter-spacing: normal;
+}
+[data-sidebar-style="compact"] .sidebar-section-list { padding: 0 6px 4px; }
+[data-sidebar-style="compact"] .sidebar-item {
+  min-height: 26px;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 4px;
+  box-shadow: none;
+}
+[data-sidebar-style="compact"] .sidebar-item-title { font-size: 12px; font-weight: 400; line-height: 18px; }
+[data-sidebar-style="compact"] .sidebar-item-meta { font-size: 10px; margin-top: 0; }
+[data-sidebar-style="compact"] .sidebar-container {
+  border: 0;
+  border-radius: 0;
+  margin-bottom: 0;
+  box-shadow: none;
+}
+[data-sidebar-style="compact"] .sidebar-container-header { min-height: 26px; padding: 3px 8px; }
+[data-sidebar-style="compact"] .sidebar-container-name { font-weight: 500; }
+[data-sidebar-style="compact"] .sidebar-container-list { padding: 0 4px 2px; }
+[data-sidebar-style="compact"] .sidebar-new-btn { width: 24px; height: 24px; border: 0; background: transparent; }
+[data-sidebar-style="compact"] .sidebar-delete-btn { top: 1px; right: 4px; width: 24px; height: 24px; }
+[data-sidebar-style="compact"] .sidebar-workspace-actions { opacity: 0; }
+[data-sidebar-style="compact"] .sidebar-section-header:hover .sidebar-workspace-actions,
+[data-sidebar-style="compact"] .sidebar-section-header:focus-within .sidebar-workspace-actions,
+[data-sidebar-style="compact"] .sidebar-container-header:focus-within .sidebar-container-actions,
+[data-sidebar-style="compact"] .sidebar-item:focus-within .sidebar-delete-btn { opacity: 1; }
+
+[data-sidebar-style="compact"] .sidebar-item:focus-visible,
+[data-sidebar-style="compact"] .sidebar-section-header:focus-visible,
+[data-sidebar-style="compact"] .sidebar-container-header:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}

@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 ## [Unreleased]
 
 ### Added
+- Optional Compact sidebar style with smaller rows and text, preserving navigation icons and hierarchy. Switch back to Original in Appearance at any time.
 - Create an independent editing draft from a manuscript, with compact chapter navigation and an original-copy version to restore. The source manuscript and its documents remain unchanged.
 
 ### Fixed

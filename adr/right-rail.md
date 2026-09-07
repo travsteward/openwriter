@@ -191,3 +191,11 @@ The right rail consolidates every contextual surface into a single tabbed sideba
 - `VoiceIcon` (waveform glyph) added to `right-rail/icons.tsx`. RightRail gains `heatmapOn` / `onToggleHeatmap` / `heatmapAvailable` / `heatmapTitle` props, threaded from `App.tsx` exactly like `focusMode` / `onToggleFocusMode`. The button is gated on `heatmapAvailable` (mirrors the old `metadata?.docId` gate) and reuses `right-rail-topbar-btn--active` for on-state — zero new CSS.
 - The previous floating bottom-left pill (`.attr-heatmap-control`) and its CSS were removed; the per-doc % composition moved from an inline legend into the button's `title` tooltip.
 - **Files touched**: `right-rail/RightRail.tsx`, `right-rail/icons.tsx`, `App.tsx`, `decorations/styles.css`.
+
+### 2026-09-07 — Optional compact sidebar presentation
+
+Appearance exposes Original and Compact sidebar styles using the existing
+appearance preference. Original remains the fallback and default. Compact is
+scoped entirely by the selected style attribute; existing stylesheets, icons,
+navigation hierarchy, and row behavior remain intact. The user can compare both
+live before deciding whether Compact should become the default.

@@ -6,7 +6,7 @@
 import { useState } from 'react';
 import type { JSX } from 'react';
 import {
-  TYPEFACES, SIDEBAR_MODES, SPACING_PRESETS, CANVAS_STYLES,
+  TYPEFACES, SIDEBAR_MODES, SIDEBAR_STYLES, SPACING_PRESETS, CANVAS_STYLES,
   getTypeface, getMode, getSidebarMode, getSidebarStyle, getSpacing, getCanvasStyle, applyAppearance,
 } from '../../themes/appearance-store';
 import type { Typeface, ThemeMode, SidebarMode, SidebarStyle, SpacingPreset, CanvasStyle } from '../../themes/appearance-store';
@@ -24,7 +24,7 @@ export default function AppearanceTab(_props: RightRailTabProps) {
   const [typeface, setTypeface] = useState<Typeface>(getTypeface);
   const [mode, setMode] = useState<ThemeMode>(getMode);
   const [sidebarMode, setSidebarMode] = useState<SidebarMode>(getSidebarMode);
-  const sidebarStyle = getSidebarStyle();
+  const [sidebarStyle, setSidebarStyle] = useState<SidebarStyle>(getSidebarStyle);
   const [spacing, setSpacing] = useState<SpacingPreset>(getSpacing);
   const [canvasStyle, setCanvasStyle] = useState<CanvasStyle>(getCanvasStyle);
 
@@ -51,6 +51,7 @@ export default function AppearanceTab(_props: RightRailTabProps) {
     window.dispatchEvent(new CustomEvent('ow-sidebar-mode-change', { detail: id }));
   };
   const handleSpacing = (id: SpacingPreset) => { setSpacing(id); apply(undefined, undefined, undefined, undefined, id); };
+  const handleSidebarStyle = (id: SidebarStyle) => { setSidebarStyle(id); apply(undefined, undefined, undefined, id); };
   const handleCanvasStyle = (id: CanvasStyle) => { setCanvasStyle(id); apply(undefined, undefined, undefined, undefined, undefined, id); };
 
   return (
@@ -134,6 +135,22 @@ export default function AppearanceTab(_props: RightRailTabProps) {
             >
               {ModeIcons[m.icon]}
               <span>{m.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="appearance-section">
+        <div className="appearance-section-header">
+          <span className="appearance-section-title">Sidebar style</span>
+        </div>
+        <div className="appearance-style-grid" role="group" aria-label="Sidebar style">
+          {SIDEBAR_STYLES.map(style => (
+            <button key={style.id} type="button"
+              className={`appearance-style-option ${sidebarStyle === style.id ? 'active' : ''}`}
+              aria-pressed={sidebarStyle === style.id}
+              onClick={() => handleSidebarStyle(style.id)}>
+              {style.label}
             </button>
           ))}
         </div>
