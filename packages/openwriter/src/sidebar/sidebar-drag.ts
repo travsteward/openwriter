@@ -340,7 +340,7 @@ export function useSidebarDrag({ docs, workspaces, assignedFiles, scrollRef, set
   const handlePointerDown = useCallback((e: React.PointerEvent, item: DraggedItem, label: string) => {
     if (e.button !== 0) return;
     const target = e.target as HTMLElement;
-    if (target.closest('input, button, .sidebar-tag-remove, .sidebar-tag-add, .sidebar-container-actions, .sidebar-delete-btn, .sidebar-confirm-delete, .sidebar-inline-confirm')) return;
+    if (target.closest('input, button:not(.variant-document-title), .sidebar-tag-remove, .sidebar-tag-add, .sidebar-container-actions, .sidebar-delete-btn, .sidebar-confirm-delete, .sidebar-inline-confirm')) return;
 
     dragStartPos.current = { x: e.clientX, y: e.clientY };
     pendingDrag.current = item;

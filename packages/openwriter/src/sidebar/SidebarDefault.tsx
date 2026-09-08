@@ -240,10 +240,11 @@ export default function SidebarDefault({ docs, archivedDocs, workspaces, assigne
     doc: DocumentInfo, wsFilename: string | undefined,
     containerId: string | null, _siblings: WorkspaceNode[], _itemIndex: number,
     inheritedAutoAccept: boolean = false,
+    hasVariants: boolean = false,
   ) => (
     <div
       key={doc.filename}
-      {...sidebarRowProps()}
+      {...(hasVariants ? { role: 'group', 'aria-label': doc.title } : sidebarRowProps())}
       aria-current={doc.isActive ? 'page' : undefined}
       className={`sidebar-item ${doc.isActive ? 'active' : ''} ${isDragging(doc.filename) ? 'dragging' : ''} ${dropClass(doc.filename)}`}
       data-drag-id={doc.filename}
@@ -251,8 +252,12 @@ export default function SidebarDefault({ docs, archivedDocs, workspaces, assigne
       data-drag-ws={wsFilename || '__docs__'}
       data-drag-container={containerId || ''}
       onPointerDown={(e) => handlePointerDown(e, { type: 'doc', file: doc.filename, sourceWs: wsFilename || null }, doc.title)}
-      onClick={() => !doc.isActive && !draggedItem && onSwitchDocument(doc.filename)}
-      onDoubleClick={() => { setEditingFilename(doc.filename); setEditValue(doc.title); }}
+      onClick={() => {
+        if (draggedItem) return;
+        if (hasVariants) toggleSection(`variants-${doc.docId}`);
+        else if (!doc.isActive) onSwitchDocument(doc.filename);
+      }}
+      onDoubleClick={e => { if (!hasVariants || (e.target as HTMLElement).closest('.variant-document-title')) { setEditingFilename(doc.filename); setEditValue(doc.title); } }}
       onContextMenu={(e) => handleDocContextMenu(e, doc)}
     >
       {editingFilename === doc.filename ? (
@@ -271,7 +276,20 @@ export default function SidebarDefault({ docs, archivedDocs, workspaces, assigne
       ) : (
         <>
           <div className="sidebar-item-title">
-            <span className="sidebar-item-title-text">{doc.title}</span>
+            {hasVariants && (
+              <button type="button" {...sidebarRowProps(!collapsedSections.has(`variants-${doc.docId}`))}
+                className={`sidebar-variant-chevron variant-toggle${collapsedSections.has(`variants-${doc.docId}`) ? ' collapsed' : ''}`}
+                aria-label={`Variants of ${doc.title}`}
+                onClick={e => { e.stopPropagation(); if (!draggedItem) toggleSection(`variants-${doc.docId}`); }}
+              >
+                <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+            )}
+            <span className="sidebar-item-title-text">{hasVariants ? (
+              <button type="button" {...sidebarRowProps()} className="variant-document-title"
+                onClick={e => { e.stopPropagation(); if (!doc.isActive && !draggedItem) onSwitchDocument(doc.filename); }}
+              >{doc.title}</button>
+            ) : doc.title}</span>
             {doc.variantType && <span className="files-badge-variant">{doc.variantType}</span>}
             {actions.getDocTags(doc.filename).includes('✓') && (
               <svg className="sidebar-approved-icon" aria-label="Approved" role="img" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -345,11 +363,8 @@ export default function SidebarDefault({ docs, archivedDocs, workspaces, assigne
 
     return (
       <div key={`vg-${doc.filename}`} className="sidebar-variant-group">
-        <div className={`sidebar-variant-master${!isExpanded && activeTrail?.masterDocId === doc.docId ? ' active-within' : ''}`} onClick={(e) => { if ((e.target as HTMLElement).closest('.sidebar-variant-chevron')) { e.stopPropagation(); toggleSection(variantKey); } }}>
-          {renderDocItem(doc, wsFilename, containerId, siblings, itemIndex, inheritedAutoAccept)}
-          <span className={`sidebar-variant-chevron${isExpanded ? '' : ' collapsed'}`}>
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-          </span>
+        <div className={`sidebar-variant-master${!isExpanded && activeTrail?.masterDocId === doc.docId ? ' active-within' : ''}`}>
+          {renderDocItem(doc, wsFilename, containerId, siblings, itemIndex, inheritedAutoAccept, true)}
         </div>
         {isExpanded && (
           <div className="sidebar-variant-children">

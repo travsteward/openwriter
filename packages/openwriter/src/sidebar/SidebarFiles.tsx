@@ -505,7 +505,7 @@ export default function SidebarFiles({
   const renderDoc = (doc: DocumentInfo, indent: number, wsFilename?: string, containerId?: string | null, hasVariants?: boolean, inheritedAutoAccept: boolean = false) => (
     <div
       key={doc.filename}
-      {...sidebarRowProps()}
+      {...(hasVariants ? { role: 'group', 'aria-label': doc.title } : sidebarRowProps())}
       aria-current={doc.isActive ? 'page' : undefined}
       className={`files-row${doc.isActive ? ' active' : ''}${doc.docId && activeTrail?.masterDocId === doc.docId && collapsed.has(`variants-${doc.docId}`) ? ' active-within' : ''}${selection.has(doc.filename) ? ' selected' : ''} ${isDragging(doc.filename) ? 'dragging' : ''} ${dropClass(doc.filename)}${doc.masterDocId ? ' is-variant' : ''}`}
       style={{ paddingLeft: indent, ...dropIndentStyle(doc.filename) }}
@@ -514,16 +514,36 @@ export default function SidebarFiles({
       data-drag-ws={wsFilename || '__docs__'}
       data-drag-container={containerId || ''}
       onPointerDown={e => handlePointerDown(e, { type: 'doc', file: doc.filename, sourceWs: wsFilename || null }, selection.has(doc.filename) && selection.size > 1 ? `${selection.size} docs` : doc.title)}
-      onClick={e => handleDocClick(e, doc.filename)}
-      onDoubleClick={() => startRename('doc', doc.filename, doc.title)}
+      onClick={e => {
+        if (hasVariants && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
+          if (!draggedItem) toggle(`variants-${doc.docId}`);
+        } else handleDocClick(e, doc.filename);
+      }}
+      onDoubleClick={e => { if (!hasVariants || (e.target as HTMLElement).closest('.variant-document-title')) startRename('doc', doc.filename, doc.title); }}
       onContextMenu={e => handleDocContextMenu(e, doc)}
     >
+      {hasVariants && (
+        <button type="button"
+          {...sidebarRowProps(!collapsed.has(`variants-${doc.docId}`))}
+          className={`files-row-chevron leading variant-toggle${collapsed.has(`variants-${doc.docId}`) ? ' collapsed' : ''}`}
+          aria-label={`Variants of ${doc.title}`}
+          aria-expanded={!collapsed.has(`variants-${doc.docId}`)}
+          onClick={e => { e.stopPropagation(); if (!draggedItem) toggle(`variants-${doc.docId}`); }}
+        >
+          <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+      )}
       <span className="files-row-icon"><ContentIcon type={doc.contentType} /></span>
       {renaming?.type === 'doc' && renaming.key === doc.filename ? (
         renderRenameInput(commitRename)
       ) : (
         <>
-          <span className="files-row-label">{doc.title}</span>
+          <span className="files-row-label">{hasVariants ? (
+            <button type="button" className="variant-document-title"
+              {...sidebarRowProps()}
+              onClick={e => { e.stopPropagation(); handleDocClick(e, doc.filename); }}
+            >{doc.title}</button>
+          ) : doc.title}</span>
           {doc.variantType && <span className="files-badge-variant">{doc.variantType}</span>}
           {(doc.autoAccept === true || (doc.autoAccept !== false && inheritedAutoAccept)) && <span className="sidebar-auto-accept-dot" title={doc.autoAccept === true ? "Auto-accept on" : "Auto-accept inherited"} />}
           {pendingDocs.filenames.includes(doc.filename) && !clearedPending.has(doc.filename) && <span className="files-badge-pending" />}
@@ -534,14 +554,6 @@ export default function SidebarFiles({
           )}
           {actions.getDocTags(doc.filename).includes('✓') && <span className="files-badge-approved"><CheckIcon /></span>}
           {doc.lastSent && <span className="files-badge-sent"><CheckIcon /></span>}
-          {hasVariants && (
-            <span
-              className={`files-row-chevron${collapsed.has(`variants-${doc.docId}`) ? ' collapsed' : ''}`}
-              onClick={e => { e.stopPropagation(); toggle(`variants-${doc.docId}`); }}
-            >
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-            </span>
-          )}
         </>
       )}
     </div>

@@ -44,7 +44,7 @@
   background: color-mix(in srgb, var(--accent) 24%, transparent);
 }
 
-/* Chevron — trailing (variants, far right) */
+/* Chevron — shared disclosure shape; leading on expandable rows. */
 .files-row-chevron {
   width: 20px;
   height: 20px;

@@ -52,3 +52,11 @@ parent relationship. Restoration now retains current identity/parent/review
 fields while restoring the snapshot body exactly, including explicit false
 auto-accept settings. The test covers this alongside accepted-only copying,
 format retention, source independence, pending edits, and baseline restores.
+
+### 2026-09-08 — Separate expansion from document opening
+
+Variant parents use a leading folder-style chevron beside the unchanged document
+icon. Clicking row space or the icon expands/collapses; only the title opens the
+parent. Native disclosure and title buttons provide separate keyboard actions.
+Existing context menus, rename on the title, drag, and modified multi-selection
+retain their behavior. Leaf documents still open from the whole row.
