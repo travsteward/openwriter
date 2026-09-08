@@ -26,6 +26,10 @@ through their own pathway.
 
 ## Current invariants
 
+- Focus mode uses the same ReviewTab title/body cursor, preview restoration,
+  resolution handlers, and WebSocket persistence as the full review panel.
+
+
 - **Disk = canonical only.** No `pending:` or `meta.pending` field in
   frontmatter. The body holds only accepted content. `tiptapToMarkdown`
   reverts pending nodes to their `originalBaseline` before serializing.
@@ -1198,3 +1202,10 @@ preserves current docId, masterDocId, variantType, and autoAccept using parsed
 frontmatter, while leaving the snapshot body byte-exact. Pending sidecars stay
 on their existing restore path. A regression reproduces the old-parent loss and
 checks original prose, current nesting, and review-enabled state after restore.
+
+### 2026-09-08 — Focus review uses existing resolution
+
+ReviewTab can present its current-change actions in the Focus titlebar through
+a portal. It retains the same body/title cursor, restores any Original preview
+before resolution, and sends the existing persistence messages. No second
+pending-state hook or new acceptance path is introduced.

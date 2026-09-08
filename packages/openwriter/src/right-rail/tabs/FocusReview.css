@@ -1,0 +1,30 @@
+.focus-review {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding-right: 6px;
+  margin-right: 4px;
+  border-right: 1px solid var(--border);
+  color: var(--ink-medium);
+}
+
+.focus-review button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.focus-review button:hover:not(:disabled) { background: var(--bg-hover); }
+.focus-review button:disabled { opacity: .3; cursor: default; }
+.focus-review button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.focus-review__count { min-width: 36px; text-align: center; font-size: 11px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.focus-review .focus-review__accept { color: var(--pending-insert-color, #22c55e); }
+.focus-review .focus-review__reject { color: var(--pending-delete-color, #ef4444); }

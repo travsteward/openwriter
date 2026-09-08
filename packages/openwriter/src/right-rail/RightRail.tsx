@@ -182,7 +182,7 @@ export default function RightRail(props: RightRailProps) {
         </div>
       </div>
       <RailIconStrip pendingDocs={tabProps.pendingDocs} />
-      <RailBody {...tabProps} />
+      <RailBody {...tabProps} focusMode={focusMode} />
     </aside>
   );
 }

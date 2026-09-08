@@ -19,6 +19,15 @@ The right rail consolidates every contextual surface into a single tabbed sideba
 
 ## Decision log (append-only)
 
+### 2026-09-08 — Focus review strip
+
+Focus mode renders the existing ReviewTab controller as a compact titlebar portal:
+previous, count, next, accept-current, reject-current. There is only one pending
+cursor and one set of resolution handlers. The portal sits outside the hidden
+rail's inert DOM. Entry works from any rail tab; leaving Focus restores normal
+tab selection. The strip disappears when the current document has no proposals.
+Bulk approval remains in the full panel.
+
 ### 2026-06-09 — Responsive overlay mode: intent vs drawer split
 
 - Narrow windows float the rail over the doc instead of pushing it — full

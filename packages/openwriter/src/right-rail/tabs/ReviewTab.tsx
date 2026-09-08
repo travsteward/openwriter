@@ -10,6 +10,8 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import './FocusReview.css';
 import type { Editor } from '@tiptap/react';
 import { usePendingState, derivePendingState } from '../../hooks/usePendingState';
 import { setPreviewState, isPreviewActive, getSavedModifiedContent, getPreviewGroupId } from '../../decorations/plugin';
@@ -138,7 +140,8 @@ export default function ReviewTab({
   sendMessage,
   getDocument,
   docVersionRef,
-}: RightRailTabProps) {
+  focusReviewTarget,
+}: RightRailTabProps & { focusReviewTarget?: HTMLElement | null }) {
   const {
     counts,
     currentNode,
@@ -570,6 +573,22 @@ export default function ReviewTab({
   // doesn't need to nag here. Without this, branch 3 used to fire and show
   // a `—/N` doc navigator on every clean doc, which read like an error.
   // adr: adr/pending-overlay-model.md
+  // One controller, two presentations. The portal is outside the collapsed
+  // rail's inert DOM, so Focus controls remain accessible and interactive.
+  if (focusReviewTarget !== undefined) {
+    if (!focusReviewTarget || totalSlots === 0) return null;
+    return createPortal(
+      <div className="focus-review" role="group" aria-label="Review changes">
+        <button type="button" onClick={handleGoToPrevious} disabled={totalSlots <= 1} aria-label="Previous change" title="Previous change"><ChevronLeft /></button>
+        <span className="focus-review__count" aria-live="polite" aria-atomic="true" title={cursor === 'title' && pendingTitle ? `${pendingTitle.from} → ${pendingTitle.to}` : 'Current change'}>{cursor === 'title' ? 'Title ' : ''}{slotIndex + 1}/{totalSlots}</span>
+        <button type="button" onClick={handleGoToNext} disabled={totalSlots <= 1} aria-label="Next change" title="Next change"><ChevronRight /></button>
+        <button type="button" className="focus-review__accept" onClick={handleAcceptCurrent} aria-label="Accept current change" title="Accept current change"><Check /></button>
+        <button type="button" className="focus-review__reject" onClick={handleRejectCurrent} aria-label="Reject current change" title="Reject current change"><XIcon /></button>
+      </div>,
+      focusReviewTarget,
+    );
+  }
+
   if (!hasPending && !pendingTitle) {
     return (
       <>

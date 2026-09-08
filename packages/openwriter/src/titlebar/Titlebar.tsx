@@ -177,6 +177,7 @@ export default function Titlebar({ title, onTitleChange, onToggleSidebar, canGoB
         )}
       </div>
       <div className="titlebar-right">
+        {focusMode && <div id="focus-review-controls" />}
         {!railVisible && onToggleFocusMode && (
           <button
             className={`titlebar-nav-btn${focusMode ? ' titlebar-nav-btn--active' : ''}`}

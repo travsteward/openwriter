@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 ## [Unreleased]
 
 ### Added
+- Compact Focus-mode review controls navigate, accept, and reject individual changes without opening the side panel.
 - Optional Compact sidebar style with smaller rows and text, preserving navigation icons and hierarchy. Switch back to Original in Appearance at any time.
 - Create a Revision variant beneath any document, preserving its writing format and an original-copy version to restore. Manuscripts compile into an editable revision while their source documents stay intact.
 - Read and annotate revisions in the existing Focus mode. Older reading links open the normal editor in Focus mode.
