@@ -30,6 +30,11 @@ Bulk approval remains in the full panel.
 If the user reopens the rail while Focus remains enabled, its selected tab works
 normally; the compact presentation resumes when the rail closes.
 
+Full-book navigation exposed the pending-arrival auto-open path overriding Focus
+after loading. Both server arrivals and local pending-write notifications now
+share an auto-reveal policy: ordinary mode opens Review; Focus keeps its compact
+strip visible and leaves panels closed. Explicit user panel opens still work.
+
 ### 2026-06-09 — Responsive overlay mode: intent vs drawer split
 
 - Narrow windows float the rail over the doc instead of pushing it — full

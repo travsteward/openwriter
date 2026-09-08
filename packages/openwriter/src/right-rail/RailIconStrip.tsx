@@ -16,13 +16,14 @@
  *
  * adr: adr/right-rail.md
  */
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRightRail } from './RightRailContext';
 import { TAB_REGISTRY } from './tabs';
 import type { PendingDocsPayload } from '../ws/client';
 
 interface RailIconStripProps {
   pendingDocs: PendingDocsPayload;
+  autoReveal: boolean;
 }
 
 // Last observed pending count, kept at MODULE scope so it survives this
@@ -35,27 +36,31 @@ interface RailIconStripProps {
 // "already auto-opened for this batch" memory outlive the remount.
 let lastPendingCount = 0;
 
-export default function RailIconStrip({ pendingDocs }: RailIconStripProps) {
+export default function RailIconStrip({ pendingDocs, autoReveal }: RailIconStripProps) {
   const { visible, activeTab, openTab } = useRightRail();
   const [pulsingActivity, setPulsingActivity] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  // Focus has its own visible review controls; arrivals must not open a panel.
+  const revealReview = useCallback(() => {
+    if (autoReveal) openTab('review');
+  }, [autoReveal, openTab]);
 
   useEffect(() => {
     const cur = pendingDocs.filenames.length;
     const prev = lastPendingCount;
     lastPendingCount = cur;
-    if (prev === 0 && cur > 0) openTab('review');
-  }, [pendingDocs.filenames.length, openTab]);
+    if (prev === 0 && cur > 0) revealReview();
+  }, [pendingDocs.filenames.length, revealReview]);
 
   // Right-click actions (enhance, author's voice) apply pending changes directly
   // into the editor — the server's pending-docs-changed WebSocket event only arrives
   // after the auto-save debounce, and the 0→>0 guard above misses it entirely if any
   // other doc is already pending. Switch to Review immediately on the client event.
   useEffect(() => {
-    const handler = () => openTab('review');
+    const handler = () => revealReview();
     window.addEventListener('ow-pending-write-applied', handler);
     return () => window.removeEventListener('ow-pending-write-applied', handler);
-  }, [openTab]);
+  }, [revealReview]);
 
   useEffect(() => {
     const handler = () => {

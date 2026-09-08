@@ -181,7 +181,7 @@ export default function RightRail(props: RightRailProps) {
           <SyncButton syncStatus={syncStatus} onSync={onSync} />
         </div>
       </div>
-      <RailIconStrip pendingDocs={tabProps.pendingDocs} />
+      <RailIconStrip pendingDocs={tabProps.pendingDocs} autoReveal={!focusMode} />
       <RailBody {...tabProps} focusMode={focusMode && !visible} />
     </aside>
   );
