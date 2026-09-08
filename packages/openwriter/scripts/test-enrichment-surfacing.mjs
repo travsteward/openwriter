@@ -80,28 +80,18 @@ try {
     const footer = enrichmentFooter();
     assert(footer.includes('3 docs need enrichment'),
       'footer reports correct count');
-    assert(footer.includes('openwriter-enrichment-minion'),
-      'footer names the minion subagent');
-    assert(footer.includes('Agent('),
-      'footer includes the exact dispatch call');
-    assert(footer.includes('subagent_type: "openwriter-enrichment-minion"'),
-      'footer names the minion subagent_type');
-    assert(footer.includes('description:'),
-      'footer includes description field');
-    assert(footer.includes('prompt:'),
-      'footer includes prompt field');
-    assert(footer.includes('run_in_background: true'),
-      'footer dispatches in background mode');
+    assert(footer.includes('claim_enrichment'), 'footer directs the agent to claim work');
+    assert(footer.includes('claimToken'), 'completion carries snapshot ownership');
+    assert(footer.includes('Empty claims mean stop'), 'in-flight work cannot trigger dispatch loops');
+    assert(!footer.includes('Agent('), 'notice is harness-neutral');
 
     const instructions = buildEnrichmentInstructions();
     assert(instructions.includes('ENRICHMENT_STATUS'),
       'instructions contain ENRICHMENT_STATUS header');
     assert(instructions.includes('3 docs need enrichment'),
       'instructions report correct count');
-    assert(instructions.includes('openwriter-enrichment-minion'),
-      'instructions name the minion subagent');
-    assert(instructions.includes('self-discovers'),
-      'instructions emphasize self-discovery (no args needed)');
+    assert(instructions.includes('claim_enrichment'), 'instructions name the claim protocol');
+    assert(instructions.includes('canonical content'), 'instructions require snapshot content');
   }
 
   // ---------------------------------------------------------------------

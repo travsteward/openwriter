@@ -89,7 +89,7 @@ try {
     const b = ['s1','s2','s3','s4','s5','s6','s7','s8','s9','sNEW'];
     const d = jaccardDistance(a, b);
     assert(Math.abs(d - (2/11)) < 1e-9, '1 sentence change in 10 → distance ≈ 0.18');
-    assert(d < DEFAULT_ENRICHMENT_DRIFT_THRESHOLD, 'sub-threshold (no flag)');
+    assert(d >= DEFAULT_ENRICHMENT_DRIFT_THRESHOLD, 'exceeds current 0.10 drift threshold');
   }
 
   // Half the doc rewritten → drift ≥ 0.3
@@ -147,8 +147,8 @@ try {
       lastEnrichedSentences: ['s1','s2','s3','s4','s5','s6','s7','s8','s9','s10'],
     };
     assert(isEnrichmentStale(
-      ['s1','s2','s3','s4','s5','s6','s7','s8','s9','sNEW'], 100, meta) === false,
-      '1-of-10 sentence change → not stale');
+      ['s1','s2','s3','s4','s5','s6','s7','s8','s9','sNEW'], 100, meta) === true,
+      '1-of-10 sentence change → stale at current 0.10 threshold');
   }
 
   {
@@ -336,8 +336,8 @@ try {
 
   // 5b — populate_document on an already-enriched-with-matching-baseline doc stays clean.
   // The doc on disk has lastEnriched* matching content; populate replaces with
-  // pending-marked content. Canonical (pending reverted) is empty → volumeRatio
-  // trips. Confirms canonical-not-merged measurement.
+  // pending-marked content. The existing canonical body remains on disk.
+  // Confirms canonical-not-merged measurement.
   {
     const filePath = join(TEST_PROFILE_DIR, 'flush-with-baseline.md');
     const baselineContent = 'Alpha sentence here. Beta sentence here.';
@@ -362,10 +362,10 @@ try {
     populateDocumentFile('flush-with-baseline.md', doc);
 
     const fm = matter(readFileSync(filePath, 'utf-8'));
-    // Canonical (post pending-revert) is empty → volumeRatio from baselineChars > 0
-    // to 0 = Infinity → stale by volume.
-    assert(fm.data.enrichmentStale === true,
-      'populateDocumentFile reverts pending → canonical empty → stale by volume');
+    assert(fm.content.includes(baselineContent), 'pending replacement preserves canonical body');
+    assert(!fm.content.includes('Brand new content via populate.'), 'pending prose stays out of canonical disk body');
+    assert(fm.data.enrichmentStale !== true,
+      'pending replacement does not stale an unchanged canonical baseline');
   }
 
   // 5c — apply_changes_to_file with sub-threshold edit on enriched doc stays clean.

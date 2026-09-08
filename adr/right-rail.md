@@ -207,3 +207,7 @@ Collapsed panels stay mounted but are inert and hidden from accessibility naviga
 ### 2026-09-07 — Enrichment handler extraction
 
 Moved enrichment tool handlers into enrichment-tools.ts without changing the single batch Activity event or document metadata behavior.
+
+### 2026-09-07 — Claimed enrichment completion
+
+Batch Activity now reports rejected stale/expired claims alongside successful refreshes. Only successful matching snapshots retire enrichment work.

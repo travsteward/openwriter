@@ -16,7 +16,7 @@ description: |
   Requires: OpenWriter MCP server configured. Browser UI at localhost:5050.
 metadata:
   author: travsteward
-  version: "0.20.0"
+  version: "0.21.0"
   repository: https://github.com/travsteward/openwriter
 license: MIT
 ---
@@ -45,18 +45,7 @@ You are a writing collaborator. You read documents and make edits **exclusively 
 2. **The terminal is for discussion only.** Use chat messages to explain your edits, ask questions, discuss direction, or summarize what you changed. Never use it as the writing surface.
 3. **Name every document.** When you encounter a generically named doc ("Quote Tweet", "Article", "Untitled", etc.), rename it based on its content before proceeding. Titles are the human scanning layer — a sidebar full of "Quote Tweet" is useless. Use `rename_item` with the docId. Short, descriptive titles: "Venezuela Proxy States QT", "Feature Blindness Article".
 4. **Metadata first.** When the user asks you to work on a document, call `get_metadata` immediately after `read_pad`. Tweet docs store the parent URL in `tweetContext.url`, article docs store context in `articleContext`. **Never search externally for a tweet URL that's already in the document metadata.** This prevents wasting paid API calls on information you already have.
-5. **Dispatch the enrichment minion when openwriter says so.** OpenWriter surfaces stale enrichment two ways: (a) `ENRICHMENT_STATUS: ...` in the MCP server's session-start instructions; (b) a `⚠ N docs need enrichment. Dispatch:` footer on `list_documents`, `list_workspaces`, and `get_workspace_structure` responses. Both signals include the **complete dispatch call inline** — copy it verbatim and fire the Agent tool with those exact field values. When you see either signal, dispatch the minion immediately, before responding to the user's request. The minion is orchestrator-mode by default: it calls `list_dirty_docs` itself, self-bounds the batch, reads each doc, writes a logline, calls `mark_enriched` once with the whole batch, and returns a short summary. **v0.19.0 schema:** the minion writes ONE field — `logline`. The agent owns `status` (`canonical` / `draft`); the system owns `enrichmentStale`. The legacy fields `domain`, `concepts`, and `docRole` were dropped. The `prompt` field in the dispatch line is a placeholder — the minion ignores its content because its full procedure lives in its system prompt at `~/.claude/agents/openwriter-enrichment-minion.md`.
-
-   **Surfacing to the user:** treat enrichment like the inbox — a maintenance reflex, not a feature they have to ask for. Phrasing depends on context:
-
-   - **First time in a session, small batch (N ≤ 5):** silent dispatch + one-line aside in your response: "Enriched 3 docs in the background. Now, ..."
-   - **First time in a session, medium batch (5 < N ≤ 20):** brief explanation on first surface: "OpenWriter just refreshed loglines on 12 docs in the background. Now, ..." Sets expectations once; subsequent runs can stay silent.
-   - **First time in a session, large batch (N > 20):** give the user a heads-up BEFORE dispatching: "OpenWriter detected 47 docs that haven't been summarized yet — first-time setup. Refreshing them in the background; this'll take ~30 seconds and a few cents of Haiku usage." Then dispatch and report when done.
-   - **Very large batch (N > 30):** one minion can't get through that many in reasonable wall time. Switch to **chunked parallel dispatch** — multiple minions, each given an explicit docId list, all dispatched in a single message with `run_in_background: true`. Full procedure (chunking strategy, explicit-list prompt format, failure modes) lives in this skill's `docs/enrichment.md`. Read that doc before dispatching anything over 30 docs.
-
-   **If the subagent isn't installed** (older openwriter, or the user skipped setup): the Agent call returns `Agent type 'openwriter-enrichment-minion' not found`. Tell the user once: "OpenWriter has stale docs but the enrichment minion isn't installed yet — run `npx openwriter setup` and restart Claude Code." Then proceed with their original request without enriching; don't loop on the failure.
-
-   **If the user opts out** ("stop nagging me about enrichment for X workspace"): call `update_workspace_context` with `enrichmentDisabled: true` for that workspace. The footer + ENRICHMENT_STATUS will drop those docs from their counts immediately.
+5. **Refresh stale loglines through server-owned claims.** During authorized document work, enrichment notices signal a bounded maintenance batch. Read `docs/enrichment.md`. Use `claim_enrichment` to acquire at most 12 full canonical snapshots, summarize those exact snapshots, then call `mark_enriched` once with `{ docId, claimToken, logline }` per document. Use a helper supported by the active harness, or work inline when helpers cannot access MCP. Empty claims mean stop, even if the dirty count is nonzero. Do not poll or repeatedly spawn workers from that count. Claims expire after five minutes; edited documents settle for five seconds. Respect workspace `enrichmentDisabled` opt-outs. Report only actual completions and failures, without fixed time or cost promises.
 6. **Dispatch the sort minion when openwriter says so.** The user marks docs in the sidebar with "Request sort" when they don't know where a doc belongs and want you to file it — the mark *is* them delegating the placement decision. OpenWriter surfaces pending sorts two ways: (a) `SORT_STATUS: N docs awaiting sort` in the MCP server's session-start instructions; (b) a `⚠ N docs awaiting sort. Dispatch:` footer on `list_documents` / `list_workspaces` / `get_workspace_structure`. Both signals include the **complete dispatch call inline** — copy it verbatim and fire the Agent tool with those exact field values. When you see either signal, dispatch the minion immediately, before responding to the user's request. The minion self-discovers via `list_pending_sorts`, reads each doc, picks the best workspace + container from purpose hints, files it (`move_item`), retires the request (`mark_sorted`), and returns a one-line "what moved" summary.
 
    ```
@@ -226,7 +215,7 @@ OpenWriter detects when a doc has drifted past enrichment thresholds (sentence-h
 
 | Field | Owner | Set how |
 |-------|-------|---------|
-| `logline` | LLM (minion) | `mark_enriched({ docs: [{ docId, logline }] })` |
+| `logline` | LLM (minion) | `mark_enriched({ docs: [{ docId, claimToken, logline }] })` |
 | `status` (`canonical` / `draft`) | Agent | `create_document({ status })` on create; `set_metadata({ status })` on lifecycle change |
 | `enrichmentStale` | System | OpenWriter sets on save; minion clears on `mark_enriched` |
 
@@ -239,7 +228,8 @@ OpenWriter detects when a doc has drifted past enrichment thresholds (sentence-h
 | Tool | Key Params | Description |
 |------|-----------|-------------|
 | `list_dirty_docs` | `workspaceFile?` | List docs that need enrichment (never enriched OR explicitly flagged stale). Returns identity + reason only — no bodies. Optionally scoped to one workspace. Docs in opted-out workspaces (`enrichmentDisabled: true`) are excluded. |
-| `mark_enriched` | `docs: [{docId, logline}]` | Stamp one or more docs as freshly enriched. **Strict schema** — passing `domain` / `concepts` / `docRole` / `status` fails validation. OpenWriter auto-computes baselines (`lastEnrichedAt`, `lastEnrichedCharCount`, `lastEnrichedSentences`), clears `enrichmentStale`, and retires legacy fields from frontmatter. The minion calls this once at the end of its run with the full batch. |
+| `claim_enrichment` | `workspaceFile?`, `docIds?`, `limit?` | Acquire up to 12 exclusive full canonical snapshots with claimToken, revision and expiry. Empty docs means stop. |
+| `mark_enriched` | `docs: [{docId, claimToken, logline}]` | Stamp one or more docs as freshly enriched. **Strict schema** — passing `domain` / `concepts` / `docRole` / `status` fails validation. OpenWriter auto-computes baselines (`lastEnrichedAt`, `lastEnrichedCharCount`, `lastEnrichedSentences`), clears `enrichmentStale`, and retires legacy fields from frontmatter. The minion calls this once at the end of its run with the full batch. |
 | `browse_docs` | `workspaceFile?`, `tags?`, `status?` (`canonical`/`draft`), `hasLogline?` | Bulk-read concept-level frontmatter per doc with AND-composed filters. The agent's "scan the shelf" primitive — ~60 tokens per doc, no bodies, no tree shape. Pairs with `get_workspace_structure` (tree shape), `outline_doc` (skeleton), `peek_doc` (windowed read), and `read_pad` (full body) as the read ladder. Renamed from `crawl` / `browse` — both kept as DEPRECATED aliases for one release. |
 
 ### Sort Requests
