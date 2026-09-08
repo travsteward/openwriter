@@ -7,6 +7,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync, unlinkSync, statSync } from 'fs';
 import { join } from 'path';
 import { createHash } from 'crypto';
+import matter from 'gray-matter';
 import { getVersionsDir } from './helpers.js';
 import { markdownToTiptap } from './markdown.js';
 
@@ -271,28 +272,20 @@ export function pruneVersions(docId: string): void {
 }
 
 /**
- * Override the `autoAccept` field in a snapshot's frontmatter without
- * reparsing the body. Used by `restore_version` to preserve the CURRENT
- * user toggle (a per-doc UI preference) across a content-restore. Editing
- * the frontmatter line directly avoids a full parse + reserialize, which
- * would re-run the matcher and risk minor body-shape drift for what's
- * supposed to be an exact content restore.
+ * Restore content while retaining current document identity, variant parent,
+ * and review preference. These fields describe the document today, not the
+ * historic prose. Parse only frontmatter; the snapshot body stays byte-exact.
  *
  * adr: adr/pending-overlay-model.md
+ * adr: adr/document-variants.md
  */
-export function applyAutoAcceptOverride(snapshotMarkdown: string, currentAutoAccept: boolean): string {
-  const fmMatch = snapshotMarkdown.match(/^---\n(.+?)\n---\n/s);
-  if (!fmMatch) return snapshotMarkdown; // no frontmatter to update
-  try {
-    const fm = JSON.parse(fmMatch[1]);
-    if (currentAutoAccept) {
-      fm.autoAccept = true;
-    } else {
-      delete fm.autoAccept;
-    }
-    const newFmLine = JSON.stringify(fm);
-    return snapshotMarkdown.replace(/^---\n.+?\n---\n/s, `---\n${newFmLine}\n---\n`);
-  } catch {
-    return snapshotMarkdown; // malformed frontmatter — leave alone
+export function applyCurrentDocumentMetadata(snapshotMarkdown: string, current: Record<string, any> & { docId: string }): string {
+  const metadata = { ...matter(snapshotMarkdown).data };
+  for (const key of ['docId', 'masterDocId', 'variantType', 'autoAccept']) {
+    if (current[key] === undefined) delete metadata[key];
+    else metadata[key] = current[key];
   }
+  const header = snapshotMarkdown.match(/^(?:\uFEFF)?---\r?\n[\s\S]*?\r?\n---(?:\r?\n|$)/);
+  const body = header ? snapshotMarkdown.slice(header[0].length) : snapshotMarkdown;
+  return matter.stringify('', metadata).trimEnd() + '\n' + body;
 }

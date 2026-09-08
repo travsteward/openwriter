@@ -74,7 +74,7 @@ import { importGoogleDoc } from './gdoc-import.js';
 import { toCompactFormat, compactNodes, parseMarkdownContent } from './compact.js';
 import matter from 'gray-matter';
 import { getUpdateInfo } from './update-check.js';
-import { listVersions, forceSnapshot, writeSnapshotMarkdown, restoreVersion, getVersionContent, applyAutoAcceptOverride } from './versions.js';
+import { listVersions, forceSnapshot, writeSnapshotMarkdown, restoreVersion, getVersionContent, applyCurrentDocumentMetadata } from './versions.js';
 import { markdownToTiptap, tiptapToMarkdown, splitFusedParagraphs } from './markdown.js';
 import { loadDocFromDisk } from './pending-overlay.js';
 import { getComments, getCommentCount, getGlobalCommentSummary, resolveComments, type Comment } from './comments.js';
@@ -1795,16 +1795,10 @@ export const TOOL_REGISTRY: ToolDef[] = [
       const rawSnapshot = getVersionContent(target.docId, timestamp);
       if (!rawSnapshot) return { content: [{ type: 'text', text: `Error: Version ${timestamp} not found.` }] };
 
-      // Preserve the CURRENT autoAccept setting rather than rolling it back
-      // to the snapshot-era value. `autoAccept` is a per-doc user preference
-      // (toggled in the sidebar) that governs how FUTURE writes behave —
-      // it's not document content. Without this, a user who toggled
-      // autoAccept off to review incoming changes would silently lose that
-      // preference when the agent calls restore_version, and the next
-      // write_to_pad would auto-apply instead of arriving as pending.
+      // Restore prose without rolling back current identity, variant placement,
+      // or the user's review preference. Older snapshots may predate nesting.
       // adr: adr/pending-overlay-model.md
-      const currentAutoAccept = target.metadata?.autoAccept === true;
-      const snapshotMarkdown = applyAutoAcceptOverride(rawSnapshot, currentAutoAccept);
+      const snapshotMarkdown = applyCurrentDocumentMetadata(rawSnapshot, { ...target.metadata, docId: target.docId });
 
       // Write the snapshot directly to disk — this becomes the new canonical.
       // The pending overlay sidecar is unchanged; on reload, the matcher

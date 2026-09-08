@@ -61,3 +61,10 @@ Editing drafts reuse the controlled sidebar for a compact chapter outline. They 
 ### 2026-09-07 — UX audit closure
 
 Hidden sidebar and rail controls are inert; closing a focused panel returns focus to the opener. Layout widths and overlay thresholds are unchanged.
+
+### 2026-09-08 — Revisions use ordinary layout and Focus mode
+
+Removed editing-draft sidebar overrides and their Board-mode exception. Revision
+placement uses the existing variant tree. A focus=1 URL request is consumed once
+and enters the existing Focus transition; panel intent/restoration and the
+mounted editor are preserved. Compact sidebar styling is unchanged.

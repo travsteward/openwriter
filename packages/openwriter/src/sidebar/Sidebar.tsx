@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, type ReactNode } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import type { PendingDocsPayload } from '../ws/client';
 import { useSidebarData } from './sidebar-data';
 import { useSidebarActions } from './sidebar-actions';
@@ -19,7 +19,6 @@ import { moveSidebarFocus, searchInputKeyDown } from './sidebar-keyboard';
 import { usePanelVisibility } from '../hooks/usePanelVisibility';
 
 interface SidebarProps {
-  documentNavigation?: ReactNode;
   open: boolean;
   onSwitchDocument: (filename: string) => void;
   onCreateDocument: () => void;
@@ -55,11 +54,9 @@ export const SIDEBAR_MIN_WIDTH = 200;
 export const SIDEBAR_MAX_WIDTH = 600;
 export const SIDEBAR_DEFAULT_WIDTH = 260;
 
-export default function Sidebar({ open, onSwitchDocument, onCreateDocument, refreshKey, docTagsRefreshKey, workspacesRefreshKey, pendingDocs, writingTitle, writingTarget, pendingWriteFilenames, activeFilename, onClose, width, onWidthChange, floating, documentNavigation }: SidebarProps) {
-  const [showFiles, setShowFiles] = useState(false);
+export default function Sidebar({ open, onSwitchDocument, onCreateDocument, refreshKey, docTagsRefreshKey, workspacesRefreshKey, pendingDocs, writingTitle, writingTarget, pendingWriteFilenames, activeFilename, onClose, width, onWidthChange, floating }: SidebarProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   usePanelVisibility(panelRef, open, '[title="Open sidebar"]');
-  useEffect(() => { setShowFiles(false); }, [activeFilename]);
   const { docs, setDocs, workspaces, assignedFiles, fetchDocs, fetchWorkspaces, scrollRef } = useSidebarData(refreshKey, workspacesRefreshKey);
   const actions = useSidebarActions(fetchDocs, fetchWorkspaces, docs);
   const mode = getSidebarMode();
@@ -252,7 +249,7 @@ export default function Sidebar({ open, onSwitchDocument, onCreateDocument, refr
   ) : null;
 
   // Board mode uses horizontal layout — rendered differently in App
-  if (mode === 'board' && !documentNavigation) {
+  if (mode === 'board') {
     return (
       <div ref={panelRef} aria-hidden={!open} onKeyDown={moveSidebarFocus} className={`sidebar sidebar-board-mode ${open ? 'open' : ''}`} style={sidebarStyle}>
         {renderMode()}
@@ -310,17 +307,11 @@ export default function Sidebar({ open, onSwitchDocument, onCreateDocument, refr
           )}
         </div>
       </div>
-      {documentNavigation && (
-        <div className="sidebar-document-tabs" aria-label="Sidebar navigation">
-          <button type="button" aria-pressed={!showFiles && !tasksView && !scheduleView} onClick={() => { setShowFiles(false); setTasksView(false); setScheduleView(false); }}>Chapters</button>
-          <button type="button" aria-pressed={showFiles && !tasksView && !scheduleView} onClick={() => { setShowFiles(true); setTasksView(false); setScheduleView(false); }}>Files</button>
-        </div>
-      )}
       {tasksView ? (
         <SidebarTasks onBack={() => setTasksView(false)} />
       ) : scheduleView ? (
         <SidebarSchedule onBack={() => setScheduleView(false)} />
-      ) : documentNavigation && !showFiles ? documentNavigation : (
+      ) : (
         <>
           {searchBar}
           {renderMode()}

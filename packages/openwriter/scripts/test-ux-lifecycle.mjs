@@ -1,4 +1,4 @@
-// Regression coverage for archive placement and independent reading.
+// Regression coverage for archive placement and legacy reading links.
 import assert from 'node:assert/strict';
 import { mkdirSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
 import { join, resolve } from 'node:path';
@@ -63,14 +63,13 @@ try {
   const base = `http://127.0.0.1:${server.address().port}`;
   const before = ['Alpha', 'Beta', 'Gamma'].map(n => readFileSync(join(dir, `${n}.md`), 'utf8'));
   const active = getActiveFilename();
-  const beta = await fetch(`${base}/read/cc000002`);
-  assert.equal(beta.status, 200);
-  assert.match(await beta.text(), /Second document/);
-  assert.match(await (await fetch(`${base}/read/cc000001`)).text(), /href="\/read\/cc000002"/, 'document links stay in reading view');
+  const beta = await fetch(`${base}/read/cc000002`, { redirect: 'manual' });
+  assert.equal(beta.status, 303);
+  assert.equal(beta.headers.get('location'), '/d/cc000002?focus=1', 'saved reading links use the interactive editor in Focus mode');
   assert.equal((await fetch(`${base}/read/ffffffff`)).status, 404);
   assert.equal(getActiveFilename(), active, 'independent reads do not navigate the shared editor');
   assert.deepEqual(['Alpha', 'Beta', 'Gamma'].map(n => readFileSync(join(dir, `${n}.md`), 'utf8')), before, 'independent reads do not write files');
-  console.log('PASS: archive restoration, nesting, idempotence, missing destinations, independent reading, and file integrity');
+  console.log('PASS: archive restoration, nesting, idempotence, missing destinations, Focus link compatibility, and file integrity');
 } finally {
   if (server) await new Promise(resolve => server.close(resolve));
   clearAllCaches();

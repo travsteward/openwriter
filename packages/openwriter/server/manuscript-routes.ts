@@ -16,7 +16,7 @@ import {
   renderDocx,
 } from './manuscript/index.js';
 import { listManuscripts, loadManifest, safeName } from './manuscript/load.js';
-import { createEditingDraft } from './manuscript/editing-draft.js';
+import { createEditingDraft } from './document-revisions.js';
 
 export function createManuscriptRouter(): Router {
   const router = Router();

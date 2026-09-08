@@ -14,6 +14,7 @@ export interface SidebarMenuItem {
  *  content types in CreateDocDropdown, minus reply/quote (those need a tweet URL
  *  and aren't meaningful as derivatives). See docs/variants.md. */
 const VARIANT_TYPES: { key: string; label: string }[] = [
+  { key: 'revision', label: 'Revision' },
   { key: 'document', label: 'Document' },
   { key: 'tweet', label: 'Tweet' },
   { key: 'article', label: 'Article' },

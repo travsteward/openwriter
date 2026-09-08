@@ -8,10 +8,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ### Added
 - Optional Compact sidebar style with smaller rows and text, preserving navigation icons and hierarchy. Switch back to Original in Appearance at any time.
-- Create an independent editing draft from a manuscript, with compact chapter navigation and an original-copy version to restore. The source manuscript and its documents remain unchanged.
-- Independent reading views let you compare documents without moving the shared editor.
+- Create a Revision variant beneath any document, preserving its writing format and an original-copy version to restore. Manuscripts compile into an editable revision while their source documents stay intact.
+- Read and annotate revisions in the existing Focus mode. Older reading links open the normal editor in Focus mode.
 
 ### Fixed
+- Restoring older versions preserves the document's current variant parent and review preference.
 - Undo history stays within the document being edited when switching between documents.
 - Deleting the open document keeps the sidebar at your current folder while the editor opens the remaining document, avoiding jumps through nested folders.
 - Automatic document naming preserves text and Undo history; new documents appear immediately and accept typing.

@@ -211,3 +211,10 @@ Moved enrichment tool handlers into enrichment-tools.ts without changing the sin
 ### 2026-09-07 — Claimed enrichment completion
 
 Batch Activity now reports rejected stale/expired claims alongside successful refreshes. Only successful matching snapshots retire enrichment work.
+
+### 2026-09-08 — Reading and revision consolidation
+
+Removed the separate reader link and Shared label. Existing Focus controls still
+close and restore panels while keeping the editable document mounted. Revision
+creation belongs to the existing sidebar variant menu; the manuscript rail no
+longer offers a second creation action. Review and Versions remain unchanged.

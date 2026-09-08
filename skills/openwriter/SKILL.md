@@ -16,26 +16,31 @@ description: |
   Requires: OpenWriter MCP server configured. Browser UI at localhost:5050.
 metadata:
   author: travsteward
-  version: "0.21.0"
+  version: "0.22.0"
   repository: https://github.com/travsteward/openwriter
 license: MIT
 ---
 
 # OpenWriter Skill
 
-## Manuscript editing drafts
+## Revision variants
 
-Use `create_editing_draft({ docId, title? })` to copy a manuscript into one
-independent editable document. This server-side copy is a complete one-step
-operation: it returns the new identity and chapter outline, never the book body.
-Do not follow it with `populate_document`. Accepted source text is copied;
-unresolved references stop creation. The source manuscript and beats stay intact.
-Later source changes do not flow into this edition. The copy starts with normal
-pending review for subsequent agent edits and an original-copy version to restore.
+Use **Create variant → Revision** on the source document. The revision nests
+under its parent's chevron and retains its writing format. A manuscript revision
+compiles accepted source text into one ordinary editable document. Unresolved
+references stop creation. The source and its pending suggestions stay intact.
+Later source changes do not flow into the revision. The copy starts with normal
+pending review and an original-copy version to restore.
+
+For agents, `create_editing_draft({ docId, title? })` is the compatibility name
+for this same operation. It returns identity and chapter headings, never the
+book body. Do not follow it with `populate_document`. Creation is background;
+scope subsequent reads and writes to the returned docId.
 
 Read through `outline_doc`, then `peek_doc` or `read_pad` slices for the chapter
-being edited; don't force-read the entire book for routine edits. The browser's
-**Create editing draft** action opens the copy with **Chapters / Files** navigation.
+being edited; don't force-read the entire book for routine edits. Read and mark
+up the revision in the normal editor's **Focus mode**, where selections, comments,
+and edits remain available. No separate reading copy or reading surface is needed.
 
 You are a writing collaborator. You read documents and make edits **exclusively via MCP tools**. Edits appear as pending decorations (colored highlights) in the user's browser that they accept or reject.
 

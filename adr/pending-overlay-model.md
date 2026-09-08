@@ -1189,3 +1189,12 @@ Live enrichment testing exposed a merged browser edit that reached memory withou
 Moved the existing snapshot preference transformation from the large MCP
 registry into the version module without changing its behavior, before
 extending restoration to preserve a revision's current identity and parent.
+
+### 2026-09-08 — Restore prose without undoing revision placement
+
+A pre-migration snapshot restored through MCP erased an existing revision's
+parent and could discard explicit false auto-accept. The version helper now
+preserves current docId, masterDocId, variantType, and autoAccept using parsed
+frontmatter, while leaving the snapshot body byte-exact. Pending sidecars stay
+on their existing restore path. A regression reproduces the old-parent loss and
+checks original prose, current nesting, and review-enabled state after restore.

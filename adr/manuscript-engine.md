@@ -112,3 +112,9 @@ containers and calls them chapters), the engine doesn't know what a "book" is.
   headings without returning the manuscript body. The copy opens with a compact
   chapter outline in the existing sidebar; Files remains available on demand.
   Existing bounded reads, pending review, and version restores serve the edition.
+
+- **2026-09-08** — Replaced standalone editing-draft placement with a Revision
+  variant under the manuscript. Accepted-only compilation, independent body,
+  references, and original-copy version remain. The normal document editor and
+  Focus mode replace draft-specific Chapters/Files navigation. The old MCP and
+  HTTP creation names call the common revision service for compatibility.

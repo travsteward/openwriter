@@ -136,3 +136,10 @@ All five PadEditor surfaces receive stable metadata docId; auto-title rename pre
 ### 2026-09-07 — Shared browser mutation bookkeeping
 
 Stale-version merges retain their incoming-body fidelity check and install the merged view through updateDocument. This shares persistence version bookkeeping with current-version edits; it does not weaken body-collapse checks.
+
+### 2026-09-08 — Revision format and interactive reading
+
+Revision is a variant role; content_type still selects the editor. Copies retain
+the source format/context, and manuscript revisions use the full document
+schema. Legacy type inference now matches the editor's body-bearing precedence.
+The separate reader was removed in favor of Focus mode in the same editor.

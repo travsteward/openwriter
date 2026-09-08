@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Editor } from '@tiptap/react';
 import { useRightRail } from '../right-rail/RightRailContext';
 import { OpenRailIcon, FocusModeIcon } from '../right-rail/icons';
-import './TitlebarSession.css';
 
 interface TitlebarProps {
   title: string;
@@ -21,7 +20,6 @@ interface TitlebarProps {
    *  it only when the rail is closed; the rail topbar owns it when open. */
   focusMode?: boolean;
   onToggleFocusMode?: () => void;
-  readingViewUrl?: string;
 }
 
 interface UpdateInfo {
@@ -50,7 +48,7 @@ interface UpdateInfo {
  *
  * adr: adr/right-rail.md
  */
-export default function Titlebar({ title, onTitleChange, onToggleSidebar, canGoBack, canGoForward, onGoBack, onGoForward, editor, onToggleToolbar, toolbarOpen, focusMode, onToggleFocusMode, readingViewUrl }: TitlebarProps) {
+export default function Titlebar({ title, onTitleChange, onToggleSidebar, canGoBack, canGoForward, onGoBack, onGoForward, editor, onToggleToolbar, toolbarOpen, focusMode, onToggleFocusMode }: TitlebarProps) {
   const { visible: railVisible, openTab, activeTab } = useRightRail();
   const [editing, setEditing] = useState(false);
   const [, setTick] = useState(0);
@@ -179,10 +177,6 @@ export default function Titlebar({ title, onTitleChange, onToggleSidebar, canGoB
         )}
       </div>
       <div className="titlebar-right">
-        <span className="titlebar-session-label" title="Editor tabs share navigation with your agents. Use reading view to compare documents independently.">Shared</span>
-        {readingViewUrl && <a className="titlebar-nav-btn" href={readingViewUrl} target="_blank" rel="noopener" title="Open independent reading view" aria-label="Open independent reading view">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 5c-3-2-6-2-10-1v15c4-1 7-1 10 1 3-2 6-2 10-1V4c-4-1-7-1-10 1Zm0 0v15" /></svg>
-        </a>}
         {!railVisible && onToggleFocusMode && (
           <button
             className={`titlebar-nav-btn${focusMode ? ' titlebar-nav-btn--active' : ''}`}

@@ -18,6 +18,13 @@ large document lifecycle module; its older design notes are local-only.
 - A variant has independent identity and content. It does not synchronize
   changes back to its parent.
 - Duplicate remains the verbatim-copy operation.
+- Revision is a variant role, not a content type. It preserves the source
+  writing format; a manuscript compiles into an ordinary document revision.
+- Revisions copy accepted text only, with fresh identity, source references,
+  review enabled, and an original-copy version. They add no workspace row.
+- Migrating an existing draft changes its parent metadata, not its body,
+  node identities, comments, pending overlay, or version history.
+- Version restore preserves current identity, parent, role, and review preference.
 
 ## Decision log
 
@@ -29,3 +36,19 @@ the operation directly, keeping document lifecycle ownership separate and
 avoiding a return dependency when revision creation is added. Behavior is
 unchanged. This ADR carries the public implementation invariants previously
 documented only in the local variant notes.
+
+### 2026-09-08 — Revision reuses the existing variant tree
+
+Added Revision to the existing variant menu. The common creation service handles
+ordinary documents and compiled manuscripts; the older create_editing_draft
+tool remains a compatibility entry. UI creation opens the child; agent creation
+stays background. Existing format conversions keep their field projection.
+Legacy type derivation follows the same body-bearing precedence as the editor.
+Removed special editing-draft navigation and the separate reader. Focus mode
+keeps the ordinary editor available for comments and surgical edits.
+
+A regression restoring a pre-migration snapshot reproduced loss of the new
+parent relationship. Restoration now retains current identity/parent/review
+fields while restoring the snapshot body exactly, including explicit false
+auto-accept settings. The test covers this alongside accepted-only copying,
+format retention, source independence, pending edits, and baseline restores.

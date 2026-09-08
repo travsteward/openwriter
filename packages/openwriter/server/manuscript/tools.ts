@@ -6,15 +6,15 @@ import { ROOT_DIR } from '../helpers.js';
 import { compileManuscript, renderBookHtml, renderEpub, renderDocx } from './index.js';
 import { loadManifest, safeName } from './load.js';
 import type { ToolDef } from '../mcp.js';
-import { createEditingDraft } from './editing-draft.js';
+import { createEditingDraft } from '../document-revisions.js';
 
 export const manuscriptTools: ToolDef[] = [
   {
     name: 'create_editing_draft',
-    description: 'Copy a compiled manuscript into an independent, ordinary editable document. Preserves the original manuscript and source docs, copies accepted text only, and saves a restorable original version. Returns the new document identity and chapter outline, never the full book. Does not change the active document. Use outline_doc / peek_doc for section reads and normal editing tools for revisions.',
+    description: 'Compatibility entry for creating a Revision variant beneath its source document. Copies accepted text, preserves the writing format and source references, and saves an original version. Manuscripts compile into editable document revisions. Returns identity and outline, not the full body. Does not change the active document. Use normal editing tools and Focus mode.',
     schema: {
-      docId: z.string().describe('Source manuscript docId.'),
-      title: z.string().optional().describe('Optional name for the independent editing draft.'),
+      docId: z.string().describe('Source document or manuscript docId.'),
+      title: z.string().optional().describe('Optional name for the nested Revision variant.'),
     },
     handler: async ({ docId, title }: { docId: string; title?: string }) => ({
       content: [{ type: 'text', text: JSON.stringify(createEditingDraft(docId, title)) }],

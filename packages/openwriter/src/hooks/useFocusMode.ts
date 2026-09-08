@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 
 // adr: adr/responsive-overlay-layout.md
 export function useFocusMode({ sidebarOpen, showToolbar, setSidebarOpen, setSidebarDrawer, setShowToolbar }: {
@@ -31,8 +31,18 @@ export function useFocusMode({ sidebarOpen, showToolbar, setSidebarOpen, setSide
       }
       return false;
     });
-  }, [sidebarOpen, showToolbar]);
+  }, [sidebarOpen, showToolbar, setSidebarOpen, setSidebarDrawer, setShowToolbar]);
 
+  // Old reading links now request the existing, interactive Focus mode. Consume
+  // the URL intent once so rerenders and StrictMode cannot toggle it back off.
+  useLayoutEffect(() => {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get('focus') === '1') {
+      url.searchParams.delete('focus');
+      window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash);
+      toggleFocusMode();
+    }
+  }, [toggleFocusMode]);
 
   return { focusMode, toggleFocusMode };
 }

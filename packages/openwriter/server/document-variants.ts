@@ -3,6 +3,8 @@ import { markdownToTiptap, tiptapToMarkdownChecked } from './markdown.js';
 import { deriveContentType, resolveTypeMeta } from './content-type-meta.js';
 import { save, cancelDebouncedSave, setActiveDocument, getDocument, getTitle, type PadDocument } from './state.js';
 import { resolveDocPath, filePathForTitle, generateNodeId, ensureDataDir, atomicWriteFileSync } from './helpers.js';
+import { filenameByDocId, switchDocument } from './documents.js';
+import { createRevision } from './document-revisions.js';
 
 // Formats whose editable headline is stored as the document title.
 const TITLE_BEARING_TYPES = new Set(['blog', 'article', 'newsletter']);
@@ -25,6 +27,12 @@ export function createVariant(
 ): { document: PadDocument; title: string; filename: string } {
   cancelDebouncedSave();
   save();
+
+  if (opts.variantType === 'revision') {
+    if (filenameByDocId(opts.masterDocId) !== masterFilename) throw new Error('The revision source does not match its parent.');
+    const revision = createRevision(opts.masterDocId);
+    return switchDocument(revision.filename);
+  }
 
   const sourcePath = resolveDocPath(masterFilename);
   if (!existsSync(sourcePath)) throw new Error(`Document not found: ${masterFilename}`);

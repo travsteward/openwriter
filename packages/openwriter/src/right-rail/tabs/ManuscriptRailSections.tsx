@@ -15,7 +15,6 @@
  * adr: adr/manuscript-engine.md
  */
 import { useEffect, useState } from 'react';
-import { showToast } from '../../utils/toast';
 import './ManuscriptRailSections.css';
 
 interface ManuscriptItem {
@@ -45,23 +44,6 @@ export default function ManuscriptRailSections({ contentType, docId, manuscriptS
   const [list, setList] = useState<ManuscriptItem[]>([]);
   const [mode, setMode] = useState<'manifest' | 'preview'>('manifest');
   const isManuscript = contentType === 'manuscript';
-  const [creatingDraft, setCreatingDraft] = useState(false);
-
-  const createDraft = async () => {
-    setCreatingDraft(true);
-    try {
-      const response = await fetch('/api/manuscript/editing-draft', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ docId }),
-      });
-      const draft = await response.json();
-      if (!response.ok) throw new Error(draft.error || 'Could not create the editing draft.');
-      onSwitchDocument(draft.filename);
-      showToast('Editing draft created. Your original manuscript is preserved.');
-    } catch (error) {
-      showToast(error instanceof Error ? error.message : 'Could not create the editing draft.', 'error');
-    } finally { setCreatingDraft(false); }
-  };
 
   // Paragraph style is a manuscript OPTION (not always-on indent). Optimistic
   // local mirror of manuscriptContext.paragraphStyle so the toggle feels instant;
@@ -116,10 +98,6 @@ export default function ManuscriptRailSections({ contentType, docId, manuscriptS
       {isManuscript && docId && (
         <div className="review-tab__section">
           <div className="review-tab__section-label">This Manuscript</div>
-          <button type="button" className="ms-create-draft" disabled={creatingDraft} onClick={createDraft}>
-            {creatingDraft ? 'Creating editing draft…' : 'Create editing draft'}
-          </button>
-          <p className="ms-create-hint">A separate copy you can edit as one continuous document.</p>
           <div className="review-tab__toggle" role="tablist" aria-label="Manuscript view">
             <button type="button" className={toggleBtn(mode === 'manifest')} onClick={() => view('manifest')}>Manifest</button>
             <button

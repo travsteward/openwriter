@@ -24,10 +24,12 @@ export function resolveTypeMeta(type: string, url?: string): Record<string, any>
 /** Derive content_type from frontmatter — explicit field first, then fallback from context keys. */
 export function deriveContentType(data: Record<string, any>): string | undefined {
   if (data.content_type) return data.content_type as string;
-  if (data.tweetContext) return data.tweetContext.mode || 'tweet';
-  if (data.articleContext) return 'article';
-  if (data.linkedinContext) return 'linkedin';
-  if (data.newsletterContext) return 'newsletter';
+  if (data.contentType) return data.contentType as string;
+  // Match the editor's body-bearing-first fallback for legacy mixed contexts.
   if (data.blogContext) return 'blog';
+  if (data.newsletterContext) return 'newsletter';
+  if (data.articleContext) return 'article';
+  if (data.tweetContext) return data.tweetContext.mode || 'tweet';
+  if (data.linkedinContext) return 'linkedin';
   return undefined;
 }
