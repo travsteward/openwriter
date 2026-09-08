@@ -1175,3 +1175,7 @@ passed before the placement changes began.
 ### 2026-09-07 — UX audit closure
 
 Archive placement is captured before active-tree removal and restored independently of sidecars. The HTTP route no longer removes placement before the archive service can capture it. Pending sidecar lifecycle remains unchanged.
+
+### 2026-09-07 — Browser merge extraction
+
+Extracted the pure canonical/proposal merge into browser-state-merge.ts; state installation remains in the original caller.

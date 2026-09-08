@@ -24,6 +24,7 @@ import { loadPendingMetadata, savePendingMetadata, type PendingMetadata } from '
 import { harvestSentenceHashes, harvestCharCount, isEnrichmentStale } from './enrichment.js';
 import { clearActivityBuffer } from './activity-log.js';
 import { titleFromDoc, shouldAutoTitle } from './title-from-body.js';
+import { mergeBrowserState } from './browser-state-merge.js';
 
 /** Read the persisted identity graph (nodes + graveyard) from a file's
  *  frontmatter. The save-time matcher reads previousNodes + graveyard
@@ -364,36 +365,10 @@ export function syncBrowserDocUpdate(browserDoc: PadDocument, browserVersion: nu
     console.error(`[State] REFUSED body-collapse in syncBrowserDocUpdate: ${browserDoc?.content?.length ?? 0} nodes would replace ${state.document?.content?.length ?? 0} nodes (checkpointed, write refused)`);
     return { preservedServerEntries: 0 };
   }
-  const { canonical: browserCanonical, overlayEntries: browserOverlay } = splitMergedDoc(browserDoc);
-
-  // Identify server overlay entries to preserve: those added after browser's baseline.
-  const preserved: PendingEntry[] = [];
-  for (const [, entry] of state.overlay) {
-    const added = entry.addedAtVersion ?? 0;
-    if (added > browserVersion) preserved.push(entry);
-  }
-
-  // Build the merged overlay. Browser's view first; server-preserved entries
-  // overwrite (server wins on conflict).
-  const merged = new Map<string, PendingEntry>();
-  for (const e of browserOverlay) {
-    if (!merged.has(e.nodeId)) merged.set(e.nodeId, e);
-  }
-  for (const e of preserved) {
-    merged.set(e.nodeId, e);
-  }
-
-  // Apply: browser's canonical view + merged overlay.
-  state.canonical = browserCanonical;
-  // The browser-derived canonical may still hold a rewrite's NEW text when the
-  // browser dropped that node's pendingOriginalContent (stripPendingFromDoc
-  // couldn't revert it). Re-assert the authoritative baseline from the merged
-  // overlay so the next applyOverlayPure doesn't falsely flag pendingStaleBaseline.
-  // adr: adr/pending-overlay-model.md
-  const mergedEntries = Array.from(merged.values());
-  reconcileCanonicalToBaselines(state.canonical, mergedEntries);
-  setOverlayFromEntries(mergedEntries);
-  return { preservedServerEntries: preserved.length };
+  const merged = mergeBrowserState(browserDoc, browserVersion, state.overlay.values());
+  state.canonical = merged.canonical;
+  setOverlayFromEntries(merged.entries);
+  return { preservedServerEntries: merged.preservedServerEntries };
 }
 
 const listeners: Set<ChangeListener> = new Set();
