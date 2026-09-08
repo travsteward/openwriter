@@ -8,7 +8,7 @@
  * Run: `node scripts/test-sync-merge.mjs`
  */
 
-import { mkdirSync, rmSync } from 'fs';
+import { mkdirSync, rmSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
 import {
@@ -20,6 +20,7 @@ import {
   bumpDocVersion,
   getDocVersion,
   cancelDebouncedSave,
+  save,
 } from '../dist/server/state.js';
 import { setActiveProfile, ensureDataDir } from '../dist/server/helpers.js';
 
@@ -136,6 +137,18 @@ try {
   const p1Text = canonicalAfterScenario2.content.find((n) => n.attrs?.id === 'p1')?.content?.[0]?.text || '';
   assert(p1Text === 'browser changed p1', `p1 reflects browser edit (got "${p1Text}")`);
   assert(overlayAfterScenario2.length === 0, `no overlay entries (got ${overlayAfterScenario2.length})`);
+
+  // Regression: enrichment saves metadata at a newer version than the browser.
+  // The next stale-version browser merge must advance the persistence version.
+  save();
+  const savedVersion = getDocVersion();
+  const followOn = structuredClone(getDocument());
+  followOn.content[0].content[0].text = 'Browser edit after enrichment must persist.';
+  syncBrowserDocUpdate(followOn, savedVersion - 1);
+  assert(getDocVersion() > savedVersion, 'stale browser merge advances save version');
+  save();
+  const persisted = readFileSync(join(TEST_PROFILE_DIR, 'doc2.md'), 'utf8');
+  assert(persisted.includes('Browser edit after enrichment must persist.'), 'follow-on browser edit reaches disk');
 
   console.log('\n============================================================');
   console.log(`Sync-merge: ${passed} passed, ${failed} failed`);

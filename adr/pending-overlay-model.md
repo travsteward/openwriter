@@ -1179,3 +1179,7 @@ Archive placement is captured before active-tree removal and restored independen
 ### 2026-09-07 — Browser merge extraction
 
 Extracted the pure canonical/proposal merge into browser-state-merge.ts; state installation remains in the original caller.
+
+### 2026-09-07 — Persist stale-version browser edits
+
+Live enrichment testing exposed a merged browser edit that reached memory without advancing docVersion, so save's no-op gate skipped it. syncBrowserDocUpdate now installs its merged result through updateDocument, sharing version/lastModified bookkeeping while preserving newer server proposals.

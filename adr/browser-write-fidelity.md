@@ -132,3 +132,7 @@ Editing drafts explicitly use content_type document and the full PadEditor schem
 ### 2026-09-07 — UX audit closure
 
 All five PadEditor surfaces receive stable metadata docId; auto-title rename preserves current editor text and history. Reading views render accepted text without joining the writing session.
+
+### 2026-09-07 — Shared browser mutation bookkeeping
+
+Stale-version merges retain their incoming-body fidelity check and install the merged view through updateDocument. This shares persistence version bookkeeping with current-version edits; it does not weaken body-collapse checks.

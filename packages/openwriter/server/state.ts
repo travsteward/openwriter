@@ -366,8 +366,10 @@ export function syncBrowserDocUpdate(browserDoc: PadDocument, browserVersion: nu
     return { preservedServerEntries: 0 };
   }
   const merged = mergeBrowserState(browserDoc, browserVersion, state.overlay.values());
-  state.canonical = merged.canonical;
-  setOverlayFromEntries(merged.entries);
+  // Install through the same mutation boundary as current-version browser
+  // edits, including lastModified and docVersion. Otherwise save's no-op gate
+  // can silently skip an accepted stale-version edit after metadata changes.
+  updateDocument(applyOverlayPure(merged.canonical, merged.entries));
   return { preservedServerEntries: merged.preservedServerEntries };
 }
 
