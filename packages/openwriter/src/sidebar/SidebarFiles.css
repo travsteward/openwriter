@@ -78,6 +78,12 @@
   opacity: 1;
 }
 
+/* A parent disclosure occupies exactly the document icon's slot. */
+.files-row-chevron.variant-toggle {
+  width: 18px;
+  margin-right: 7px;
+}
+
 .files-row-chevron svg {
   flex-shrink: 0;
 }

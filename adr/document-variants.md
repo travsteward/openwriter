@@ -60,3 +60,9 @@ icon. Clicking row space or the icon expands/collapses; only the title opens the
 parent. Native disclosure and title buttons provide separate keyboard actions.
 Existing context menus, rename on the title, drag, and modified multi-selection
 retain their behavior. Leaf documents still open from the whole row.
+
+### 2026-09-08 — One leading icon slot
+
+Visual review rejected the chevron-plus-document pair. Variant parents now show
+only the chevron in the same width and spacing as a document icon. Children keep
+their document icons and existing indentation. Expansion/title actions are unchanged.

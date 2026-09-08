@@ -40,6 +40,7 @@
   transform: rotate(-90deg);
 }
 [data-sidebar-style="compact"] .files-row-chevron { width: 16px; height: 24px; }
+[data-sidebar-style="compact"] .files-row-chevron.variant-toggle { margin-right: 6px; }
 [data-sidebar-style="compact"] .files-row-count { font-size: 10px; }
 [data-sidebar-style="compact"] .files-section-btn { width: 24px; height: 24px; }
 [data-sidebar-style="compact"] .files-row:focus-within .files-section-btn { opacity: .8; }

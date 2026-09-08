@@ -26,6 +26,9 @@ The race that makes this non-obvious: `workspaces-changed` only bumps a refresh 
 Moved variant toggles to the leading edge and split title opening from row
 expansion. Existing placeholder placement and indentation remain unchanged.
 
+The follow-up visual pass replaces the parent's document icon with its chevron
+in one aligned slot; spinner placement and child indentation remain unchanged.
+
 ### 2026-05-17 — Add inline `paddingLeft` to SidebarFiles spinner placeholders (the actual user-visible bug)
 
 - **Trigger.** The user: *"this didnt' work btw. New docs always placeholder/spinner create at parent level, even if in a container."* The earlier `!hasContainer` fix had no visible effect because it addressed a latent race condition, not the bug the user was reporting.

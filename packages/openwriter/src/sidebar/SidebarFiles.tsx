@@ -522,7 +522,7 @@ export default function SidebarFiles({
       onDoubleClick={e => { if (!hasVariants || (e.target as HTMLElement).closest('.variant-document-title')) startRename('doc', doc.filename, doc.title); }}
       onContextMenu={e => handleDocContextMenu(e, doc)}
     >
-      {hasVariants && (
+      {hasVariants ? (
         <button type="button"
           {...sidebarRowProps(!collapsed.has(`variants-${doc.docId}`))}
           className={`files-row-chevron leading variant-toggle${collapsed.has(`variants-${doc.docId}`) ? ' collapsed' : ''}`}
@@ -532,8 +532,9 @@ export default function SidebarFiles({
         >
           <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
         </button>
+      ) : (
+        <span className="files-row-icon"><ContentIcon type={doc.contentType} /></span>
       )}
-      <span className="files-row-icon"><ContentIcon type={doc.contentType} /></span>
       {renaming?.type === 'doc' && renaming.key === doc.filename ? (
         renderRenameInput(commitRename)
       ) : (
