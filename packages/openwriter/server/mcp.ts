@@ -74,7 +74,7 @@ import { importGoogleDoc } from './gdoc-import.js';
 import { toCompactFormat, compactNodes, parseMarkdownContent } from './compact.js';
 import matter from 'gray-matter';
 import { getUpdateInfo } from './update-check.js';
-import { listVersions, forceSnapshot, writeSnapshotMarkdown, restoreVersion, getVersionContent } from './versions.js';
+import { listVersions, forceSnapshot, writeSnapshotMarkdown, restoreVersion, getVersionContent, applyAutoAcceptOverride } from './versions.js';
 import { markdownToTiptap, tiptapToMarkdown, splitFusedParagraphs } from './markdown.js';
 import { loadDocFromDisk } from './pending-overlay.js';
 import { getComments, getCommentCount, getGlobalCommentSummary, resolveComments, type Comment } from './comments.js';
@@ -159,33 +159,6 @@ function resolveDocTarget(docId: string): DocTarget {
     pendingCount: countPending(loaded.document.content),
     lastModified: statSync(filePath).mtime,
   };
-}
-
-/**
- * Override the `autoAccept` field in a snapshot's frontmatter without
- * reparsing the body. Used by `restore_version` to preserve the CURRENT
- * user toggle (a per-doc UI preference) across a content-restore. Editing
- * the frontmatter line directly avoids a full parse + reserialize, which
- * would re-run the matcher and risk minor body-shape drift for what's
- * supposed to be an exact content restore.
- *
- * adr: adr/pending-overlay-model.md
- */
-function applyAutoAcceptOverride(snapshotMarkdown: string, currentAutoAccept: boolean): string {
-  const fmMatch = snapshotMarkdown.match(/^---\n(.+?)\n---\n/s);
-  if (!fmMatch) return snapshotMarkdown; // no frontmatter to update
-  try {
-    const fm = JSON.parse(fmMatch[1]);
-    if (currentAutoAccept) {
-      fm.autoAccept = true;
-    } else {
-      delete fm.autoAccept;
-    }
-    const newFmLine = JSON.stringify(fm);
-    return snapshotMarkdown.replace(/^---\n.+?\n---\n/s, `---\n${newFmLine}\n---\n`);
-  } catch {
-    return snapshotMarkdown; // malformed frontmatter — leave alone
-  }
 }
 
 export type ToolResult = { content: { type: 'text'; text: string }[] };

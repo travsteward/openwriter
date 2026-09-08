@@ -1183,3 +1183,9 @@ Extracted the pure canonical/proposal merge into browser-state-merge.ts; state i
 ### 2026-09-07 — Persist stale-version browser edits
 
 Live enrichment testing exposed a merged browser edit that reached memory without advancing docVersion, so save's no-op gate skipped it. syncBrowserDocUpdate now installs its merged result through updateDocument, sharing version/lastModified bookkeeping while preserving newer server proposals.
+
+### 2026-09-08 — Snapshot preference helper extraction
+
+Moved the existing snapshot preference transformation from the large MCP
+registry into the version module without changing its behavior, before
+extending restoration to preserve a revision's current identity and parent.
