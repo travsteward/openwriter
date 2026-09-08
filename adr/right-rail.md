@@ -203,3 +203,7 @@ live before deciding whether Compact should become the default.
 ### 2026-09-07 — UX audit closure
 
 Collapsed panels stay mounted but are inert and hidden from accessibility navigation, with focus returned to their opener. Version saving uses an explicit form; Cancel sends no request. Independent reading is a native link from the shared-session title bar.
+
+### 2026-09-07 — Enrichment handler extraction
+
+Moved enrichment tool handlers into enrichment-tools.ts without changing the single batch Activity event or document metadata behavior.
