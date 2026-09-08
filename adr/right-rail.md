@@ -27,6 +27,8 @@ cursor and one set of resolution handlers. The portal sits outside the hidden
 rail's inert DOM. Entry works from any rail tab; leaving Focus restores normal
 tab selection. The strip disappears when the current document has no proposals.
 Bulk approval remains in the full panel.
+If the user reopens the rail while Focus remains enabled, its selected tab works
+normally; the compact presentation resumes when the rail closes.
 
 ### 2026-06-09 — Responsive overlay mode: intent vs drawer split
 
