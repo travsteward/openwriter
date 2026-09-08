@@ -21,7 +21,9 @@
 [data-sidebar-style="compact"] .files-row.is-container .files-row-label { font-weight: 500; }
 [data-sidebar-style="compact"] .files-row-icon { width: 16px; height: 16px; margin-right: 6px; }
 [data-sidebar-style="compact"] .files-row-icon svg { width: 14px; height: 14px; }
-[data-sidebar-style="compact"] .files-row.is-container > .files-row-icon svg { display: none; }
+[data-sidebar-style="compact"] .files-row.is-container > .files-row-icon svg,
+[data-sidebar-style="compact"] .files-row-chevron svg { display: none; }
+[data-sidebar-style="compact"] .files-row-chevron::before,
 [data-sidebar-style="compact"] .files-row.is-container > .files-row-icon::before {
   content: '';
   width: 6px;
@@ -31,10 +33,11 @@
   transform: rotate(45deg);
   margin-top: -3px;
 }
-[data-sidebar-style="compact"] .files-row.is-container:has(+ .files-children.collapsed) > .files-row-icon::before {
-  transform: rotate(-45deg);
-  margin-top: 0;
-  margin-left: -3px;
+[data-sidebar-style="compact"] .files-row.is-container > .files-row-icon {
+  transition: transform 0.15s ease;
+}
+[data-sidebar-style="compact"] .files-row.is-container:has(+ .files-children.collapsed) > .files-row-icon {
+  transform: rotate(-90deg);
 }
 [data-sidebar-style="compact"] .files-row-chevron { width: 16px; height: 24px; }
 [data-sidebar-style="compact"] .files-row-count { font-size: 10px; }
