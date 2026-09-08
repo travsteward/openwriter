@@ -44,6 +44,10 @@ ResizeObserver on `.app`; `.app--overlay` switches panel CSS to
 
 ## Decision log
 
+- **2026-09-08** — Extracted the existing Focus mode transition into
+  `useFocusMode` before extending its entry path. Sidebar/toolbar snapshot,
+  drawer closure, and the rail's existing transition behavior are unchanged.
+
 - **2026-06-09** — Initial implementation. Chose a *computed* threshold
   (doc-floor 600px against live panel widths) over a fixed px breakpoint so
   user-resized panels are respected; chose one shared flip for both panels

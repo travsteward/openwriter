@@ -1,3 +1,4 @@
+import { useFocusMode } from './hooks/useFocusMode';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { Editor } from '@tiptap/react';
 
@@ -106,13 +107,6 @@ export default function App() {
   const [heatmapOn, setHeatmapOn] = useState(false);
   const [attribution, setAttribution] = useState<{ percent: { human: number; agent: number; unknown: number }; nodeOrigins: Record<string, Origin>; tracked: boolean } | null>(null);
   const [showToolbar, setShowToolbar] = useState(() => localStorage.getItem('ow-toolbar') !== 'hidden');
-  // Focus mode: collapses left sidebar + right rail + format bar to a clean
-  // editor canvas. The toggle button lives in the rail topbar (when rail
-  // open) and in the titlebar (when rail closed) so it's always reachable.
-  // Prior state is snapshotted on entry and restored on exit.
-  const [focusMode, setFocusMode] = useState(false);
-  const focusSnapshotRef = useRef<{ sidebarOpen: boolean; showToolbar: boolean } | null>(null);
-
   // ─── Responsive overlay layout ──────────────────────────────────────────
   // Narrow windows: instead of squishing the doc, panels stop pushing and
   // float over it (drawers you close to reveal the doc). One ResizeObserver on
@@ -124,6 +118,7 @@ export default function App() {
   const [containerWidth, setContainerWidth] = useState(0);
   const [overlay, setOverlay] = useState(false);
   const [sidebarDrawer, setSidebarDrawer] = useState(false);
+  const { focusMode, toggleFocusMode } = useFocusMode({ sidebarOpen, showToolbar, setSidebarOpen, setSidebarDrawer, setShowToolbar });
   const [sidebarWidth, setSidebarWidth] = useState<number>(() => {
     try {
       const saved = localStorage.getItem('ow-sidebar-width');
@@ -1086,29 +1081,6 @@ export default function App() {
       return !v;
     });
   }, []);
-
-  const toggleFocusMode = useCallback(() => {
-    setFocusMode((cur) => {
-      if (!cur) {
-        // Entering focus mode — snapshot sidebar + toolbar, close both.
-        // Snapshot/restore is intent-only; the transient overlay drawer is
-        // closed outright (it has no place in focus mode and isn't restored).
-        focusSnapshotRef.current = { sidebarOpen, showToolbar };
-        setSidebarOpen(false);
-        setSidebarDrawer(false);
-        setShowToolbar(false);
-        return true;
-      }
-      // Exiting — restore snapshot if we have one.
-      const snap = focusSnapshotRef.current;
-      if (snap) {
-        setSidebarOpen(snap.sidebarOpen);
-        setShowToolbar(snap.showToolbar);
-        focusSnapshotRef.current = null;
-      }
-      return false;
-    });
-  }, [sidebarOpen, showToolbar]);
 
   const handleSync = useCallback(() => {
     if (syncStatus.state === 'unconfigured') {

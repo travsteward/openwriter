@@ -1,3 +1,4 @@
+import { createVariant } from './document-variants.js';
 /**
  * Express HTTP server: serves built React app, WebSocket, plugins.
  * MCP stdio transport is started separately in bin/pad.ts for fast startup.
@@ -15,7 +16,7 @@ import { zodToJsonSchema } from 'zod-to-json-schema';
 import { save, cancelDebouncedSave, load, getDocument, getTitle, getFilePath, getDocId, getMetadata, getStatus, updateDocument, setMetadata, applyTextEdits, isAgentLocked, getPendingDocInfo, getDocTagsByFilename, addDocTag, removeDocTag, markAllNodesAsPending, updatePendingCacheForActiveDoc, removePendingCacheEntry, clearAllCaches, stripPendingAttrs, stripPendingAttrsFromFile, setAutoAcceptOnFile, setSortRequestOnFile, clearSortRequestOnFile, bumpDocVersion, markAsAgentStub, extractText } from './state.js';
 import { syncPostHistory } from './post-sync.js';
 import { enrollManualPostForAutoplug } from './autoplug-enroll.js';
-import { listDocuments, switchDocument, createDocument, deleteDocument, duplicateDocument, createVariant, reloadDocument, updateDocumentTitle, openFile, reorderDocs, searchDocuments, listArchivedDocuments, archiveDocument, unarchiveDocument, getActiveFilename, batchResolve, listPendingSorts } from './documents.js';
+import { listDocuments, switchDocument, createDocument, deleteDocument, duplicateDocument, reloadDocument, updateDocumentTitle, openFile, reorderDocs, searchDocuments, listArchivedDocuments, archiveDocument, unarchiveDocument, getActiveFilename, batchResolve, listPendingSorts } from './documents.js';
 import { writePromptDebug, isPromptDebugEnabled } from './prompt-debug.js';
 import { createWorkspaceRouter } from './workspace-routes.js';
 import { createLinkRouter } from './link-routes.js';

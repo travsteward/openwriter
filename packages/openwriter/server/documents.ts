@@ -9,7 +9,7 @@ import { join } from 'path';
 import matter from 'gray-matter';
 import trash from 'trash';
 import { tiptapToMarkdownChecked, markdownToTiptap } from './markdown.js';
-import { resolveTypeMeta } from './content-type-meta.js';
+import { deriveContentType } from './content-type-meta.js';
 import { parseMarkdownContent } from './compact.js';
 import {
   getDocument, getTitle, getFilePath, getIsTemp, getMetadata, save, cancelDebouncedSave, setActiveDocument,
@@ -83,17 +83,6 @@ function writeDocOrder(order: string[]): void {
 
 export function reorderDocs(orderedFilenames: string[]): void {
   writeDocOrder(orderedFilenames);
-}
-
-/** Derive content_type from frontmatter — explicit field first, then fallback from context keys. */
-function deriveContentType(data: Record<string, any>): string | undefined {
-  if (data.content_type) return data.content_type as string;
-  if (data.tweetContext) return data.tweetContext.mode || 'tweet';
-  if (data.articleContext) return 'article';
-  if (data.linkedinContext) return 'linkedin';
-  if (data.newsletterContext) return 'newsletter';
-  if (data.blogContext) return 'blog';
-  return undefined;
 }
 
 export function listDocuments(): DocumentInfo[] {
@@ -1207,93 +1196,12 @@ export function duplicateDocument(
   // Variant relationship — set AFTER the spread so it overrides any inherited
   // masterDocId/variantType from the source doc. masterDocId points at the
   // source (the master); variantType labels this copy's intended format.
-  // adr: docs/variants.md
+  // adr: adr/document-variants.md
   if (variant?.masterDocId) metadata.masterDocId = variant.masterDocId;
   if (variant?.variantType) metadata.variantType = variant.variantType;
   setActiveDocument(parsed.document, newTitle, filePath, false, undefined, metadata);
 
   const { markdown } = tiptapToMarkdownChecked(parsed.document, newTitle, metadata);
-  ensureDataDir();
-  atomicWriteFileSync(filePath, markdown);
-
-  const newFilename = filePath.split(/[/\\]/).pop()!;
-  return { document: getDocument(), title: getTitle(), filename: newFilename };
-}
-
-// Content types that surface an editable title/headline above the body. For
-// these, the doc's frontmatter `title` IS content (blog headline, article title,
-// newsletter subject). For every other type the title is just a sidebar label
-// and the body carries everything. adr: docs/variants.md
-const TITLE_BEARING_TYPES = new Set(['blog', 'article', 'newsletter']);
-
-/**
- * Create a variant of `masterFilename` retyped as `variantType`, nested under
- * the master. Field-projection model (NOT a verbatim clone — that's
- * duplicateDocument): port the fields the two types share.
- *  - body: always ported.
- *  - downcast (title-bearing master → body-only variant): the master's title is
- *    folded into the body as its first paragraph so the headline isn't lost.
- *  - the variant is scaffolded with the TARGET type's content_type + context;
- *    the source's context objects (blogContext, tweetContext, …) are NOT
- *    inherited — a variant is a new typed doc, not a surface clone.
- * adr: docs/variants.md
- */
-export function createVariant(
-  masterFilename: string,
-  opts: { masterDocId: string; variantType: string },
-): { document: PadDocument; title: string; filename: string } {
-  cancelDebouncedSave();
-  save();
-
-  const sourcePath = resolveDocPath(masterFilename);
-  if (!existsSync(sourcePath)) throw new Error(`Document not found: ${masterFilename}`);
-
-  const raw = readFileSync(sourcePath, 'utf-8');
-  const parsed = markdownToTiptap(raw);
-  const srcType = deriveContentType(parsed.metadata) || 'document';
-  const tgtType = opts.variantType;
-  const srcTitleBearing = TITLE_BEARING_TYPES.has(srcType);
-  const tgtTitleBearing = TITLE_BEARING_TYPES.has(tgtType);
-
-  // Body projection. Downcast (title-bearing → body-only): prepend the master's
-  // title as the first paragraph so the headline survives in a surface with no
-  // title field ("title becomes first line, body the next paragraph"). Otherwise
-  // the body ports unchanged.
-  let bodyContent = parsed.document.content || [];
-  if (srcTitleBearing && !tgtTitleBearing && parsed.title) {
-    bodyContent = [
-      { type: 'paragraph', content: [{ type: 'text', text: parsed.title }] },
-      ...bodyContent,
-    ];
-  }
-  const bodyDoc = { ...parsed.document, content: bodyContent } as PadDocument;
-
-  // Title is always label-suffixed: it doubles as the filename + sidebar name,
-  // so it must stay unique vs the master (a raw duplicate title would collide).
-  // The title CONTENT still rides along for title-bearing targets — they render
-  // it as the headline and the user trims the suffix.
-  const Label = tgtType.charAt(0).toUpperCase() + tgtType.slice(1);
-  let newTitle = `${parsed.title} (${Label})`;
-  let filePath = filePathForTitle(newTitle);
-  if (existsSync(filePath)) {
-    let counter = 2;
-    while (existsSync(filePathForTitle(`${parsed.title} (${Label} ${counter})`))) counter++;
-    newTitle = `${parsed.title} (${Label} ${counter})`;
-    filePath = filePathForTitle(newTitle);
-  }
-
-  // Fresh metadata: target type scaffold + variant relationship only. Source
-  // context objects are intentionally dropped (see header).
-  const metadata: Record<string, any> = {
-    title: newTitle,
-    docId: generateNodeId(),
-    ...(resolveTypeMeta(tgtType) || {}),
-    masterDocId: opts.masterDocId,
-    variantType: tgtType,
-  };
-
-  setActiveDocument(bodyDoc, newTitle, filePath, false, undefined, metadata);
-  const { markdown } = tiptapToMarkdownChecked(bodyDoc, newTitle, metadata);
   ensureDataDir();
   atomicWriteFileSync(filePath, markdown);
 

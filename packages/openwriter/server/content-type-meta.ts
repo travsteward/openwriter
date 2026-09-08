@@ -5,7 +5,7 @@
 //
 // Used by both the MCP create_document handler and the HTTP POST /api/documents
 // endpoint (the "Create variant" path) so a typed empty doc is scaffolded the
-// same way regardless of who creates it. adr: docs/variants.md
+// same way regardless of who creates it. adr: adr/document-variants.md
 
 export function resolveTypeMeta(type: string, url?: string): Record<string, any> | undefined {
   switch (type) {
@@ -19,4 +19,15 @@ export function resolveTypeMeta(type: string, url?: string): Record<string, any>
     case 'manuscript': return { content_type: 'manuscript', manuscriptContext: { active: true } };
     default: return undefined;
   }
+}
+
+/** Derive content_type from frontmatter — explicit field first, then fallback from context keys. */
+export function deriveContentType(data: Record<string, any>): string | undefined {
+  if (data.content_type) return data.content_type as string;
+  if (data.tweetContext) return data.tweetContext.mode || 'tweet';
+  if (data.articleContext) return 'article';
+  if (data.linkedinContext) return 'linkedin';
+  if (data.newsletterContext) return 'newsletter';
+  if (data.blogContext) return 'blog';
+  return undefined;
 }
