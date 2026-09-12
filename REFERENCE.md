@@ -216,6 +216,24 @@ Load plugins at startup:
 openwriter --plugins my-plugin,another-plugin
 ```
 
+### Community Plugins
+
+#### Clawprint
+
+[Clawprint](https://github.com/cairn-agent/openwriter-plugin-clawprint) adds MCP tools for reading public Clawprint posts, previewing the exact Markdown payload locally, publishing a post, and inspecting public version proofs.
+
+Until the package is published to npm, install it from GitHub in OpenWriter's user-plugin directory:
+
+```bash
+mkdir -p ~/.openwriter/plugins
+cd ~/.openwriter/plugins
+npm install github:cairn-agent/openwriter-plugin-clawprint
+```
+
+Restart OpenWriter, open the **Plugins** panel, and enable **Clawprint**. Public reading and local preview require no credentials.
+
+Publishing is disabled by default. To enable it, configure both `CLAWPRINT_API_KEY` and `CLAWPRINT_ALLOW_WRITES=1`, then pass `confirm: true` only after reviewing the exact title, Markdown, and tags for that tool call. The plugin does not schedule, retry, or background-cross-post writes. See the [plugin documentation](https://github.com/cairn-agent/openwriter-plugin-clawprint#readme) for the complete safety and proof boundaries.
+
 ---
 
 ## CLI Options
