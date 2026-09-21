@@ -29,8 +29,8 @@ jobs:
       # this repo's own checkouts do not do. Check out the bytes as committed so
       # a check never passes locally and fails here over whitespace.
       - run: git config --global core.autocrlf false
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
