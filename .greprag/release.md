@@ -25,23 +25,35 @@ Set-Location C:/openwriter
 ./scripts/release.ps1
 ```
 
+-CheckOnly prints the release plan: each of the four outward steps — push,
+publish, GitHub release, deployment record — marked done or pending. It touches
+nothing. Use it before and after any run to see exactly what is left.
+
 The wrapper deliberately invokes prepublish.cjs before packing: this machine's
 global npm ignore-scripts setting must not skip skill/plugin preparation. The
 tested tarball is published with lifecycle scripts disabled so it cannot change
 between packing and publication. Never replace the existing npm development
 link; local runtime deployment uses [deploy.ps1](../scripts/deploy.ps1).
 
-## Authentication and partial completion
+## Authentication and interruption
 
 Use npm whoami first. If authentication is missing, use npm login --auth-type=web
-and complete the browser approval. Publishing may require its own separate
-browser approval. Never print a token or replace credentials merely to bypass
-interactive authentication.
+and complete the browser approval. Publishing requires its own separate browser
+approval, which only a human at the machine can complete, so run the wrapper in
+a real terminal rather than through a tool that captures its output. Never print
+a token or replace credentials merely to bypass interactive authentication.
 
-If npm accepted the version but a later GitHub step failed, do not republish or
-bump again. Verify the existing registry integrity against the packed tarball,
-finish only the missing GitHub release step, then record the npm deployment.
-Create no deployment record until every declared release artifact is verified.
+If a run stops part way — a missed publish approval, a network failure, a closed
+window — nothing needs undoing and nothing needs finishing by hand. Re-run the
+same wrapper. Every outward step asks first whether it is already satisfied: the
+tag and branch already on the remote, the version already on the registry, the
+GitHub release already created, the deployment already recorded. Satisfied steps
+are reported as skipped and the run continues from the first one that is not.
+
+Do not republish or bump a version to recover from a partial run. Registry
+integrity is re-proven against the freshly packed tarball on every run, whether
+this run published or an earlier one did, and no deployment is recorded until
+every declared artifact is verified.
 
 After release, verify the registry version/integrity, GitHub tag and release,
 public skill and all bundled plugins. Deploy the local-app target separately if
