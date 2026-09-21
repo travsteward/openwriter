@@ -1,5 +1,21 @@
 $ErrorActionPreference = 'Stop'
 
+# adr: adr/delivery-system.md
+# A delivery script's failure output is read by a person deciding what to do
+# next. Re-throwing after the explanation prints a PowerShell exception dump
+# underneath it, which buries the guidance and reads as a crash rather than a
+# deliberate stop — on 2026-09-21 that made a release that had actually
+# succeeded look broken. Scripts report the cause and the next step, then exit
+# non-zero so automation still sees a failure.
+function Exit-DeliveryFailure {
+  param([string]$Summary, [string[]]$NextSteps)
+  Write-Host ''
+  Write-Host $Summary
+  foreach ($line in $NextSteps) { Write-Host $line }
+  Write-Host ''
+  exit 1
+}
+
 function Invoke-DeliveryCommand {
   param([string]$File, [string[]]$Arguments)
   & $File @Arguments

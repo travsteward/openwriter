@@ -7,6 +7,7 @@ Invoke-DeliveryCommand -File node -Arguments @('scripts/check-build-inputs.mjs')
 if ($CheckOnly) { return }
 
 Invoke-DeliveryCommand -File greprag -Arguments @('deploy-lock', 'acquire', '--target', $target, '--pid', "$PID", '--label', 'OpenWriter local app')
+$failure = $null
 try {
   Invoke-DeliveryCommand -File greprag -Arguments @('deploy-gate', '--target', $target, '--ignore-lock')
   $sha = (Invoke-DeliveryCommand -File git -Arguments @('rev-parse', 'HEAD')).Trim()
@@ -53,6 +54,19 @@ try {
   }
   Invoke-DeliveryCommand -File greprag -Arguments @('deploy-record', '--target', $target, '--sha', $sha)
   Write-Output "OpenWriter $sha verified on port 5050 (PID $($started.Id))."
+} catch {
+  # Held so the lock comes off first and the guidance lands last.
+  $failure = $_
 } finally {
   & greprag deploy-lock release --target $target
+}
+
+if ($failure) {
+  Exit-DeliveryFailure -Summary "Deploy stopped: $($failure.Exception.Message)" -NextSteps @(
+    'Nothing was recorded as deployed. The running app was left alone unless'
+    'the message above says it was stopped.'
+    '  ./scripts/deploy.ps1 -CheckOnly        shows what would ship'
+    '  .greprag/runtime/local-app/stderr.log  startup output, if it restarted'
+    'Fix the cause, then run ./scripts/deploy.ps1 again.'
+  )
 }

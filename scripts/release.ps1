@@ -1,5 +1,14 @@
 param([switch]$CheckOnly)
 . "$PSScriptRoot/delivery-common.ps1"
+
+# Preflight runs before the lock is taken, so its failures never reach the
+# handler below. Without this they surfaced as raw exception dumps.
+trap {
+  Exit-DeliveryFailure -Summary "Release stopped before publishing: $($_.Exception.Message)" -NextSteps @(
+    'Nothing was published, tagged or recorded by this run.'
+    'Fix the cause, then run ./scripts/release.ps1 again.'
+  )
+}
 $delivery = Get-DeliveryContext
 $target = 'npm'
 Invoke-DeliveryCommand -File greprag -Arguments @('deploy-gate', '--target', $target)
@@ -57,6 +66,7 @@ if ($CheckOnly) {
 }
 
 Invoke-DeliveryCommand -File greprag -Arguments @('deploy-lock', 'acquire', '--target', $target, '--pid', "$PID", '--label', "OpenWriter $tag")
+$failure = $null
 try {
   Invoke-DeliveryCommand -File greprag -Arguments @('deploy-gate', '--target', $target, '--ignore-lock')
   $artifactDir = Join-Path $delivery.root '.greprag/runtime/releases'
@@ -103,12 +113,17 @@ try {
     Invoke-DeliveryCommand -File greprag -Arguments @('deploy-record', '--target', $target, '--sha', $sha)
   }
 } catch {
-  Write-Host ''
-  Write-Host "Release of $tag stopped: $($_.Exception.Message)"
-  Write-Host 'Nothing needs undoing. Completed steps are detected and skipped:'
-  Write-Host '  ./scripts/release.ps1 -CheckOnly   shows what is left'
-  Write-Host '  ./scripts/release.ps1              resumes from there'
-  throw
+  # Held, not rethrown: the lock must come off first, and the guidance should
+  # be the last thing on screen rather than buried under an exception dump.
+  $failure = $_
 } finally {
   & greprag deploy-lock release --target $target
+}
+
+if ($failure) {
+  Exit-DeliveryFailure -Summary "Release of $tag stopped: $($failure.Exception.Message)" -NextSteps @(
+    'Nothing needs undoing. Completed steps are detected and skipped:'
+    '  ./scripts/release.ps1 -CheckOnly   shows what is left'
+    '  ./scripts/release.ps1              resumes from there'
+  )
 }

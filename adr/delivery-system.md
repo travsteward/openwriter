@@ -82,3 +82,24 @@ is not in doubt and the wrapper can simply be re-run. Registry reads prefer the
 network so a cached miss from before publication cannot answer for the
 registry. A regression script locks the waiting, the bound, and each refusal
 with its own temporary records and fake probes, contacting no registry.
+
+### 2026-09-21 (2)
+
+A delivery script's failure output is read by a person deciding what to do
+next. The wrapper printed its explanation and then re-threw, so a PowerShell
+exception dump landed underneath and buried it; deploy and merge had no
+explanation at all. The v0.41.1 release, which had in fact succeeded, was
+reported this way and read as a crash. Failures now route through one shared
+reporter: the cause, the next step, then a non-zero exit, with no exception
+furniture. The lock is released before the report so the guidance is the last
+thing on screen. Release also traps preflight errors, which occur before the
+lock exists and so never reached the handler.
+
+The same rule applies one layer down. The build-input check refused by
+throwing, printing a node stack trace over the file list the reader needs; it
+now reports and exits when run as a script, while still throwing for
+importers. Guarding "am I the entry point?" must use pathToFileURL rather than
+a hand-built file:// string: on Windows the hand-built form does not match
+node's own URL, and the mismatch silently disables the gate instead of making
+it noisy. That regression is now locked by a test that gives the checker real
+dirt and asserts it refuses.
