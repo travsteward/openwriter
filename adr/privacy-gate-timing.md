@@ -56,6 +56,17 @@ it and has to fail closed when it cannot.
 - **A pattern that cannot match is a hard error.** A JSON `"\b"` decodes to a
   backspace rather than a word boundary, producing an entry that silently never
   fires. The loader exits rather than run blind.
+- **A gate that cannot read its rules refuses.** Missing rules mean "cannot
+  check", never "nothing to check". The loader exits non-zero instead of
+  reporting clean, and every passing run states which rule sets actually ran.
+- **Worktrees source the one denylist, they do not get a copy.** A worktree
+  checks out tracked files only, so the gitignored denylist is not in it. The
+  loader derives the main checkout from the shared git directory and reads the
+  file there. A copy per worktree would drift, which is the same silent failure
+  spread over more places.
+- **Absence can be acknowledged, never assumed.** A clone with no personal
+  vocabulary to protect sets `OPENWRITER_PRIVACY_NO_DENYLIST=1`, and the run
+  then says out loud that personal-term checking is off.
 - **Fixtures declare their origin.** Every corpus stage must appear in
   `corpus/SOURCES.md`, enforced at pre-push and at release. This is the half a
   denylist cannot do: it catches prose nobody thought to list, by refusing
@@ -94,3 +105,31 @@ it and has to fail closed when it cannot.
   precisely what had been exposed and where it remained reachable. That turns a
   needle in a thousand commits into a signposted one. An ADR has to justify the
   design without indexing the thing it protects.
+
+### 2026-09-21 — a missing denylist refuses instead of passing
+
+- **Change.** `loadPersonalDeny` now resolves the personal denylist from, in
+  order: `OPENWRITER_PRIVACY_DENYLIST`, this checkout, then the main checkout
+  found via the shared git directory. When none can be read it exits non-zero
+  rather than returning null. Both gates dropped their warn-and-continue
+  branch and now name the rule sets that ran on success.
+  `scripts/test-privacy-denylist-resolution.ps1` locks the behaviour with a
+  throwaway repo, a worktree, and a denylist of invented terms.
+- **Why.** The denylist is gitignored and a worktree holds tracked files only,
+  so in a worktree the file was absent, personal-term checking was skipped, and
+  the gate printed clean and exited 0. All machine-authored work happens in
+  worktrees, so the gate was half-running in the one place it most needed to
+  run, and the only signal was a stderr warning inside a git hook. A check that
+  cannot obtain its rules has not checked anything.
+- **Considered and rejected.** Tracking the terms in encrypted or hashed form.
+  Hashes only match whole tokens, which throws away the substring and
+  word-boundary matching the denylist depends on, and a tracked ciphertext
+  still publishes the count and shape of what is protected while needing a key
+  distributed out of band — the same absent-file problem one layer down.
+  Copying the file into each worktree was rejected for drift.
+- **Verified.** In a throwaway repo, a commit made in a worktree containing an
+  invented personal term blocks the push; a clean commit passes and names the
+  main checkout as the rule source; removing the denylist everywhere refuses
+  with exit 2 and lists where it looked; the acknowledgement variable restores
+  a generic-only run and says so. The release gate run from this worktree
+  resolves the real denylist from the main checkout and reports clean.

@@ -50,8 +50,9 @@ if (!refs.length) {
   process.exit(0);
 }
 
-const personalDeny = loadPersonalDeny(ROOT);
-const DENYLIST = [...GENERIC_DENY, ...(personalDeny || [])];
+// Refuses rather than returning when no rules can be read — see the loader.
+const personal = loadPersonalDeny(ROOT);
+const DENYLIST = [...GENERIC_DENY, ...personal.patterns];
 const SPAN_G = spanAllowGlobal();
 
 const hits = [];
@@ -96,11 +97,6 @@ for (const r of refs) {
   }
 }
 
-if (!personalDeny) {
-  console.error('push privacy gate: WARNING — scripts/privacy-denylist.local.json not found.');
-  console.error('  Personal-term checks were SKIPPED. Generic checks ran.\n');
-}
-
 if (hits.length) {
   const shown = hits.slice(0, 40);
   console.error(`\nPUSH BLOCKED — ${hits.length} privacy hit(s) in content you are about to publish:\n`);
@@ -113,4 +109,9 @@ if (hits.length) {
   process.exit(1);
 }
 
-console.log(`push privacy gate: clean (${commitCount} new commit(s) scanned)`);
+// Say which rules actually ran. "Clean" without that is the sentence a
+// half-running gate prints.
+const rules = personal.source
+  ? (personal.origin === 'main-checkout' ? 'generic + personal (denylist from the main checkout)' : 'generic + personal')
+  : 'GENERIC ONLY — personal-term checking is off';
+console.log(`push privacy gate: clean (${commitCount} new commit(s) scanned, ${rules})`);

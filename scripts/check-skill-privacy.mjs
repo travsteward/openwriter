@@ -34,8 +34,9 @@ function trackedFiles() {
   return out.toString('utf8').split('\0').filter(Boolean);
 }
 
-const personalDeny = loadPersonalDeny(ROOT);
-const DENYLIST = [...GENERIC_DENY, ...(personalDeny || [])];
+// Refuses rather than returning when no rules can be read — see the loader.
+const personal = loadPersonalDeny(ROOT);
+const DENYLIST = [...GENERIC_DENY, ...personal.patterns];
 const SPAN_G = spanAllowGlobal();
 const hits = [];
 
@@ -50,16 +51,13 @@ for (const relPath of trackedFiles()) {
   });
 }
 
-if (!personalDeny) {
-  console.error('privacy gate: WARNING — scripts/privacy-denylist.local.json not found.');
-  console.error('  Personal-term checks (venture/book/family vocab) were SKIPPED.');
-  console.error('  The operator\'s publish machine MUST have this file. Generic checks ran.\n');
-}
-
 if (hits.length) {
   console.error(`PRIVACY GATE FAILED — ${hits.length} hit(s):\n`);
   for (const h of hits) console.error('  ' + h);
   console.error('\nGenericize these before publishing (fictional examples only).');
   process.exit(1);
 }
-console.log(`privacy gate: clean${personalDeny ? '' : ' (generic only — local denylist missing)'}`);
+const rules = personal.source
+  ? (personal.origin === 'main-checkout' ? 'generic + personal (denylist from the main checkout)' : 'generic + personal')
+  : 'GENERIC ONLY — personal-term checking is off';
+console.log(`privacy gate: clean (${rules})`);
