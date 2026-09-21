@@ -37,6 +37,12 @@ git push origin main
 - Identify only the listener on port 5050, verify its canonical entrypoint,
   require successful save, and recheck the listener before stopping that PID.
   Leave MCP proxies and other test servers alone. Relaunch hidden.
+- The entrypoint check compares files, not command-line text: the listener's
+  entry script is resolved through junctions and symlinks to its final file and
+  must equal the canonical pad.js. A launch through the npm development link
+  therefore passes; any other file, a missing file, or a relative path is
+  refused. [test-deploy-listener-identity.ps1](../scripts/test-deploy-listener-identity.ps1)
+  locks this with its own temp fixture and touches no process.
 - Verify the process-start build stamp and artifact digest, restore the active
   document when still present, then write the deployment record and release the
   lock. The stamp is served at /__build.json with Cache-Control: no-store.

@@ -42,6 +42,32 @@ function Invoke-DeliveryStep {
   & $Action
 }
 
+# adr: adr/delivery-system.md
+# A listener is identified by the file its entry script resolves to, never by the
+# text of its command line: a launch through a junction or symlink (the npm
+# development link) runs the same code as a launch by the direct path.
+function Get-DeliveryEntryScript {
+  param([string]$CommandLine)
+  $tokens = @([regex]::Matches($CommandLine, '"([^"]*)"|(\S+)') | ForEach-Object { if ($_.Groups[1].Success) { $_.Groups[1].Value } else { $_.Groups[2].Value } })
+  return $tokens | Select-Object -Skip 1 | Where-Object { $_ -notlike '-*' } | Select-Object -First 1
+}
+
+function Resolve-DeliveryFinalPath {
+  param([string]$Path)
+  # A relative path would resolve against this shell, not the listener's directory.
+  if ($Path -notmatch '^([A-Za-z]:[\\/]|\\\\)') { return $null }
+  $final = Get-DeliveryCommandOutput -File node -Arguments @('-e', "process.stdout.write(require('fs').realpathSync.native(process.argv[1]))", $Path)
+  if (!$final) { return $null }
+  return $final -replace '/', '\'
+}
+
+function Test-DeliveryListenerEntry {
+  param([string]$CommandLine, [string]$Entry)
+  $actual = Resolve-DeliveryFinalPath (Get-DeliveryEntryScript $CommandLine)
+  $expected = Resolve-DeliveryFinalPath $Entry
+  return [bool]($actual -and $expected -and [string]::Equals($actual, $expected, [StringComparison]::OrdinalIgnoreCase))
+}
+
 function Get-DeliveryContext {
   $resolved = (Invoke-DeliveryCommand -File greprag -Arguments @('delivery', 'resolve', '--json')) | ConvertFrom-Json
   if ($resolved.mode -ne 'profile') { throw 'A valid committed delivery profile is required.' }

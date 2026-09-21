@@ -11,13 +11,12 @@ try {
   Invoke-DeliveryCommand -File greprag -Arguments @('deploy-gate', '--target', $target, '--ignore-lock')
   $sha = (Invoke-DeliveryCommand -File git -Arguments @('rev-parse', 'HEAD')).Trim()
   $entry = Join-Path $delivery.root 'packages/openwriter/dist/bin/pad.js'
-  $entryMatch = [regex]::Escape(($entry -replace '\\', '/')) + '(?:["\s]|$)'
   $listeners = @(Get-NetTCPConnection -LocalPort 5050 -State Listen -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique)
   if ($listeners.Count -gt 1) { throw 'More than one process owns port 5050.' }
   $primary = $null
   if ($listeners.Count -eq 1) {
     $primary = Get-CimInstance Win32_Process -Filter "ProcessId=$($listeners[0])"
-    if (($primary.CommandLine -replace '\\', '/') -notmatch $entryMatch) { throw 'Port 5050 is not the canonical OpenWriter entrypoint.' }
+    if (!(Test-DeliveryListenerEntry -CommandLine $primary.CommandLine -Entry $entry)) { throw 'Port 5050 is not the canonical OpenWriter entrypoint.' }
   }
   Push-Location (Join-Path $delivery.root 'packages/openwriter')
   try { Invoke-DeliveryCommand -File npm -Arguments @('run', 'build') } finally { Pop-Location }
@@ -32,7 +31,7 @@ try {
     if (!$saved.success) { throw 'OpenWriter did not acknowledge saving.' }
     $currentListeners = @(Get-NetTCPConnection -LocalPort 5050 -State Listen | Select-Object -ExpandProperty OwningProcess -Unique)
     $current = Get-CimInstance Win32_Process -Filter "ProcessId=$($primary.ProcessId)"
-    if ($currentListeners.Count -ne 1 -or $currentListeners[0] -ne $primary.ProcessId -or !$current -or ($current.CommandLine -replace '\\', '/') -notmatch $entryMatch) {
+    if ($currentListeners.Count -ne 1 -or $currentListeners[0] -ne $primary.ProcessId -or !$current -or !(Test-DeliveryListenerEntry -CommandLine $current.CommandLine -Entry $entry)) {
       throw 'The primary process changed during the build. Retry without stopping it.'
     }
     Stop-Process -Id $primary.ProcessId
