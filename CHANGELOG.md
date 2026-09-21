@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ## [Unreleased]
 
+## [0.41.0] - 2026-09-20
+
 ### Added
 - Compact Focus-mode review controls navigate, accept, and reject individual changes without opening the side panel.
 - Optional Compact sidebar style with smaller rows and text, preserving navigation icons and hierarchy. Switch back to Original in Appearance at any time.
