@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ## [Unreleased]
 
+## [0.41.1] - 2026-09-21
+
+### Changed
+- The bundled skill's document-creation example uses a generic workspace name.
+
 ## [0.41.0] - 2026-09-20
 
 ### Added
