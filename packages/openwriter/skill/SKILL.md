@@ -343,7 +343,7 @@ The user can turn on **auto-accept** on a per-doc basis (right-click the doc in 
 create_document({
   title: "Opening Chapter",
   content_type: "document",          ← REQUIRED: "document" for plain, or "tweet"/"article"/etc.
-  workspace: "The Immortal",        ← name-based: creates workspace if it doesn't exist
+  workspace: "My Book",             ← name-based: creates workspace if it doesn't exist
   container: "Chapters"             ← name-based: creates container if it doesn't exist
 })
 ```

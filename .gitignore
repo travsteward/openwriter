@@ -9,6 +9,7 @@ dist/
 
 # Project-internal (not for public repo)
 CLAUDE.md
+AGENTS.md
 docs/
 !skills/*/docs/
 !plugins/*/skill/docs/

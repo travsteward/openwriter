@@ -83,7 +83,7 @@ For each chapter, the agent needs:
 
 Use `get_workspace_structure` first to map the whole workspace. Then `read_pad` on each Beats doc for beat counts. Then aggregate.
 
-## Example output (TM Book, 2026-05-22 state)
+## Example output (a sleep book mid-draft)
 
 ```
 | Chapter | Beats sheet | Research Notes | Beats drafted | Prose words | Target | % done |
