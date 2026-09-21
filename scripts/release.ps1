@@ -32,7 +32,7 @@ $isPushed = {
   & git merge-base --is-ancestor $sha $branchSha 2>$null
   return $LASTEXITCODE -eq 0
 }
-$isPublished = { $null -ne (Get-DeliveryCommandOutput -File npm -Arguments @('view', $spec, 'dist.integrity')) }
+$isPublished = { $null -ne (Get-DeliveryRegistryIntegrity -Spec $spec) }
 $isReleased = { Test-DeliveryCommand -File gh -Arguments @('release', 'view', $tag, '--json', 'tagName') }
 $isRecorded = {
   $json = Get-DeliveryCommandOutput -File greprag -Arguments @('deploy-record', 'show', '--target', $target, '--json')
@@ -81,14 +81,20 @@ try {
   Invoke-DeliveryStep -Name "push $branch and $tag to $remote" -Satisfied $isPushed -Action {
     Invoke-DeliveryCommand -File git -Arguments @('push', $remote, $branch, "refs/tags/$tag")
   }
+  $recordPath = Get-DeliveryPublishRecordPath -Directory $artifactDir -Tag $tag
   Invoke-DeliveryStep -Name "publish $spec to npm" -Satisfied $isPublished -Action {
     Invoke-DeliveryCommand -File npm -Arguments @('whoami')
+    # Written before the call, not after: the registry may accept these bytes
+    # and the run still end before the next line, and this record is the only
+    # proof of which bytes it was given.
+    Write-DeliveryPublishRecord -Path $recordPath -Spec $spec -Sha $sha -Integrity $packed[0].integrity -Tarball $tarball
     Invoke-DeliveryCommand -File npm -Arguments @('publish', $tarball, '--access', 'public', '--ignore-scripts')
   }
   # Never skipped: whether this run published or a previous one did, the
-  # registry artifact is proven against the tarball this run packed and tested.
-  $integrity = (Invoke-DeliveryCommand -File npm -Arguments @('view', $spec, 'dist.integrity')).Trim()
-  if ($integrity -ne $packed[0].integrity) { throw 'Registry artifact integrity does not match the tested tarball.' }
+  # registry artifact is proven against the tarball that was actually
+  # published. This run's own pack cannot stand in for it - the build stamp
+  # carries a fresh time, so every run packs different bytes.
+  Assert-DeliveryRegistryArtifact -Spec $spec -RecordPath $recordPath
   Invoke-DeliveryStep -Name "create GitHub release $tag" -Satisfied $isReleased -Action {
     Invoke-DeliveryCommand -File gh -Arguments @('release', 'create', $tag, '--title', $tag, '--notes-file', $notes, '--latest')
   }

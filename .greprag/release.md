@@ -16,8 +16,9 @@ project notes.
    into that version's section, commit, integrate, and tag the release commit.
 4. Run the release wrapper. It checks the tag, builds, runs the existing privacy
    and skill/plugin bundler, stamps the build, packs one tarball, pushes the
-   branch/tag, publishes that exact tarball, verifies registry integrity, creates
-   the GitHub release from public notes, then records the shipped commit.
+   branch/tag, records and publishes that exact tarball, proves the registry
+   serves it, creates the GitHub release from public notes, then records the
+   shipped commit.
 
 ```bash
 Set-Location C:/openwriter
@@ -51,9 +52,23 @@ GitHub release already created, the deployment already recorded. Satisfied steps
 are reported as skipped and the run continues from the first one that is not.
 
 Do not republish or bump a version to recover from a partial run. Registry
-integrity is re-proven against the freshly packed tarball on every run, whether
-this run published or an earlier one did, and no deployment is recorded until
-every declared artifact is verified.
+integrity is re-proven on every run, whether this run published or an earlier
+one did, and no deployment is recorded until every declared artifact is
+verified.
+
+That proof is against the integrity recorded beside the tarball when it was
+handed to the registry, never against the tarball the current run packed: every
+run rebuilds and stamps a fresh build time, so a later run's bytes differ from
+the published ones and could never match. A new version is also given up to five
+minutes to appear, with progress reported while waiting, because the registry's
+per-version and package-level views become consistent at different times and npm
+says so in its own publish output. If that wait runs out, the publish itself is
+not in doubt — re-run the same wrapper to finish verifying it. A version already
+on the registry with no such record cannot be proven and is refused; use
+-CheckOnly to see whether any step is genuinely outstanding.
+[test-release-integrity.ps1](../scripts/test-release-integrity.ps1) locks the
+waiting, the bound, and the mismatch and missing-record refusals against its own
+temporary records. It contacts no registry and publishes nothing.
 
 After release, verify the registry version/integrity, GitHub tag and release,
 public skill and all bundled plugins. Deploy the local-app target separately if

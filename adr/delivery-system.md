@@ -20,6 +20,10 @@ repo-owned artifact checks, and live acceptance proof.
   recheck before stopping the PID share one function in delivery-common.ps1.
 - local-app is recorded only after live SHA and artifact proof; npm is recorded
   only after registry integrity and GitHub release verification.
+- A published artifact is proven against the integrity recorded when it was
+  handed to the registry, never against a later run's pack, and the registry is
+  given bounded time to index it. Without such a record nothing is proven and
+  the release refuses rather than passing.
 - Public releases use the generic repository skill, privacy gate, and fresh
   plugins. Local delivery does not automatically publish an npm version.
 
@@ -49,3 +53,32 @@ entry. No directory is special-cased. Relative, missing, or unresolvable
 entries are refused, and the canonical path appearing as a later argument does
 not count. A regression script builds its own junction fixture to lock both
 the accepted and refused cases.
+
+### 2026-09-21
+
+A release threw immediately after a successful publish. The registry had
+accepted the version and said in its own output that it might take a few
+minutes to become available; the next line demanded it at once and got a
+not-found. The release had in fact worked, and the operator was shown a
+failure for it.
+
+The same step could also never pass on a resume. It compared the registry
+against the tarball the current run had just packed, and that tarball is not
+reproducible: each run rebuilds and the build stamp carries a fresh time, so a
+resumed run packs different bytes than the run that published. Re-running after
+any interruption therefore compared the registry against an artifact nobody had
+ever published, which defeated the resumability the rest of the wrapper
+provides.
+
+Verification no longer re-derives the artifact. The integrity of the tarball
+handed to the registry is written beside it in the ignored release artifacts,
+before the publish call so that a run ending between acceptance and the next
+line cannot lose the only proof of which bytes were sent. Every later run
+compares the registry against that record. A record for another version, an
+unreadable one, or none at all counts as no proof and refuses; the step is not
+weakened into a skip. The registry is given a bounded, progress-reporting wait
+to index a new version, and a wait that runs out says plainly that the publish
+is not in doubt and the wrapper can simply be re-run. Registry reads prefer the
+network so a cached miss from before publication cannot answer for the
+registry. A regression script locks the waiting, the bound, and each refusal
+with its own temporary records and fake probes, contacting no registry.
