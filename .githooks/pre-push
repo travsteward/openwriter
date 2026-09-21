@@ -40,6 +40,11 @@ done <<EOF
 $refs
 EOF
 
+# Privacy first: it is the block that matters most and it takes a second, so a
+# push that would publish personal content is refused before twenty seconds of
+# suites run for nothing.
+printf '%s\n' "$refs" | node scripts/check-push-privacy.mjs "$1" "$2" || exit 1
+
 if [ "$full" = 1 ]; then
   echo "pre-push: this push touches scripts, hooks or dependency declarations; running every check."
   # The runner includes the two fast gates, so they are not repeated here.
@@ -48,5 +53,3 @@ else
   node scripts/check-fixture-provenance.mjs || exit 1
   node scripts/check-lockfile-sync.mjs || exit 1
 fi
-
-printf '%s\n' "$refs" | node scripts/check-push-privacy.mjs "$1" "$2"

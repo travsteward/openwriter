@@ -25,6 +25,10 @@ jobs:
       # pre-push hook, before anything reaches this workflow.
       OPENWRITER_PRIVACY_NO_DENYLIST: '1'
     steps:
+      # Windows runners default to converting line endings on checkout, which
+      # this repo's own checkouts do not do. Check out the bytes as committed so
+      # a check never passes locally and fails here over whitespace.
+      - run: git config --global core.autocrlf false
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
