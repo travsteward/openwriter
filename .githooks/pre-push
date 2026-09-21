@@ -1,0 +1,22 @@
+#!/bin/sh
+# Blocks a push that would publish personal content.
+#
+# This repo is public: pushing IS publishing, permanently and into every fork.
+# The release-time gate cannot help by then, so the real check lives here.
+#
+# Enable (once per clone):  git config core.hooksPath .githooks
+# Bypass in a real emergency:  git push --no-verify
+#
+# "$1" = remote name, "$2" = remote url; git supplies the ref list on stdin.
+
+set -e
+
+if ! command -v node >/dev/null 2>&1; then
+  echo "pre-push: node not found — cannot run the privacy gate." >&2
+  echo "  Install node, or push with --no-verify if you are certain." >&2
+  exit 1
+fi
+
+node scripts/check-fixture-provenance.mjs || exit 1
+
+exec node scripts/check-push-privacy.mjs "$1" "$2"

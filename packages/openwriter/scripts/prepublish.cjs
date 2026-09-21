@@ -14,6 +14,7 @@ const { execSync } = require('child_process');
 const repoRoot = path.resolve('../..');
 console.log('[prepublish] Privacy gate (whole-repo scan)…');
 execSync('node scripts/check-skill-privacy.mjs', { stdio: 'inherit', cwd: repoRoot });
+execSync('node scripts/check-fixture-provenance.mjs', { stdio: 'inherit', cwd: repoRoot });
 
 // --- Copy skill files ---
 const skillRoot = path.resolve('../../skills/openwriter');

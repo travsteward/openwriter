@@ -14,6 +14,20 @@ npm run dev
 
 This starts the Vite dev server with hot reload on `localhost:5050`.
 
+`npm install` also points git at `.githooks`, which adds a pre-push privacy
+check. Run it yourself any time with `npm run privacy`.
+
+## Test fixtures: write the prose, don't borrow it
+
+Fixture text under `packages/openwriter/scripts/test-node-mapping/corpus/` is
+written for the fixture. Never copy, paraphrase or slice it from a real
+document — not your drafts, not a live OpenWriter workspace, not a user's
+content. Public-domain text is fine if you record the work and edition.
+
+Every stage must declare its source in that directory's `SOURCES.md`; a push
+fails if one doesn't. The reasoning, and the incidents behind the rule, are in
+[adr/privacy-gate-timing.md](adr/privacy-gate-timing.md).
+
 ## Making Changes
 
 1. Fork the repo and create a branch from `main`
