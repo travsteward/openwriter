@@ -59,7 +59,7 @@ Use [scripts/deploy.ps1](scripts/deploy.ps1) from [the canonical main checkout](
 
 ## Logs (for troubleshooting)
 
-Codex writes MCP + main process logs to `C:/Users/travy/AppData/Roaming/Codex/logs/`:
+Codex writes MCP + main process logs to `%APPDATA%/Codex/logs/`:
 
 - **`mcp-server-openwriter.log`** — openwriter MCP server stdout/stderr. Includes `[WS] doc-update`, `[WS] Broadcast id-rewrites`, `[State] BLOCKED save`, `[sync-check serialize:<Doc>] FAIL`, plugin load errors. **First place to look** when a bug brief mentions silent data loss, rewrite loops, or sync failures.
 - **`mcp.log`** — MCP framework (transport, init, tool discovery).
