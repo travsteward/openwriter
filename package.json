@@ -10,12 +10,13 @@
     "build": "turbo run build",
     "dev": "turbo run dev",
     "lint": "turbo run lint",
-    "privacy": "node scripts/check-skill-privacy.mjs && node scripts/check-fixture-provenance.mjs"
+    "privacy": "node scripts/check-skill-privacy.mjs && node scripts/check-fixture-provenance.mjs",
+    "check:lockfile": "node scripts/check-lockfile-sync.mjs"
   },
   "devDependencies": {
     "turbo": "^2.4.0"
   },
-  "packageManager": "npm@10.5.2",
+  "packageManager": "npm@11.16.0",
   "dependencies": {
     "sharp": "^0.34.5"
   }

@@ -1,5 +1,6 @@
 #!/bin/sh
-# Blocks a push that would publish personal content.
+# Blocks a push that would publish personal content, or a lockfile that would
+# break installs on another operating system.
 #
 # This repo is public: pushing IS publishing, permanently and into every fork.
 # The release-time gate cannot help by then, so the real check lives here.
@@ -18,5 +19,6 @@ if ! command -v node >/dev/null 2>&1; then
 fi
 
 node scripts/check-fixture-provenance.mjs || exit 1
+node scripts/check-lockfile-sync.mjs || exit 1
 
 exec node scripts/check-push-privacy.mjs "$1" "$2"
