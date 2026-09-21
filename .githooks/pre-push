@@ -1,6 +1,7 @@
 #!/bin/sh
 # Blocks a push that would publish personal content, or a lockfile that would
-# break installs on another operating system.
+# break installs on another operating system. A push that changes the delivery
+# scripts also has to pass their regression suites.
 #
 # This repo is public: pushing IS publishing, permanently and into every fork.
 # The release-time gate cannot help by then, so the real check lives here.
@@ -18,7 +19,34 @@ if ! command -v node >/dev/null 2>&1; then
   exit 1
 fi
 
-node scripts/check-fixture-provenance.mjs || exit 1
-node scripts/check-lockfile-sync.mjs || exit 1
+# stdin can be read once, and two things need it: the range test below and the
+# privacy gate at the end. Read it here and hand each its own copy.
+refs=$(cat)
 
-exec node scripts/check-push-privacy.mjs "$1" "$2"
+# The regression suites take about twenty seconds, so they run only when the
+# push touches what they guard: the delivery scripts, the hooks, or the
+# dependency declarations. Every other push keeps the fast gates alone.
+# The range is the one the privacy gate uses: commits the remote does not have.
+full=0
+while read -r local_ref local_sha remote_ref remote_sha; do
+  [ -n "$local_sha" ] || continue
+  # An all-zero local sha is a branch deletion: nothing is being published.
+  case "$local_sha" in *[!0]*) ;; *) continue ;; esac
+  # A range that cannot be read is treated as touching everything.
+  touched=$(git log --format= --name-only "$local_sha" --not "--remotes=$1" -- \
+    scripts .githooks package.json package-lock.json 2>/dev/null) || touched=unreadable
+  if [ -n "$touched" ]; then full=1; fi
+done <<EOF
+$refs
+EOF
+
+if [ "$full" = 1 ]; then
+  echo "pre-push: this push touches scripts, hooks or dependency declarations; running every check."
+  # The runner includes the two fast gates, so they are not repeated here.
+  node scripts/run-checks.mjs || exit 1
+else
+  node scripts/check-fixture-provenance.mjs || exit 1
+  node scripts/check-lockfile-sync.mjs || exit 1
+fi
+
+printf '%s\n' "$refs" | node scripts/check-push-privacy.mjs "$1" "$2"

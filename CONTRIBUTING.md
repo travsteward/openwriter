@@ -17,6 +17,29 @@ This starts the Vite dev server with hot reload on `localhost:5050`.
 `npm install` also points git at `.githooks`, which adds a pre-push privacy
 check. Run it yourself any time with `npm run privacy`.
 
+## Running the checks
+
+```bash
+npm test
+```
+
+This runs every repository gate (privacy, fixture provenance, lockfile sync) and
+every regression suite matching `scripts/test-*.ps1`, prints one line per item,
+and exits non-zero if anything failed. It takes about twenty seconds. A new
+suite only has to follow that file name to be picked up; there is no list to
+update.
+
+The suites are PowerShell, and some need Windows. Without PowerShell they are
+reported as skipped and the run fails, because a suite that did not run has
+proven nothing; set `OPENWRITER_CHECKS_NO_POWERSHELL=1` to accept a gates-only
+run. CI runs the same command on Windows for every push and pull request to
+`main`, and the pre-push hook runs it when a push touches `scripts/`,
+`.githooks/`, `package.json` or `package-lock.json`.
+
+The privacy gate refuses to run without a personal denylist. On a clone with no
+personal terms to protect, set `OPENWRITER_PRIVACY_NO_DENYLIST=1` and it runs
+the generic checks only.
+
 ## Test fixtures: write the prose, don't borrow it
 
 Fixture text under `packages/openwriter/scripts/test-node-mapping/corpus/` is

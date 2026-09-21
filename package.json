@@ -10,6 +10,7 @@
     "build": "turbo run build",
     "dev": "turbo run dev",
     "lint": "turbo run lint",
+    "test": "node scripts/run-checks.mjs",
     "privacy": "node scripts/check-skill-privacy.mjs && node scripts/check-fixture-provenance.mjs",
     "check:lockfile": "node scripts/check-lockfile-sync.mjs"
   },

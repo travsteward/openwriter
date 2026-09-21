@@ -26,6 +26,10 @@ repo-owned artifact checks, and live acceptance proof.
   the release refuses rather than passing.
 - Public releases use the generic repository skill, privacy gate, and fresh
   plugins. Local delivery does not automatically publish an npm version.
+- scripts/run-checks.mjs is the one entry point for the gates and the
+  regression suites. Suites are discovered as scripts/test-*.ps1, never listed.
+  A suite that could not run is reported as not run and fails the run unless
+  that is explicitly acknowledged.
 
 ## Decision log
 
@@ -103,3 +107,38 @@ a hand-built file:// string: on Windows the hand-built form does not match
 node's own URL, and the mismatch silently disables the gate instead of making
 it noisy. That regression is now locked by a test that gives the checker real
 dirt and asserts it refuses.
+
+### 2026-09-21 (3)
+
+Four regression suites and three gates existed, and nothing ran the suites.
+There was no root test command and no CI, and the pre-push hook ran the gates
+only. Each suite locks out a failure that already happened once, so each lock
+held only while someone remembered to run it by hand.
+
+One runner now runs every gate and every suite, reports one line per item,
+keeps going after a failure so a single run shows everything that is wrong, and
+exits non-zero if anything failed. It is the root test command, the CI job, and
+the pre-push hook's full path. Suites are found by file name rather than listed:
+a list is a second place to remember, and the suite nobody added to it would be
+the original problem again. Finding no suites at all is treated as broken
+discovery and fails.
+
+A machine without PowerShell cannot run the suites. They are reported as
+skipped and the run fails, because a suite that did not run has proven nothing;
+an explicit environment acknowledgement accepts a gates-only run and says the
+suites are unverified. The build-input check is left out of the runner: it
+refuses whenever build inputs are uncommitted, which is the normal state of a
+tree under work, so it stays in deploy and release preflight.
+
+The suites build their own fixtures and assert the privacy gate's refusals, so
+the runner removes the privacy gate's environment settings before starting
+them. CI has no personal denylist and sets the documented acknowledgement for
+the real gates; inherited by a suite, that acknowledgement turns the refusal it
+asserts into a pass.
+
+The hook runs the full runner only when the pushed range touches the scripts,
+the hooks, or the dependency declarations, and otherwise stays as fast as it
+was. CI covers every push regardless, on Windows because the suites use
+directory junctions. The hook reads the ref list from stdin once and hands a
+copy to the privacy gate, since the range test would otherwise consume it and
+leave the gate with nothing to scan, which it reports as clean.

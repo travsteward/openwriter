@@ -1,0 +1,34 @@
+name: checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    # Windows because the regression suites build directory junctions and run
+    # under Windows PowerShell.
+    runs-on: windows-latest
+    timeout-minutes: 15
+    env:
+      # The personal denylist is gitignored and exists only on the operator's
+      # machine, and the privacy gate deliberately REFUSES when it cannot read
+      # one. This is the gate's own documented acknowledgement for a checkout
+      # that has no personal terms to protect: generic checks still run, and the
+      # gate says out loud that personal-term checking is off. It is not a
+      # bypass. Personal terms are enforced where they exist, by the operator's
+      # pre-push hook, before anything reaches this workflow.
+      OPENWRITER_PRIVACY_NO_DENYLIST: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: node scripts/run-checks.mjs
