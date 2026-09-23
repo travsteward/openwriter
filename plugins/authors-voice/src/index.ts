@@ -112,9 +112,8 @@ const plugin: OpenWriterPlugin = {
       options: [
         { value: '', label: 'Default (Strongest)' },
         { value: 'strongest', label: 'Strongest — Claude Opus (best quality, $$$)' },
-        { value: 'balanced', label: 'Balanced — Claude Sonnet ($$)' },
-        { value: 'fast-plus', label: 'Fast+ — Gemini 3.5 Flash (newest, great, $)' },
-        { value: 'fast', label: 'Fast — Gemini 2.5 Flash (free)' },
+        { value: 'fast-plus', label: 'Fast+ — Gemini 3.8 Flash (rapid, no cooldowns, $)' },
+        { value: 'fast', label: 'Fast — Gemini 3.8 Flash (free, slower, cooldowns)' },
       ],
     },
   },
