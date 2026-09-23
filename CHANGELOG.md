@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ## [Unreleased]
 
+## [0.41.2] - 2026-09-23
+
+### Changed
+- Author's Voice writing models: Strongest now uses Claude Opus 5.5, and both Fast tiers use Gemini 3.8 Flash. Fast is free with cooldowns, Fast+ is rapid with no cooldowns. The Balanced option is retired; saved Balanced picks move to Fast+.
+
 ## [0.41.1] - 2026-09-21
 
 ### Changed
