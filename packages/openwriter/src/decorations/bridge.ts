@@ -5,7 +5,7 @@
 import type { Editor } from '@tiptap/core';
 import { Fragment } from '@tiptap/pm/model';
 import type { NodeChange } from '../ws/client';
-import { applyInsert, applyRewrite, applyDelete, applyRangeRewrite, type InsertAnchor } from './apply';
+import { applyInsert, applyRewrite, applyDelete, applyRangeRewrite, markDeleteInTr, type InsertAnchor } from './apply';
 
 export function applyNodeChangeToEditor(
   editor: Editor,
@@ -143,11 +143,7 @@ export function applyNodeChangesToEditor(
             // Hard-delete: remove node entirely.
             tr.delete(found.pos, found.pos + found.node.nodeSize);
           } else {
-            if (found.node.attrs?.pendingStatus === 'delete') continue;
-            tr.setNodeMarkup(found.pos, undefined, {
-              ...found.node.attrs,
-              pendingStatus: 'delete',
-            });
+            markDeleteInTr(tr, found);
           }
         }
       } catch {

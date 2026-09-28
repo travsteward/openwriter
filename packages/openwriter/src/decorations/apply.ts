@@ -347,6 +347,28 @@ export function applyRangeRewrite(
 // APPLY DELETE
 // ============================================================================
 
+/**
+ * Mark a node for deletion inside a transaction. A delete targets the node's
+ * canonical form, so a pending proposal on it is withdrawn first, the same as
+ * rejecting it. A pending insert (or a rewrite with no baseline) has no
+ * canonical form and is removed outright. Mirrors the server's
+ * applyChangesToDoc. adr: adr/pending-overlay-model.md
+ */
+export function markDeleteInTr(tr: any, found: { node: any; pos: number }): void {
+  const { node, pos } = found;
+  const status = node.attrs?.pendingStatus;
+  if (status === 'delete') return;
+  const original = status === 'rewrite' ? node.attrs?.pendingOriginalContent : null;
+  if (status === 'insert' || (status === 'rewrite' && !original)) {
+    tr.delete(pos, pos + node.nodeSize);
+  } else if (original) {
+    const attrs = { ...original.attrs, id: node.attrs.id, pendingStatus: 'delete', pendingOriginalContent: null };
+    tr.replaceWith(pos, pos + node.nodeSize, tr.doc.type.schema.nodeFromJSON({ ...original, attrs }));
+  } else {
+    tr.setNodeMarkup(pos, undefined, { ...node.attrs, pendingStatus: 'delete' });
+  }
+}
+
 export function applyDelete(editor: Editor, nodeId: string, options?: ApplyOptions): ApplyResult {
   const nodeResult = findNodeById(editor, nodeId);
   if (!nodeResult) {
@@ -355,11 +377,6 @@ export function applyDelete(editor: Editor, nodeId: string, options?: ApplyOptio
 
   const { node, pos } = nodeResult;
   const autoAccept = options?.autoAccept === true;
-
-  // Skip duplicate (only relevant for pending-delete)
-  if (!autoAccept && node.attrs?.pendingStatus === 'delete') {
-    return { success: true, nodeId };
-  }
 
   try {
     if (autoAccept) {
@@ -370,10 +387,7 @@ export function applyDelete(editor: Editor, nodeId: string, options?: ApplyOptio
     } else {
       editor.chain()
         .command(({ tr }) => {
-          tr.setNodeMarkup(pos, undefined, {
-            ...node.attrs,
-            pendingStatus: 'delete',
-          });
+          markDeleteInTr(tr, nodeResult);
           return true;
         })
         .run();

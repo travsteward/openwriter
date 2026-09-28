@@ -1209,3 +1209,24 @@ ReviewTab can present its current-change actions in the Focus titlebar through
 a portal. It retains the same body/title cursor, restores any Original preview
 before resolution, and sends the existing persistence messages. No second
 pending-state hook or new acceptance path is introduced.
+
+### 2026-09-28 — Deleting a pending proposal withdraws it
+
+An agent inserted paragraphs with write_to_pad, then deleted them. The delete
+overwrote the node's pendingStatus from insert to delete. A pending delete keeps
+its node in canonical, so the unapproved paragraph was written into the .md
+body, and once the delete entry left the sidecar it read as original text: the
+ghost duplicates seen in an editing draft. Deleting a pending rewrite had the
+same shape and wrote the rewrite's unapproved text to disk.
+
+Rule: a delete targets the node's canonical form. applyChangesToDoc first
+withdraws any pending proposal on the node (canonicalFormOf, built on
+cloneWithPendingReverted, so it matches what reject produces). A pending insert
+has no canonical form and is removed outright; a pending rewrite reverts to its
+baseline, which is then marked for deletion; an original node is marked as
+before. The browser applies the same rule in markDeleteInTr (apply.ts), used by
+both the single and batched node-change paths and the context-menu delete, so a
+browser echo cannot restore the withdrawn node. Regression:
+scripts/test-delete-pending-insert.mjs covers the active and non-active paths.
+Ghosts already written into a doc's .md body are canonical text now and are not
+repaired by this change.

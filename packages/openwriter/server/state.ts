@@ -1421,6 +1421,17 @@ function findNodeInDoc(nodes: any[], id: string): { parent: any[]; index: number
  * (rather than tagging for review). Processed changes carry autoAccept: true
  * so the client knows to apply them as committed edits, not pending review.
  */
+/**
+ * The node as canonical holds it, with every pending proposal withdrawn — the
+ * same result the user gets by rejecting them. Null when canonical has no such
+ * node: a pending insert, or a rewrite with no recorded baseline. Keeps the
+ * node's id so a review can still target it. adr: adr/pending-overlay-model.md
+ */
+function canonicalFormOf(node: any): any | null {
+  const reverted = cloneWithPendingReverted({ type: 'doc', content: [node] }).content[0];
+  return reverted ? { ...reverted, attrs: { ...reverted.attrs, id: node.attrs?.id } } : null;
+}
+
 function applyChangesToDoc(doc: PadDocument, changes: NodeChange[], autoAccept: boolean = false): NodeChange[] {
   const processed: NodeChange[] = [];
 
@@ -1651,13 +1662,20 @@ function applyChangesToDoc(doc: PadDocument, changes: NodeChange[], autoAccept: 
         found.parent.splice(found.index, 1);
         processed.push({ ...change, autoAccept: true });
       } else {
-        found.parent[found.index] = {
-          ...found.parent[found.index],
-          attrs: {
-            ...found.parent[found.index].attrs,
-            pendingStatus: 'delete',
-          },
-        };
+        // A delete targets the node's canonical form. Any pending proposal on
+        // the node is withdrawn first; only what remains is marked for review.
+        // A pending insert has no canonical form, so withdrawing it removes
+        // the node outright. Marking it 'delete' instead kept it in canonical
+        // and wrote the unapproved text to disk. adr: adr/pending-overlay-model.md
+        const canonicalNode = canonicalFormOf(found.parent[found.index]);
+        if (canonicalNode) {
+          found.parent[found.index] = {
+            ...canonicalNode,
+            attrs: { ...canonicalNode.attrs, pendingStatus: 'delete' },
+          };
+        } else {
+          found.parent.splice(found.index, 1);
+        }
         processed.push(change);
       }
     }
