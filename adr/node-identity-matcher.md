@@ -185,3 +185,11 @@ Editor sessions and canonical document URLs now use stable docId. Filename promo
 - **Invariant (strengthens the 2026-05-16 v0.14.1 rule).** A block whose ID is known to `previousNodes` and unique in the tree always keeps it, whatever its content. Any ID the translation renames is renamed everywhere the overlay refers to it.
 - **Verification.** `scripts/test-delete-keeps-ids.mjs` (5 assertions; 4 fail on the prior code with the incident's shape). Full `scripts/test-*.mjs` suite matches the baseline: the six scripts that fail here fail identically on unchanged main.
 - **Not fixed here.** Edit_text on a pending insert still turns it into a rewrite whose baseline is the insert, which writes the unapproved text into the .md body; that is how the unknown-ID neighbour reached canonical in the incident.
+
+### 2026-09-28 — The references write after a save keeps the identity graph
+
+- **Trigger.** `scripts/test-backlinks-integration.mjs` failed on main: after a source block with a `doc:` link was edited, its paragraph-anchored backlink reported a fresh `from_node`.
+- **Root cause.** When a save adds a new prose-link target, `writeToDisk` does a second frontmatter-only write for `references:`. It passed `state.metadata` to `writeFrontmatter`, which replaces the whole frontmatter. `state.metadata` never holds `nodes` or `graveyard` (the serializer adds those to a copy), so that write erased the identity graph the save had just written. The next load and save found no `previousNodes` and minted fresh IDs for every block.
+- **Decision.** The references write now merges `references` onto the frontmatter read back from disk, the same way `link_to` does for non-active docs. `writeFrontmatter` keeps replace semantics because the migration uses them to delete keys.
+- **Invariant.** A frontmatter-only write after a save must start from the frontmatter on disk, never from `state.metadata`.
+- **Stale test updated.** The same script asserted the v0.19 stored `backlinks:` field. It now reads the live `computeBacklinksFor` result, filtered to paragraph-anchored entries. The "Backlinks ride on matcher ID stability" invariant above still names the removed `updateBacklinksForSource` pipeline; the ID-stability claim holds for the live computation.

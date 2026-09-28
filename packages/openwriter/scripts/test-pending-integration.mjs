@@ -305,6 +305,10 @@ New text from agent.
     // Load via the active-doc pathway (mirrors how load() handles it)
     const parsed = markdownToTiptap(readFileSync(legacyFile, 'utf-8'));
     setActiveDocument(parsed.document, parsed.title, legacyFile, false, undefined, parsed.metadata);
+    // A load alone does not bump docVersion, so save() would no-op at the gate.
+    // Re-install the loaded doc through the edit path to reach the "next save".
+    // adr: adr/pending-overlay-model.md (2026-06-01)
+    updateDocument(getDocument());
     save();
     cancelDebouncedSave();
 

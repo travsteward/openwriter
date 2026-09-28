@@ -1247,3 +1247,12 @@ baseline as before. The browser's applyRewrite (apply.ts, the single node-change
 and context-menu path) applies the same rule, so a browser echo cannot restamp
 the insert as a rewrite. Regression: scripts/test-edit-pending-insert.mjs covers
 the active and non-active paths.
+
+### 2026-09-28 — Two more tests faked an edit through the load path
+
+`test-pending-integration.mjs` (legacy migration) and
+`test-versions-integration.mjs` (M-E restore) called `setActiveDocument` then
+`save()`, which the no-op gate correctly skips (see 2026-06-01). Both now
+re-install the loaded doc through `updateDocument` before saving. No code
+change: legacy `pending:` is still converted on load and dropped from disk on
+the next real save.

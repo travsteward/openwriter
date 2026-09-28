@@ -8,9 +8,10 @@
  *   4. Simulate browser accept-all: clear pendingStatus on every inserted node
  *      and send the result back through updateDocument (this is what the WS
  *      doc-update handler does after the browser strips markers).
- *   5. save() again — disk should have 6 nodes, no graveyard surprise.
+ *   5. save() again — disk should have the 5 inserted nodes, no graveyard surprise.
  *
- * Pass condition: final disk body has the 5 inserted paragraphs + the trailing.
+ * Pass condition: final disk body has the 5 inserted blocks. The trailing empty
+ * paragraph is not expected: the serializer drops trailing empties (0ec19a3).
  * Fail condition: disk body is shorter or graveyard has the inserted IDs.
  */
 
@@ -127,7 +128,8 @@ try {
   // Pass conditions
   const nodeIds = (afterAccept.nodes || []).map((n) => Array.isArray(n) ? n[0] : n);
   const graveyardIds = (afterAccept.graveyard || []).map((g) => Array.isArray(g) ? g[0] : g);
-  assert(nodeIds.length >= 6, `disk has 6+ nodes (got ${nodeIds.length}: ${JSON.stringify(nodeIds)})`);
+  const inserted = ['head0001', 'para0001', 'para0002', 'para0003', 'para0004'];
+  assert(inserted.every((id) => nodeIds.includes(id)), `disk has all 5 inserted nodes (got ${JSON.stringify(nodeIds)})`);
   assert(graveyardIds.length === 0 || !graveyardIds.includes('head0001'), `head0001 NOT in graveyard (graveyard=${JSON.stringify(graveyardIds)})`);
   assert(!graveyardIds.includes('para0001'), 'para0001 NOT in graveyard');
   assert(body.includes('Para 1'), 'body contains "Para 1"');

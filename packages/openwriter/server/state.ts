@@ -13,7 +13,7 @@ import { getDataDir, TEMP_PREFIX, ensureDataDir, filePathForTitle, tempFilePath,
 import { snapshotIfNeeded, ensureDocId, forceSnapshot } from './versions.js';
 import { captureAttribution, bindBlameToVersion, type Actor } from './attribution.js';
 import { scheduleAgentCommit } from './commits.js';
-import { syncReferencesFromProse, invalidateBacklinksCache, writeFrontmatter } from './backlinks.js';
+import { syncReferencesFromProse, invalidateBacklinksCache, writeFrontmatter, readFrontmatter as readBacklinkFrontmatter } from './backlinks.js';
 import { isAutoAcceptInheritedForDoc } from './workspaces.js';
 import { matchNodes, type NodeEntry } from './node-matcher.js';
 import { tiptapToBlocks, applyIdsToTiptap } from './node-blocks.js';
@@ -2674,8 +2674,12 @@ function writeToDisk(actor: Actor = 'human'): void {
       if (sync && state.metadata) {
         state.metadata.references = sync.newReferences;
         // Second tiny write: re-persist frontmatter only (body already on disk).
+        // Merge onto the frontmatter just written: state.metadata lacks the
+        // serializer's `nodes`/`graveyard`, and replacing with it would erase
+        // the identity graph. adr: adr/node-identity-matcher.md
         const filename = state.filePath.split(/[/\\]/).pop() || '';
-        writeFrontmatter(filename, state.metadata);
+        const fm = readBacklinkFrontmatter(filename);
+        if (fm) writeFrontmatter(filename, { ...fm.data, references: sync.newReferences });
       }
     } catch (err) {
       console.error('[State] references auto-sync failed:', err);

@@ -6,8 +6,9 @@
  * `from_node` (the block in the source doc containing the link).
  *
  * Setup: doc A holds a target paragraph; doc B holds a paragraph with a
- * `[anchor](doc:AAA#aaa11111)` link pointing into A. After save, A's
- * frontmatter has a `backlinks:` entry referencing B's source block.
+ * `[anchor](doc:AAA#aaa11111)` link pointing into A. Since v0.20 backlinks
+ * are computed live from every doc's prose links (computeBacklinksFor), not
+ * stored in A's frontmatter; the paragraph-anchored entries carry the node IDs.
  *
  * The matcher's job is to make sure that:
  * - Editing the target block in A doesn't change `to_node` → backlink valid.
@@ -37,6 +38,7 @@ import { markdownToTiptap } from '../dist/server/markdown.js';
 import { markdownToNodes, resolvePreviousNodes, resolveGraveyard } from '../dist/server/markdown-parse.js';
 import { tiptapToBlocks } from '../dist/server/node-blocks.js';
 import { setActiveProfile, ensureDataDir } from '../dist/server/helpers.js';
+import { computeBacklinksFor } from '../dist/server/backlinks.js';
 
 let passed = 0;
 let failed = 0;
@@ -69,6 +71,11 @@ function readFrontmatter(filePath) {
       ? resolveGraveyard(data.graveyard).map((r) => ({ id: r.id, fp: r.fingerprint }))
       : data.graveyard,
   };
+}
+
+/** A's paragraph-anchored inbound links (doc-level `references:` entries have no to_node). */
+function anchoredBacklinks() {
+  return computeBacklinksFor(docA_id).filter((b) => b.to_node);
 }
 
 function setDocContent(content) {
@@ -125,11 +132,11 @@ try {
 
     // Verify A now has a backlink entry pointing to B's source block
     const fmA = readFrontmatter(docA_path);
-    assert(Array.isArray(fmA.backlinks) && fmA.backlinks.length === 1, `A has 1 backlink (got ${fmA.backlinks?.length ?? 0})`);
-    if (fmA.backlinks?.[0]) {
-      assert(fmA.backlinks[0].from_doc === docB_id, `backlink.from_doc = B (got ${fmA.backlinks[0].from_doc})`);
-      assert(fmA.backlinks[0].from_node === 'b5000001', `backlink.from_node = B's source block (got ${fmA.backlinks[0].from_node})`);
-      assert(fmA.backlinks[0].to_node === 'a7000001', `backlink.to_node = A's target block (got ${fmA.backlinks[0].to_node})`);
+    assert(anchoredBacklinks().length === 1, `A has 1 backlink (got ${anchoredBacklinks()?.length ?? 0})`);
+    if (anchoredBacklinks()?.[0]) {
+      assert(anchoredBacklinks()[0].from_doc === docB_id, `backlink.from_doc = B (got ${anchoredBacklinks()[0].from_doc})`);
+      assert(anchoredBacklinks()[0].from_node === 'b5000001', `backlink.from_node = B's source block (got ${anchoredBacklinks()[0].from_node})`);
+      assert(anchoredBacklinks()[0].to_node === 'a7000001', `backlink.to_node = A's target block (got ${anchoredBacklinks()[0].to_node})`);
     }
   }
 
@@ -148,7 +155,7 @@ try {
     const fmA = readFrontmatter(docA_path);
     const targetNode = fmA.nodes?.find((n) => n.id === 'a7000001');
     assert(!!targetNode, 'target paragraph a7000001 still alive in A');
-    assert(fmA.backlinks?.[0]?.to_node === 'a7000001', `backlink to_node still a7000001 (got ${fmA.backlinks?.[0]?.to_node})`);
+    assert(anchoredBacklinks()?.[0]?.to_node === 'a7000001', `backlink to_node still a7000001 (got ${anchoredBacklinks()?.[0]?.to_node})`);
   }
 
   // ==========================================================================
@@ -169,7 +176,7 @@ try {
     const targetNode = fmA.nodes?.find((n) => n.id === 'a7000001');
     assert(!!targetNode, 'target ID a7000001 preserved through type-change');
     assert(targetNode?.fp?.type === 'heading', `target is now a heading (got fp.type=${targetNode?.fp?.type})`);
-    assert(fmA.backlinks?.[0]?.to_node === 'a7000001', 'backlink to_node unchanged');
+    assert(anchoredBacklinks()?.[0]?.to_node === 'a7000001', 'backlink to_node unchanged');
   }
 
   // ==========================================================================
@@ -190,9 +197,9 @@ try {
     }));
     save();
     const fmA = readFrontmatter(docA_path);
-    assert(fmA.backlinks?.length === 1, `A still has 1 backlink (got ${fmA.backlinks?.length})`);
-    assert(fmA.backlinks?.[0]?.from_node === 'b5000001', `backlink.from_node still b5000001 (got ${fmA.backlinks?.[0]?.from_node})`);
-    assert(fmA.backlinks?.[0]?.text?.includes('the target'), `backlink anchor text persists`);
+    assert(anchoredBacklinks()?.length === 1, `A still has 1 backlink (got ${anchoredBacklinks()?.length})`);
+    assert(anchoredBacklinks()?.[0]?.from_node === 'b5000001', `backlink.from_node still b5000001 (got ${anchoredBacklinks()?.[0]?.from_node})`);
+    assert(anchoredBacklinks()?.[0]?.text?.includes('the target'), `backlink anchor text persists`);
   }
 
   // ==========================================================================
@@ -207,8 +214,8 @@ try {
     setDocContent(doc.content.filter((b) => b.attrs?.id !== 'b5000001'));
     save();
     const fmA = readFrontmatter(docA_path);
-    assert(!Array.isArray(fmA.backlinks) || fmA.backlinks.length === 0,
-      `A's backlinks pruned to empty after source deleted (got ${fmA.backlinks?.length ?? 0})`);
+    assert(anchoredBacklinks().length === 0,
+      `A's backlinks pruned to empty after source deleted (got ${anchoredBacklinks()?.length ?? 0})`);
   }
 
   // ==========================================================================
@@ -231,13 +238,13 @@ try {
     save();
     const fmA = readFrontmatter(docA_path);
     const fmB = readFrontmatter(docB_path);
-    assert(fmA.backlinks?.length === 1, `A has 1 backlink restored (got ${fmA.backlinks?.length})`);
-    if (fmA.backlinks?.[0]) {
+    assert(anchoredBacklinks()?.length === 1, `A has 1 backlink restored (got ${anchoredBacklinks()?.length})`);
+    if (anchoredBacklinks()?.[0]) {
       // The matcher should have graveyard-restored b5000001 since the fingerprint matches.
-      assert(fmA.backlinks[0].from_node === 'b5000001',
-        `backlink.from_node restored to b5000001 via graveyard (got ${fmA.backlinks[0].from_node})`);
-      assert(fmA.backlinks[0].to_node === 'a7000001',
-        `backlink.to_node still a7000001 (got ${fmA.backlinks[0].to_node})`);
+      assert(anchoredBacklinks()[0].from_node === 'b5000001',
+        `backlink.from_node restored to b5000001 via graveyard (got ${anchoredBacklinks()[0].from_node})`);
+      assert(anchoredBacklinks()[0].to_node === 'a7000001',
+        `backlink.to_node still a7000001 (got ${anchoredBacklinks()[0].to_node})`);
     }
   }
 
@@ -276,8 +283,8 @@ try {
     assert(!!restoredNode, 'a7000001 restored from graveyard');
     assert(!fmA.graveyard?.some((g) => g.id === 'a7000001'), 'a7000001 cleared from graveyard');
     // Backlink to_node should still be valid (it was always pointing at a7000001)
-    assert(fmA.backlinks?.[0]?.to_node === 'a7000001',
-      `backlink to_node still resolves to a7000001 (got ${fmA.backlinks?.[0]?.to_node})`);
+    assert(anchoredBacklinks()?.[0]?.to_node === 'a7000001',
+      `backlink to_node still resolves to a7000001 (got ${anchoredBacklinks()?.[0]?.to_node})`);
   }
 
 } finally {

@@ -202,6 +202,9 @@ try {
   {
     const restored = restoreVersion(docId, firstSnapshotTs);
     setActiveDocument(restored.document, restored.title, filePath, false, undefined, restored.metadata);
+    // A load alone does not bump docVersion, so save() would no-op at the gate.
+    // adr: adr/pending-overlay-model.md (2026-06-01)
+    updateDocument(getDocument());
     save();
     const fm = readFrontmatter(filePath);
     // Content correctly restored — verify by reading the actual body text
