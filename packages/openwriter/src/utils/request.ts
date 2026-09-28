@@ -1,3 +1,5 @@
+import { TAB_HEADER } from '../ws/client';
+
 /** HTTP failures and network failures share one action contract. */
 export async function checkedFetch(url: string, init?: RequestInit): Promise<Response> {
   const response = await fetch(url, init);
@@ -9,5 +11,6 @@ export async function checkedFetch(url: string, init?: RequestInit): Promise<Res
 }
 
 export function jsonRequest(method: string, body: unknown): RequestInit {
-  return { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) };
+  // The tab header lets a create/open route navigate only this tab. adr: adr/per-tab-view.md
+  return { method, headers: { 'Content-Type': 'application/json', ...TAB_HEADER }, body: JSON.stringify(body) };
 }

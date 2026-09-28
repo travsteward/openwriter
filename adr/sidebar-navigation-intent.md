@@ -30,3 +30,7 @@ deletion from timing or a transiently missing document-list entry.
 ### 2026-09-07 — UX audit closure
 
 Creation carries explicit intent for foreground caret focus and always refreshes the document list. Stable document URLs survive refresh; explicit passage navigation also works when the target is already open.
+
+### 2026-09-28 — navigation moves only the tab that navigated
+
+`document-switched` now carries an audience as well as an intent. A tab's own open moves only that tab, and other tabs are detached instead of moved. The deletion fallback still moves the tabs showing the deleted live doc. See adr/per-tab-view.md.

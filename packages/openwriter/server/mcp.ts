@@ -533,7 +533,9 @@ export const TOOL_REGISTRY: ToolDef[] = [
       const filename = resolveDocId(docId);
       broadcastWritingFinished(); // Clear any in-progress creation spinner
       const result = switchDocument(filename);
-      broadcastDocumentSwitched(result.document, result.title, result.filename);
+      // Explicit "show the user" — the one agent tool that moves every tab.
+      // adr: adr/per-tab-view.md
+      broadcastDocumentSwitched(result.document, result.title, result.filename, undefined, 'open', 'all');
       const compact = toCompactFormat(result.document, result.title, getWordCount(), getPendingChangeCount(), getDocId());
       return { content: [{ type: 'text', text: `Switched to "${result.title}" [${docId}]\n\n${compact}` }] };
     },
@@ -548,7 +550,7 @@ export const TOOL_REGISTRY: ToolDef[] = [
       container: z.string().optional().describe('Container name within the workspace (e.g. "Chapters", "Notes", "References"). Creates the container if it doesn\'t exist. Requires workspace.'),
       workspaceFile: z.string().optional().describe('Existing workspace by manifest filename (the *.json id used by move_item / get_workspace_structure). Id-based alternative to "workspace" (title). Must already exist — errors if not found. Use when you already hold the workspaceFile from another tool.'),
       containerId: z.string().optional().describe('Existing container by id (8-char hex, as used by move_item / get_workspace_structure). Id-based alternative to "container" (name). Must already exist in the resolved workspace — errors if not found. Requires a workspace (workspaceFile or workspace).'),
-      empty: z.boolean().optional().describe('ONLY for content_type template docs (tweets, articles) that start blank. Skips the spinner and switches immediately. Do NOT set this for content documents — use the two-step flow (create_document → populate_document) instead.'),
+      empty: z.boolean().optional().describe('ONLY for content_type template docs (tweets, articles) that start blank. Skips the spinner; never switches the user\'s view. Do NOT set this for content documents — use the two-step flow (create_document → populate_document) instead.'),
       content_type: z.enum(['document', 'tweet', 'reply', 'quote', 'article', 'linkedin', 'newsletter', 'blog', 'manuscript']).describe('Required. Use "document" for plain documents. Tweet/reply/quote/article/linkedin/newsletter/blog set type-specific metadata automatically. "manuscript" = a binding doc whose body is an ordered list of [text](doc:ID) pointers under ## chapter headings; populate it with the manifest, then it compiles to EPUB/DOCX via the manuscript routes.'),
       url: z.string().optional().describe('Tweet URL — REQUIRED for content_type "reply" or "quote" (e.g. "https://x.com/user/status/123"). Sets tweetContext.url automatically. Ignored for other content types.'),
       afterId: z.string().optional().describe('Place the new doc immediately after this docId (8-char hex) or containerId inside its parent. Omit to append to the bottom of the parent (the default — matches ascending-order convention: newest at bottom). Requires workspace.'),
@@ -650,49 +652,8 @@ export const TOOL_REGISTRY: ToolDef[] = [
       if (variantType) variantMeta.variantType = variantType;
 
       try {
-        if (empty) {
-          // Immediate switch — no spinner, no populate_document needed
-          const result = createDocument(title, undefined, path);
-          setAgentLock(result.filename);
-
-          // Apply status + variant + type-specific metadata in one merge
-          const initMeta: Record<string, any> = { ...statusMeta, ...variantMeta };
-          if (content_type) {
-            const typeMeta = resolveTypeMeta(content_type, url);
-            if (typeMeta) Object.assign(initMeta, typeMeta);
-          }
-          setMetadata(initMeta);
-
-          if (wsTarget) {
-            // Resolve afterId: it may be a docId (8-char hex) or containerId.
-            // filenameByDocId resolves docId→filename; if null, treat as containerId.
-            const afterRef = afterId ? (filenameByDocId(afterId) ?? afterId) : null;
-            addDoc(wsTarget.wsFilename, wsTarget.containerId, result.filename, result.title, afterRef);
-          }
-
-          const newDocId = getDocId();
-          save('agent');
-          broadcastDocumentsChanged();
-          broadcastWorkspacesChanged();
-          broadcastDocumentSwitched(getDocument(), getTitle(), getActiveFilename(), getMetadata());
-          // Right-rail Activity: one entry per agent-created doc. adr: adr/right-rail.md
-          broadcastActivityEvent({
-            kind: 'doc-created',
-            headline: `Created ${result.title || 'Untitled'}`,
-            detail: content_type && content_type !== 'document' ? content_type : undefined,
-            docId: newDocId,
-            filename: result.filename,
-          });
-          return {
-            content: [{
-              type: 'text',
-              text: `Created "${result.title}" [${newDocId}]${placement}${content_type ? ` (${content_type})` : ''} — ready.`,
-            }],
-          };
-        }
-
-        // Two-step flow: create file on disk WITHOUT switching the user's view.
-        // The spinner persists in the sidebar until populate_document is called.
+        // Create the file on disk WITHOUT switching the user's view — agent
+        // creation never navigates a tab. adr: adr/per-tab-view.md
         // Merge status with any content-type metadata so it lands on the first
         // disk write.
         const typeMeta = content_type ? resolveTypeMeta(content_type, url) : undefined;
@@ -704,12 +665,18 @@ export const TOOL_REGISTRY: ToolDef[] = [
           addDoc(wsTarget.wsFilename, wsTarget.containerId, result.filename, result.title, afterRef);
         }
 
-        // Broadcast spinner keyed by filename so populate_document can clear exactly
-        // this entry. Fires after the file exists, so documents-changed arrives with
-        // the real entry that the sidebar filters behind the spinner until populate.
-        spinnerKey = result.filename;
-        broadcastWritingStarted(title || 'Untitled', wsTarget, spinnerKey, result.filename, result.docId);
+        // Two-step flow: the spinner persists in the sidebar until
+        // populate_document is called. Keyed by filename so populate_document
+        // can clear exactly this entry. Fires after the file exists, so
+        // documents-changed arrives with the real entry that the sidebar
+        // filters behind the spinner until populate. Blank template docs
+        // (empty) are complete as created — no spinner.
+        if (!empty) {
+          spinnerKey = result.filename;
+          broadcastWritingStarted(title || 'Untitled', wsTarget, spinnerKey, result.filename, result.docId);
+        }
         broadcastDocumentsChanged();
+        if (wsTarget) broadcastWorkspacesChanged();
         // Right-rail Activity: one entry per agent-created doc. adr: adr/right-rail.md
         broadcastActivityEvent({
           kind: 'doc-created',
@@ -721,7 +688,9 @@ export const TOOL_REGISTRY: ToolDef[] = [
         return {
           content: [{
             type: 'text',
-            text: `Created "${result.title}" [${result.docId}]${placement} — empty. Call populate_document with docId "${result.docId}" to add content.`,
+            text: empty
+              ? `Created "${result.title}" [${result.docId}]${placement}${content_type ? ` (${content_type})` : ''} — ready. Write to it by docId; the user opens it from the sidebar.`
+              : `Created "${result.title}" [${result.docId}]${placement} — empty. Call populate_document with docId "${result.docId}" to add content.`,
           }],
         };
       } catch (err) {
@@ -923,7 +892,7 @@ export const TOOL_REGISTRY: ToolDef[] = [
     },
     handler: async ({ path }: { path: string }) => {
       const result = openFile(path);
-      broadcastDocumentSwitched(result.document, result.title, result.filename);
+      broadcastDocumentSwitched(result.document, result.title, result.filename, undefined, 'open', 'all');
       const openedDocId = getDocId();
       const compact = toCompactFormat(result.document, result.title, getWordCount(), getPendingChangeCount(), openedDocId);
       return { content: [{ type: 'text', text: `Opened "${result.title}" [${openedDocId}] from ${path}\n\n${compact}` }] };

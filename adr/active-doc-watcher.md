@@ -116,3 +116,7 @@ Creating a manuscript editing draft leaves the active document untouched. The UI
 ### 2026-09-07 — UX audit closure
 
 Reload notices clear when document identity changes; same-document external reloads retain their notice.
+
+### 2026-09-28 — reload reaches attached tabs only
+
+`document-reloaded` and external-write conflicts now go only to the tabs attached to the live doc. A detached tab shows another doc, or a frozen copy of this one, and must not adopt the reload. adr: adr/per-tab-view.md

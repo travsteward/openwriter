@@ -37,3 +37,4 @@ Global schema strictness (`.strict()` on every tool so *any* unknown param hard-
 ## Decision log
 
 - **2026-07-09** — Unified the placement contract (accept id-based `workspaceFile`+`containerId` alongside name-based `workspace`+`container`), added hard errors for unhonorable placement, and made the result always state placement/UNFILED. Fixes the silent-orphan class in `create_document`. Verified: id-based call lands + reports; bad `containerId` errors; container-without-workspace errors; no-placement reports UNFILED. Frontend `src/` tsc errors are pre-existing and unrelated.
+- **2026-09-28** — `empty: true` now writes the file through the same no-switch path as the two-step create (`createDocumentFile`), minus the spinner. Placement handling is unchanged. The result says "ready" and tells the agent to write by docId. See adr/per-tab-view.md.

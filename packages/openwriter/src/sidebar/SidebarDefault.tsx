@@ -10,6 +10,7 @@ import FocusInstructionsModal from './FocusInstructionsModal';
 import SearchResults from './SearchResults';
 import { sidebarRowProps } from './sidebar-keyboard';
 import NewsletterAnalyticsModal from '../newsletter/NewsletterAnalyticsModal';
+import { TAB_HEADER } from '../ws/client';
 import SchedulePostModal from './SchedulePostModal';
 import CreateDocDropdown from './CreateDocDropdown';
 import { getSidebarDensity, setSidebarDensity } from '../themes/appearance-store';
@@ -149,7 +150,7 @@ export default function SidebarDefault({ docs, archivedDocs, workspaces, assigne
   const handleDuplicate = useCallback((filename: string) => {
     fetch('/api/documents/duplicate', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...TAB_HEADER },
       body: JSON.stringify({ filename }),
     }).catch(() => {});
   }, []);
@@ -161,7 +162,7 @@ export default function SidebarDefault({ docs, archivedDocs, workspaces, assigne
   const handleCreateVariant = useCallback((filename: string, masterDocId: string, variantType: string) => {
     fetch('/api/documents/variant', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...TAB_HEADER },
       body: JSON.stringify({ filename, masterDocId, variantType }),
     }).catch(() => {});
   }, []);
@@ -769,7 +770,7 @@ export default function SidebarDefault({ docs, archivedDocs, workspaces, assigne
               // Unassigned doc with metadata — create via HTTP so metadata is set
               fetch('/api/documents', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...TAB_HEADER },
                 body: JSON.stringify({ metadata }),
               }).catch(() => {});
             } else {

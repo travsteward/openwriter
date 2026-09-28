@@ -10,6 +10,7 @@ import FocusInstructionsModal from './FocusInstructionsModal';
 import SchedulePostModal from './SchedulePostModal';
 import PostToBlogModal from './PostToBlogModal';
 import CreateDocDropdown from './CreateDocDropdown';
+import { TAB_HEADER } from '../ws/client';
 import NewsletterAnalyticsModal from '../newsletter/NewsletterAnalyticsModal';
 import SearchResults from './SearchResults';
 import './SidebarFiles.css';
@@ -275,7 +276,7 @@ export default function SidebarFiles({
   }, [selection]);
 
   const handleDuplicate = useCallback((filename: string) => {
-    fetch('/api/documents/duplicate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ filename }) }).catch(() => {});
+    fetch('/api/documents/duplicate', { method: 'POST', headers: { 'Content-Type': 'application/json', ...TAB_HEADER }, body: JSON.stringify({ filename }) }).catch(() => {});
   }, []);
 
   const handlePluginAction = useCallback((action: string, item: SidebarMenuItem, filename: string, title: string, instructions?: string) => {
@@ -822,7 +823,7 @@ export default function SidebarFiles({
             // the master onto the target type — NOT a content clone. adr: docs/variants.md
             fetch('/api/documents/variant', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              headers: { 'Content-Type': 'application/json', ...TAB_HEADER },
               body: JSON.stringify({ filename: ctxMenu.filename, masterDocId: ctxMenu.docId, variantType: vt }),
             }).catch(() => {});
           } : undefined}
@@ -958,7 +959,7 @@ export default function SidebarFiles({
             if (createDropdown.wsFilename) {
               actions.handleCreateInWorkspace(createDropdown.wsFilename, createDropdown.containerId ?? null, metadata);
             } else if (metadata) {
-              fetch('/api/documents', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ metadata }) }).catch(() => {});
+              fetch('/api/documents', { method: 'POST', headers: { 'Content-Type': 'application/json', ...TAB_HEADER }, body: JSON.stringify({ metadata }) }).catch(() => {});
             } else {
               onCreateDocument();
             }

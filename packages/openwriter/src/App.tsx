@@ -556,7 +556,7 @@ export default function App() {
     setPendingDocs(data);
   }, []);
 
-  const { connected, sendMessage, docVersionRef } = useWebSocket({
+  const { connected, sendMessage, docVersionRef, detached } = useWebSocket({
     onNodeChanges: (changes) => {
       const editors = allEditorsRef.current;
       if (editors.length <= 1) {
@@ -633,7 +633,17 @@ export default function App() {
       if (!doc) return null;
       return { document: doc };
     },
+    getViewFilename: () => currentFilename.current,
   });
+
+  // A detached tab's copy of the doc is frozen: typing into it could never be
+  // saved. adr: adr/per-tab-view.md
+  useEffect(() => {
+    const editors = allEditorsRef.current.length > 0 ? allEditorsRef.current : [editorRef.current];
+    for (const editor of editors) {
+      if (editor && !editor.isDestroyed) editor.setEditable(!detached);
+    }
+  }, [detached]);
 
   // Flush current editor content to server synchronously before switching/creating docs.
   // Only sends doc-update (no explicit save) — switchDocument/createDocument call save() internally.
@@ -1114,6 +1124,16 @@ export default function App() {
         />
       )}
       <div className="app-main">
+        {detached && (
+          // Another tab took the live doc. This tab keeps its view but is
+          // read-only until the user takes the doc back. adr: adr/per-tab-view.md
+          <div className="view-detached-banner" role="status">
+            <span>This document is open in another tab. Edits here are paused.</span>
+            <button type="button" onClick={() => sendMessage({ type: 'switch-document', filename: currentFilename.current })}>
+              Edit here
+            </button>
+          </div>
+        )}
         <Titlebar
           title={title}
           onTitleChange={handleTitleChange}

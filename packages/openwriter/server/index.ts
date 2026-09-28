@@ -813,7 +813,8 @@ export async function startHttpServer(options: { server: HttpServer; port?: numb
         markAsAgentStub(result.filename);
       }
 
-      broadcastDocumentSwitched(result.document, result.title, result.filename, undefined, req.body.agentCreated ? 'open' : 'create');
+      // A sidebar request names its tab; only that tab navigates. adr: adr/per-tab-view.md
+      broadcastDocumentSwitched(result.document, result.title, result.filename, undefined, req.body.agentCreated ? 'open' : 'create', { tab: req.get('x-ow-tab') });
       broadcastDocumentsChanged();
       if (req.body.markPending || req.body.agentCreated) {
         broadcastPendingDocsChanged();
@@ -832,7 +833,7 @@ export async function startHttpServer(options: { server: HttpServer; port?: numb
         filename,
         (masterDocId || variantType) ? { masterDocId, variantType } : undefined,
       );
-      broadcastDocumentSwitched(result.document, result.title, result.filename);
+      broadcastDocumentSwitched(result.document, result.title, result.filename, undefined, 'open', { tab: req.get('x-ow-tab') });
       broadcastDocumentsChanged();
       res.json(result);
     } catch (err: any) {
@@ -851,7 +852,7 @@ export async function startHttpServer(options: { server: HttpServer; port?: numb
         return;
       }
       const result = createVariant(filename, { masterDocId, variantType });
-      broadcastDocumentSwitched(result.document, result.title, result.filename);
+      broadcastDocumentSwitched(result.document, result.title, result.filename, undefined, 'open', { tab: req.get('x-ow-tab') });
       broadcastDocumentsChanged();
       res.json(result);
     } catch (err: any) {
@@ -886,7 +887,8 @@ export async function startHttpServer(options: { server: HttpServer; port?: numb
         return;
       }
       const result = openFile(path);
-      broadcastDocumentSwitched(result.document, result.title, result.filename);
+      // No tab named = an agent or plugin asking to show the user: every tab.
+      broadcastDocumentSwitched(result.document, result.title, result.filename, undefined, 'open', req.get('x-ow-tab') ? { tab: req.get('x-ow-tab') } : 'all');
       res.json(result);
     } catch (err: any) {
       res.status(400).json({ error: err.message });
@@ -917,7 +919,7 @@ export async function startHttpServer(options: { server: HttpServer; port?: numb
       const alreadyActive = req.body.filename === getActiveFilename();
       const result = switchDocument(req.body.filename);
       if (!alreadyActive) {
-        broadcastDocumentSwitched(result.document, result.title, result.filename);
+        broadcastDocumentSwitched(result.document, result.title, result.filename, undefined, 'open', req.get('x-ow-tab') ? { tab: req.get('x-ow-tab') } : 'all');
       }
       res.json(result);
     } catch (err: any) {
@@ -1207,7 +1209,7 @@ export async function startHttpServer(options: { server: HttpServer; port?: numb
       load();
 
       // Broadcast fresh state
-      broadcastDocumentSwitched(getDocument(), getTitle(), getFilePath().split(/[/\\]/).pop() || '', getMetadata());
+      broadcastDocumentSwitched(getDocument(), getTitle(), getFilePath().split(/[/\\]/).pop() || '', getMetadata(), 'open', 'all');
       broadcastDocumentsChanged();
       broadcastWorkspacesChanged();
       broadcastPendingDocsChanged();

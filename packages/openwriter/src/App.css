@@ -38,6 +38,31 @@ body {
   position: relative;
 }
 
+/* Another tab holds this doc live — this tab is read-only until "Edit here".
+ * adr: adr/per-tab-view.md */
+.view-detached-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 8px 16px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--ink-dark);
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.view-detached-banner button {
+  font: inherit;
+  padding: 4px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-hover);
+  color: var(--ink-dark);
+  cursor: pointer;
+}
+
 /* ─── Responsive overlay mode ───────────────────────────────────────────
  * Narrow windows (.app--overlay, set by App's ResizeObserver): panels stop
  * pushing the doc and float over it as drawers. The doc (.app-main) keeps the

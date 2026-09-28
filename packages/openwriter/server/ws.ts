@@ -72,6 +72,29 @@ function pendingSummary(doc: any): string {
 const clients = new Set<WebSocket>();
 let currentAgentConnected = false;
 
+// Per-tab view. Each tab shows its own document; the server holds one live
+// in-memory doc (the active doc). `attached` is the set of tabs showing that
+// live doc — only they receive its edits and only they may write to it. A tab
+// that navigates takes the live doc for itself; tabs that were attached are
+// told they are detached instead of being moved. adr: adr/per-tab-view.md
+const attached = new Set<WebSocket>();
+const tabSockets = new Map<string, WebSocket>();
+// The active filename as last delivered to attached tabs.
+let attachedFilename = '';
+
+/** Messages about the live doc's content go only to the tabs showing it. */
+function sendToAttached(msg: string): void {
+  for (const ws of attached) {
+    if (ws.readyState === WebSocket.OPEN) ws.send(msg);
+  }
+}
+
+/** Who follows a document-switched:
+ *  - 'viewers': the attached tabs (refresh, rename, or fallback when the live doc is deleted).
+ *  - 'all': every tab (explicit "show the user": switch_document, open_file, profile switch).
+ *  - { tab }: only the tab that navigated (its socket or its tab id); other attached tabs detach. */
+export type SwitchAudience = 'viewers' | 'all' | { tab: WebSocket | string | undefined };
+
 // Debounced auto-save lives in state.ts now — one timer for the whole process.
 // Both browser doc-update (here) and MCP write paths (state.ts) call into the
 // same timer so a single TTL governs all save activity.
@@ -172,15 +195,9 @@ export function setupWebSocket(server: Server): void {
       setAgentLockActive();
       const filePath = getFilePath();
       const filename = filePath ? filePath.split(/[/\\]/).pop() || '' : '';
-      const msg = JSON.stringify(buildDocumentSwitchedPayload(getDocument(), getTitle(), filename, metadata));
-      for (const ws of clients) {
-        if (ws.readyState === WebSocket.OPEN) ws.send(msg);
-      }
+      sendToAttached(JSON.stringify(buildDocumentSwitchedPayload(getDocument(), getTitle(), filename, metadata)));
     } else {
-      const msg = JSON.stringify({ type: 'node-changes', changes, version });
-      for (const ws of clients) {
-        if (ws.readyState === WebSocket.OPEN) ws.send(msg);
-      }
+      sendToAttached(JSON.stringify({ type: 'node-changes', changes, version }));
     }
     // Notify browser of updated pending docs list (debounced)
     broadcastPendingDocsChanged();
@@ -195,10 +212,7 @@ export function setupWebSocket(server: Server): void {
   // adr: adr/node-identity-matcher.md
   onIdRewrites((rewrites: IdRewrite[]) => {
     if (rewrites.length === 0) return;
-    const msg = JSON.stringify({ type: 'id-rewrites', rewrites });
-    for (const ws of clients) {
-      if (ws.readyState === WebSocket.OPEN) ws.send(msg);
-    }
+    sendToAttached(JSON.stringify({ type: 'id-rewrites', rewrites }));
     console.log(`[WS] Broadcast id-rewrites (${rewrites.length} block(s))`);
   });
 
@@ -228,9 +242,7 @@ export function setupWebSocket(server: Server): void {
       orphanCount: event.orphans.length,
       staleBaselineCount: event.staleBaseline.length,
     });
-    for (const ws of clients) {
-      if (ws.readyState === WebSocket.OPEN) ws.send(msg);
-    }
+    sendToAttached(msg);
     // Pending count may have shifted (orphan rewrites convert to inserts).
     broadcastPendingDocsChanged();
   });
@@ -249,9 +261,7 @@ export function setupWebSocket(server: Server): void {
       diskMtime: conflict.diskMtime,
       loadedMtime: conflict.loadedMtime,
     });
-    for (const ws of clients) {
-      if (ws.readyState === WebSocket.OPEN) ws.send(msg);
-    }
+    sendToAttached(msg);
     console.warn(`[WS] Broadcast external-write-conflict for ${filename}`);
   });
 
@@ -268,9 +278,15 @@ export function setupWebSocket(server: Server): void {
     broadcastDocumentsChanged();
   });
 
-  wss.on('connection', (ws) => {
+  wss.on('connection', (ws, req) => {
     clients.add(ws);
     console.log(`[WS] Client connected (total: ${clients.size})`);
+    // A tab identifies itself (?tab=) so HTTP routes can navigate just that
+    // tab, and a reconnecting tab says which doc it is showing (?view=).
+    const query = new URL(req.url || '/', 'http://localhost').searchParams;
+    const tabId = query.get('tab');
+    const view = query.get('view');
+    if (tabId) tabSockets.set(tabId, ws);
 
     // Send current agent status to newly connected client
     ws.send(JSON.stringify({ type: 'agent-status', agentConnected: currentAgentConnected }));
@@ -280,14 +296,22 @@ export function setupWebSocket(server: Server): void {
       ws.send(JSON.stringify({ type: 'sync-status', ...lastSyncStatus }));
     }
 
-    // Always send authoritative document state on connect — forces browser to adopt server state
-    // (prevents stale browser tabs from displaying old content)
+    // A fresh page, or a reconnecting tab that shows the live doc, gets the
+    // authoritative server state and attaches. A reconnecting tab that shows
+    // some other doc keeps it and is told it is detached — reconnecting never
+    // moves a tab. adr: adr/per-tab-view.md
     const filePath = getFilePath();
     const filename = filePath ? filePath.split(/[/\\]/).pop() || '' : '';
-    const docOnConnect = getDocument();
-    const pendingOnConnect = pendingSummary(docOnConnect);
-    diagLog(`[WS] document-switched SEND on-connect docId=${getDocId()} v=${getDocVersion()} pending=[${pendingOnConnect}]`);
-    ws.send(JSON.stringify(buildDocumentSwitchedPayload(docOnConnect, getTitle(), filename, getMetadata())));
+    if (view && view !== filename) {
+      ws.send(JSON.stringify({ type: 'view-detached', activeFilename: filename }));
+    } else {
+      const docOnConnect = getDocument();
+      const pendingOnConnect = pendingSummary(docOnConnect);
+      diagLog(`[WS] document-switched SEND on-connect docId=${getDocId()} v=${getDocVersion()} pending=[${pendingOnConnect}]`);
+      ws.send(JSON.stringify(buildDocumentSwitchedPayload(docOnConnect, getTitle(), filename, getMetadata())));
+      attached.add(ws);
+      attachedFilename = filename;
+    }
 
     // Send pending docs info on connect
     ws.send(JSON.stringify({
@@ -330,6 +354,15 @@ export function setupWebSocket(server: Server): void {
      *  scope above. Returns void. */
     async function handleMessage(msg: any): Promise<void> {
       try {
+        // Only attached tabs write the live doc. A detached tab's copy of it
+        // missed every edit since it detached. adr: adr/per-tab-view.md
+        if (!attached.has(ws) && (msg.type === 'doc-update' || msg.type === 'pending-resolved' || msg.type === 'title-update')) {
+          const target = msg.filename ? canonicalizeIdentifier(msg.filename) : getActiveFilename();
+          if (msg.type === 'title-update' || target === getActiveFilename()) {
+            diagLog(`[WS] ${msg.type} DROPPED from detached tab filename=${target}`);
+            return;
+          }
+        }
 
         if (msg.type === 'doc-update' && msg.document) {
           const docContent = msg.document?.content || [];
@@ -393,6 +426,8 @@ export function setupWebSocket(server: Server): void {
           const filePath = getFilePath();
           const filename = filePath ? filePath.split(/[/\\]/).pop() || '' : '';
           ws.send(JSON.stringify(buildDocumentSwitchedPayload(getDocument(), getTitle(), filename, getMetadata())));
+          attached.add(ws);
+          attachedFilename = filename;
         }
 
         if (msg.type === 'title-update' && msg.title) {
@@ -465,7 +500,7 @@ export function setupWebSocket(server: Server): void {
             const result = switchDocument(msg.filename);
             const tSwitchDone = performance.now();
             diagLog(`[Switch:Server] DONE filename=${msg.filename} switchDoc=${(tSwitchDone - tRecv).toFixed(1)}ms`);
-            broadcastDocumentSwitched(result.document, result.title, result.filename);
+            broadcastDocumentSwitched(result.document, result.title, result.filename, undefined, 'open', { tab: ws });
             const tBcastDone = performance.now();
             diagLog(`[Switch:Server] BCAST filename=${msg.filename} stringify+send=${(tBcastDone - tSwitchDone).toFixed(1)}ms totalServer=${(tBcastDone - tRecv).toFixed(1)}ms`);
           } catch (err: any) {
@@ -476,7 +511,7 @@ export function setupWebSocket(server: Server): void {
         if (msg.type === 'create-document') {
           try {
             const result = createDocument(msg.title);
-            broadcastDocumentSwitched(result.document, result.title, result.filename, undefined, 'create');
+            broadcastDocumentSwitched(result.document, result.title, result.filename, undefined, 'create', { tab: ws });
             broadcastDocumentsChanged();
           } catch (err: any) {
             console.error('[WS] Create document failed:', err.message);
@@ -518,7 +553,7 @@ export function setupWebSocket(server: Server): void {
             }
 
             save();
-            broadcastDocumentSwitched(result.document, getTitle(), result.filename, getMetadata());
+            broadcastDocumentSwitched(result.document, getTitle(), result.filename, getMetadata(), 'open', { tab: ws });
             broadcastDocumentsChanged();
           } catch (err: any) {
             console.error('[WS] Create template failed:', err.message);
@@ -593,27 +628,53 @@ export function setupWebSocket(server: Server): void {
 
     ws.on('close', () => {
       clients.delete(ws);
+      attached.delete(ws);
+      if (tabId && tabSockets.get(tabId) === ws) tabSockets.delete(tabId);
       console.log(`[WS] Client disconnected (total: ${clients.size})`);
     });
   });
 }
 
-export function broadcastDocumentSwitched(document: any, title: string, filename: string, metadata?: Record<string, any>, navigation: 'open' | 'fallback' | 'create' = 'open'): void {
+export function broadcastDocumentSwitched(document: any, title: string, filename: string, metadata?: Record<string, any>, navigation: 'open' | 'fallback' | 'create' = 'open', audience: SwitchAudience = 'viewers'): void {
   const resolvedMeta = metadata ?? getMetadata();
   // adr: adr/sidebar-navigation-intent.md
   const msg = JSON.stringify({ ...buildDocumentSwitchedPayload(document, title, filename, resolvedMeta), navigation });
-  for (const ws of clients) {
-    if (ws.readyState === WebSocket.OPEN) {
-      ws.send(msg);
+  // adr: adr/per-tab-view.md
+  let recipients: Iterable<WebSocket>;
+  if (audience === 'all') {
+    recipients = clients;
+    attached.clear();
+    for (const ws of clients) attached.add(ws);
+  } else if (audience === 'viewers') {
+    recipients = attached;
+  } else {
+    const tab = typeof audience.tab === 'string' ? tabSockets.get(audience.tab) : audience.tab;
+    if (!tab) {
+      // No live tab to navigate (plugin or agent HTTP call): the tabs showing
+      // the live doc follow it, as before.
+      recipients = attached;
+    } else {
+      recipients = [tab];
+      // Tabs showing a different doc than the one just taken are detached,
+      // not moved. Tabs already on the same doc stay attached.
+      if (filename !== attachedFilename) {
+        const detachMsg = JSON.stringify({ type: 'view-detached', activeFilename: filename });
+        for (const ws of attached) {
+          if (ws !== tab && ws.readyState === WebSocket.OPEN) ws.send(detachMsg);
+        }
+        attached.clear();
+      }
+      attached.add(tab);
     }
   }
+  for (const ws of recipients) {
+    if (ws.readyState === WebSocket.OPEN) ws.send(msg);
+  }
+  attachedFilename = filename;
 }
 
 export function broadcastMetadataChanged(metadata: Record<string, any>): void {
-  const msg = JSON.stringify({ type: 'metadata-changed', metadata });
-  for (const ws of clients) {
-    if (ws.readyState === WebSocket.OPEN) ws.send(msg);
-  }
+  sendToAttached(JSON.stringify({ type: 'metadata-changed', metadata }));
 }
 
 export function broadcastDocumentsChanged(): void {
@@ -648,10 +709,7 @@ export function broadcastToast(message: string, kind: 'info' | 'error' = 'info',
 }
 
 export function broadcastTitleChanged(title: string): void {
-  const msg = JSON.stringify({ type: 'title-changed', title });
-  for (const ws of clients) {
-    if (ws.readyState === WebSocket.OPEN) ws.send(msg);
-  }
+  sendToAttached(JSON.stringify({ type: 'title-changed', title }));
 }
 
 /**

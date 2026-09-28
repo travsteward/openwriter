@@ -1,6 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { showToast } from '../utils/toast';
 
+/** Identifies this browser tab to the server so a navigation it asks for moves
+ *  only this tab. Sent on the WebSocket URL, and as the X-OW-Tab header on
+ *  HTTP requests that create or open a document. adr: adr/per-tab-view.md */
+export const TAB_ID = Math.random().toString(36).slice(2, 10);
+export const TAB_HEADER = { 'X-OW-Tab': TAB_ID };
+
+// Messages that write the server's live doc. A detached tab never sends them:
+// its copy of that doc missed every edit since it detached.
+const LIVE_DOC_WRITES = new Set(['doc-update', 'pending-resolved', 'title-update']);
+
 export interface NodeChange {
   operation: 'rewrite' | 'insert' | 'delete';
   nodeId?: string;
@@ -95,11 +105,21 @@ interface UseWebSocketOptions {
   onPendingFilenamesChanged?: (filenames: Set<string>) => void;
   /** Called on reconnect so the app can re-sync editor state to server */
   getEditorState?: () => { document: any } | null;
+  /** The filename this tab is showing — sent on reconnect so the server keeps
+   *  the tab on it instead of moving it to the live doc. */
+  getViewFilename?: () => string;
 }
 
-export function useWebSocket({ onNodeChanges, onAgentStatus, onDocumentSwitched, onDocumentReloaded, onDocumentsChanged, onWorkspacesChanged, onTitleChanged, onPendingDocsChanged, onMetadataChanged, onSyncStatus, onWritingStarted, onWritingFinished, onIdRewrites, onPendingFilenamesChanged, getEditorState }: UseWebSocketOptions) {
+export function useWebSocket({ onNodeChanges, onAgentStatus, onDocumentSwitched, onDocumentReloaded, onDocumentsChanged, onWorkspacesChanged, onTitleChanged, onPendingDocsChanged, onMetadataChanged, onSyncStatus, onWritingStarted, onWritingFinished, onIdRewrites, onPendingFilenamesChanged, getEditorState, getViewFilename }: UseWebSocketOptions) {
   const wsRef = useRef<WebSocket | null>(null);
   const [connected, setConnected] = useState(false);
+  // True while another tab holds this tab's doc live (or this tab shows a doc
+  // that is no longer live). The editor is read-only until the user takes the
+  // doc back. adr: adr/per-tab-view.md
+  const [detached, setDetached] = useState(false);
+  const detachedRef = useRef(false);
+  const getViewFilenameRef = useRef(getViewFilename);
+  getViewFilenameRef.current = getViewFilename;
   // Document version counter — tracks last version seen from agent writes
   const docVersionRef = useRef<number>(0);
   // Live set of keys (filenames) for all pending writes the server knows about.
@@ -141,24 +161,22 @@ export function useWebSocket({ onNodeChanges, onAgentStatus, onDocumentSwitched,
 
   useEffect(() => {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.host}/ws`;
     let reconnectTimer: ReturnType<typeof setTimeout>;
     let hasConnectedBefore = false;
     let backoff = 1000; // Start at 1s, cap at 8s
 
     function connect() {
+      // On reconnect, say which doc this tab shows: the server sends fresh
+      // state if it is the live doc, or marks the tab detached — it never
+      // moves the tab. adr: adr/per-tab-view.md
+      const view = hasConnectedBefore ? getViewFilenameRef.current?.() : '';
+      const wsUrl = `${protocol}//${window.location.host}/ws?tab=${TAB_ID}${view ? `&view=${encodeURIComponent(view)}` : ''}`;
       const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
 
       ws.onopen = () => {
         setConnected(true);
         backoff = 1000; // Reset backoff on successful connect
-
-        // On reconnect (not first connect), pull fresh state from server
-        // (server is authoritative — never push stale browser state)
-        if (hasConnectedBefore) {
-          ws.send(JSON.stringify({ type: 'request-document' }));
-        }
         hasConnectedBefore = true;
       };
 
@@ -194,7 +212,15 @@ export function useWebSocket({ onNodeChanges, onAgentStatus, onDocumentSwitched,
             onAgentStatusRef.current?.(!!msg.agentConnected);
           }
 
+          if (msg.type === 'view-detached') {
+            detachedRef.current = true;
+            setDetached(true);
+          }
+
           if (msg.type === 'document-switched') {
+            // Receiving the live doc means this tab is attached again.
+            detachedRef.current = false;
+            setDetached(false);
             // Deliver navigation intent before React adopts the new active doc.
             // adr: adr/sidebar-navigation-intent.md
             window.dispatchEvent(new CustomEvent('ow-document-navigation', {
@@ -390,10 +416,11 @@ export function useWebSocket({ onNodeChanges, onAgentStatus, onDocumentSwitched,
   }, []); // Stable — no deps, callbacks via refs
 
   const sendMessage = useCallback((msg: Record<string, any>) => {
+    if (detachedRef.current && LIVE_DOC_WRITES.has(msg.type)) return;
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify(msg));
     }
   }, []);
 
-  return { connected, sendMessage, docVersionRef };
+  return { connected, sendMessage, docVersionRef, detached };
 }
