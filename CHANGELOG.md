@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ## [Unreleased]
 
+## [0.41.3] - 2026-09-28
+
+### Fixed
+- Rejecting changes now fully reverts them. Editing or deleting a pending proposal keeps it a proposal, so its text never reaches the saved document before you accept it.
+- A pending delete no longer moves another paragraph's text or identity.
+- Saving a document that gains a link to another document keeps its paragraph identities.
+- A document tab changes only when you navigate; agent work in another document no longer pulls your view away.
+- Only the process holding the port acts as the OpenWriter server, so a second copy no longer interferes.
+- Date placeholders ({year}/{month}/{day}) in a blog site's URL pattern resolve, so the live post link is correct.
+
 ## [0.41.2] - 2026-09-23
 
 ### Changed
