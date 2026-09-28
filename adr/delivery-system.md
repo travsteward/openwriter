@@ -20,6 +20,11 @@ repo-owned artifact checks, and live acceptance proof.
   recheck before stopping the PID share one function in delivery-common.ps1.
 - local-app is recorded only after live SHA and artifact proof; npm is recorded
   only after registry integrity and GitHub release verification.
+- local-app is recorded as soon as it is proven. Steps after that, like
+  reopening the previously open document, report their failure and never
+  undo or block the record.
+- The relaunched app inherits no handle from the deploy script, so a caller
+  reading the script's output sees it end when the script ends.
 - A published artifact is proven against the integrity recorded when it was
   handed to the registry, never against a later run's pack, and the registry is
   given bounded time to index it. Without such a record nothing is proven and
@@ -142,3 +147,23 @@ was. CI covers every push regardless, on Windows because the suites use
 directory junctions. The hook reads the ref list from stdin once and hands a
 copy to the privacy gate, since the range test would otherwise consume it and
 leave the gate with nothing to scan, which it reports as clean.
+
+### 2026-09-28
+
+Two verified local deploys recorded nothing. After the running app proved the
+new commit, the script reopened the document that had been open before the
+restart, and only then wrote the deploy record. The open document's name
+contained an em dash; Windows PowerShell sends a text request body as Latin-1,
+which turned the dash into a hyphen, so the app answered not-found and the
+whole run was reported as a failure with nothing recorded. The record now comes
+directly after the proof. Reopening the document follows it, sends UTF-8, is
+bounded by a timeout, and on failure prints a note instead of failing the run.
+
+The second run never finished for its caller. It was piped through tail from
+Git Bash, and the relaunched app inherited the pipe, so the caller waited for
+end-of-output as long as the app ran. Clearing the inherit flag on the three
+standard handles was tried and was not enough, because Git Bash passes further
+copies of the pipe. The app is now launched through the shell, which inherits
+nothing, with a hidden cmd giving it its own log files and an empty input. The
+listener identity check is unchanged: the app's command line still names node
+and the entry script.

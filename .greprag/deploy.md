@@ -43,9 +43,11 @@ git push origin main
   therefore passes; any other file, a missing file, or a relative path is
   refused. [test-deploy-listener-identity.ps1](../scripts/test-deploy-listener-identity.ps1)
   locks this with its own temp fixture and touches no process.
-- Verify the process-start build stamp and artifact digest, restore the active
-  document when still present, then write the deployment record and release the
-  lock. The stamp is served at /__build.json with Cache-Control: no-store.
+- Verify the process-start build stamp and artifact digest, write the
+  deployment record, then restore the active document when still present (a
+  failure there only prints a note) and release the lock. The relaunched app
+  inherits nothing from the script, so piping the deploy's output ends with it.
+  The stamp is served at /__build.json with Cache-Control: no-store.
 
 Read-only preflight:
 

@@ -85,6 +85,22 @@ function Test-DeliveryListenerEntry {
 }
 
 # adr: adr/delivery-system.md
+# A server launched here outlives the script. Start-Process with redirected
+# streams gives the child every inheritable handle this process holds, and a
+# caller such as Git Bash passes copies of its output pipe beyond the standard
+# three, so the caller waited on end-of-output until the server exited
+# (2026-09-28). The launch is shell-executed, which inherits nothing, and a
+# hidden cmd gives the server its own log files and an empty input.
+function Start-DeliveryServerProcess {
+  param([string]$FilePath, [string[]]$ArgumentList, [string]$WorkingDirectory, [string]$LogDirectory)
+  $quoted = @($FilePath) + $ArgumentList | ForEach-Object { if ($_ -match '[\s"]') { "`"$_`"" } else { $_ } }
+  $stdout = Join-Path $LogDirectory 'stdout.log'
+  $stderr = Join-Path $LogDirectory 'stderr.log'
+  $command = "/d /s /c `"$($quoted -join ' ') <NUL >`"$stdout`" 2>`"$stderr`"`""
+  Start-Process -FilePath $env:ComSpec -ArgumentList $command -WorkingDirectory $WorkingDirectory -WindowStyle Hidden | Out-Null
+}
+
+# adr: adr/delivery-system.md
 # A published artifact cannot be re-derived. Every run rebuilds and stamps a
 # fresh build time, so a later run packs a byte-different tarball with a
 # different integrity. Proof has to be recorded when the bytes are handed to

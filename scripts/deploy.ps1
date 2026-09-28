@@ -41,19 +41,28 @@ try {
   $logs = Join-Path $delivery.root '.greprag/runtime/local-app'
   New-Item -ItemType Directory -Path $logs -Force | Out-Null
   $nodePath = (Get-Command node).Source
-  $started = Start-Process -FilePath $nodePath -ArgumentList @($entry, '--no-open') -WorkingDirectory (Join-Path $delivery.root 'packages/openwriter') -WindowStyle Hidden -RedirectStandardOutput (Join-Path $logs 'stdout.log') -RedirectStandardError (Join-Path $logs 'stderr.log') -PassThru
+  Start-DeliveryServerProcess -FilePath $nodePath -ArgumentList @($entry, '--no-open') -WorkingDirectory (Join-Path $delivery.root 'packages/openwriter') -LogDirectory $logs
   Invoke-DeliveryCommand -File greprag -Arguments @('deploy-verify', '--origin', 'http://localhost:5050', '--sha', $sha, '--attempts', '5')
-  $running = Invoke-RestMethod http://localhost:5050/__build.json
+  $running = Invoke-RestMethod http://localhost:5050/__build.json -TimeoutSec 30
   if ($running.artifact -ne $stamp.artifact) { throw 'The running artifact differs from the verified build.' }
+  # Recorded as soon as it is proven: reopening the document is a courtesy, and
+  # its failure must not leave a verified deploy unrecorded.
+  Invoke-DeliveryCommand -File greprag -Arguments @('deploy-record', '--target', $target, '--sha', $sha)
+  $listener = @(Get-NetTCPConnection -LocalPort 5050 -State Listen -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique) -join ', '
+  Write-Output "OpenWriter $sha verified on port 5050 (PID $listener)."
   if ($activeDocId) {
-    $documents = Invoke-RestMethod http://localhost:5050/api/documents
-    $restore = $documents | Where-Object { $_.docId -eq $activeDocId } | Select-Object -First 1
-    if ($restore) {
-      Invoke-RestMethod http://localhost:5050/api/documents/switch -Method Post -ContentType application/json -Body (@{ filename = $restore.filename } | ConvertTo-Json) | Out-Null
+    try {
+      $documents = Invoke-RestMethod http://localhost:5050/api/documents -TimeoutSec 30
+      $restore = $documents | Where-Object { $_.docId -eq $activeDocId } | Select-Object -First 1
+      if ($restore) {
+        # Windows PowerShell sends a string body as Latin-1, turning an em dash in a filename into a hyphen.
+        $body = [Text.Encoding]::UTF8.GetBytes((@{ filename = $restore.filename } | ConvertTo-Json))
+        Invoke-RestMethod http://localhost:5050/api/documents/switch -Method Post -ContentType 'application/json; charset=utf-8' -Body $body -TimeoutSec 30 | Out-Null
+      }
+    } catch {
+      Write-Output "Deployed and recorded, but the previously open document was not reopened: $($_.Exception.Message)"
     }
   }
-  Invoke-DeliveryCommand -File greprag -Arguments @('deploy-record', '--target', $target, '--sha', $sha)
-  Write-Output "OpenWriter $sha verified on port 5050 (PID $($started.Id))."
 } catch {
   # Held so the lock comes off first and the guidance lands last.
   $failure = $_
