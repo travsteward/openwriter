@@ -176,3 +176,12 @@ Compiled editing copies receive fresh paragraph identities through the normal pa
 ### 2026-09-07 — UX audit closure
 
 Editor sessions and canonical document URLs now use stable docId. Filename promotion no longer resets history or replays stale initial content.
+
+### 2026-09-28 — A block that carries a known ID keeps it
+
+- **Trigger.** Doc 4899ccb6: one write_to_pad call deleted a pending-rewrite paragraph (c1557d10). After the save, c1557d10 held a neighbouring paragraph's text, the original text came back under a fresh ID as the pending delete, and a pending insert anchored to the neighbour went missing.
+- **Root cause.** The deleted paragraph's saved text had changed wholesale, so no fingerprint rule matched it. `applySlotContinuityRule` skips candidates that carry a known ID, so the real owner sat out while a neighbour with an unknown ID (first written in the same save) was paired with c1557d10's slot and took the ID. `applyInsertRule` then found c1557d10 claimed and minted a fresh ID for its owner. The id translation in `writeToDisk` renamed nodeIds on overlay entries but not insert anchors, so an insert anchored to the renamed neighbour orphaned to the end of the doc.
+- **Decision.** New phase 0 in `matchNodes` (`pinCarriedIds`): when exactly one block carries an ID from `previousNodes`, it keeps that ID before any fingerprint rule runs. The fingerprint rules only guess identity for blocks the tree cannot name. A duplicated ID (a split that copied attrs) names nothing and still goes to the rules. `writeToDisk` translates `afterNodeId` / `parentNodeId` along with `nodeId` on overlay entries.
+- **Invariant (strengthens the 2026-05-16 v0.14.1 rule).** A block whose ID is known to `previousNodes` and unique in the tree always keeps it, whatever its content. Any ID the translation renames is renamed everywhere the overlay refers to it.
+- **Verification.** `scripts/test-delete-keeps-ids.mjs` (5 assertions; 4 fail on the prior code with the incident's shape). Full `scripts/test-*.mjs` suite matches the baseline: the six scripts that fail here fail identically on unchanged main.
+- **Not fixed here.** Edit_text on a pending insert still turns it into a rewrite whose baseline is the insert, which writes the unapproved text into the .md body; that is how the unknown-ID neighbour reached canonical in the incident.

@@ -99,6 +99,7 @@ export function matchNodes(
     block,
   }));
 
+  pinCarriedIds(unmatched, previousNodes, claimedPrevIds, pinned);
   pinExactMatches(unmatched, previousNodes, claimedPrevIds, pinned);
 
   applySplitRule(unmatched, previousNodes, claimedPrevIds, pinned);
@@ -146,6 +147,45 @@ export function bootstrapPreviousNodes(originalBlocks: Block[]): NodeEntry[] {
     id: generateNodeId(),
     fingerprint: fps[i],
   }));
+}
+
+// ----------------------------------------------------------------------
+// Phase 0 — a block that carries a known ID keeps it
+// ----------------------------------------------------------------------
+// The tree already names its blocks. When exactly one block carries an ID
+// from previousNodes, that block IS that node, whatever its content now is;
+// the fingerprint rules only guess identity for blocks the tree cannot name.
+// Without this, a known block whose text changed wholesale went unmatched, a
+// neighbouring block with an unknown ID took its ID by slot continuity, and
+// the real owner was re-minted. A pending delete then landed on the wrong
+// paragraph. A duplicated ID (e.g. a split that copied attrs) names nothing
+// and is left to the rules. adr: adr/node-identity-matcher.md
+function pinCarriedIds(
+  unmatched: UnmatchedEntry[],
+  previousNodes: NodeEntry[],
+  claimedPrevIds: Set<string>,
+  pinned: PinnedEntry[],
+): void {
+  const carriers = new Map<string, number>();
+  for (const u of unmatched) {
+    if (u.block.id) carriers.set(u.block.id, (carriers.get(u.block.id) || 0) + 1);
+  }
+  for (const prev of previousNodes) {
+    if (claimedPrevIds.has(prev.id) || carriers.get(prev.id) !== 1) continue;
+    const idx = unmatched.findIndex((u) => u.block.id === prev.id);
+    const cand = unmatched[idx];
+    claimedPrevIds.add(prev.id);
+    pinned.push({
+      id: prev.id,
+      position: cand.position,
+      fingerprint: cand.fingerprint,
+      block: cand.block,
+      mutation: isExactMatch(prev.fingerprint, cand.fingerprint)
+        ? (prev.fingerprint.position !== cand.position ? 'moved' : 'unchanged')
+        : 'edited',
+    });
+    unmatched.splice(idx, 1);
+  }
 }
 
 // ----------------------------------------------------------------------

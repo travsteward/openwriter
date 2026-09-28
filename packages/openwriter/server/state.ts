@@ -2490,13 +2490,18 @@ function writeToDisk(actor: Actor = 'human'): void {
       // keys (the nodeId fields), and state.document to all see the new IDs.
       if (idTranslation.size > 0) {
         applyIdTranslationToDoc(state.canonical, idTranslation);
-        // Translate overlay entry nodeIds (rewrite/delete entries point at
-        // canonical IDs that may have shifted; insert entries have unique
-        // IDs not in the translation map and pass through).
+        // Translate every canonical ID an overlay entry holds: its own nodeId
+        // (rewrite/delete targets) and an insert's afterNodeId/parentNodeId
+        // anchors. A renamed anchor left untranslated orphans the insert to
+        // the end of the doc. adr: adr/node-identity-matcher.md
+        const tr = (id: string | null | undefined) => (id ? idTranslation.get(id) ?? id : id);
         const newOverlay = new Map<string, PendingEntry>();
         for (const [nodeId, entry] of state.overlay) {
-          const newNodeId = idTranslation.get(nodeId) ?? nodeId;
-          newOverlay.set(newNodeId, { ...entry, nodeId: newNodeId });
+          const newNodeId = tr(nodeId)!;
+          const moved: PendingEntry = { ...entry, nodeId: newNodeId };
+          if (entry.afterNodeId !== undefined) moved.afterNodeId = tr(entry.afterNodeId);
+          if (entry.parentNodeId !== undefined) moved.parentNodeId = tr(entry.parentNodeId);
+          newOverlay.set(newNodeId, moved);
         }
         state.overlay = newOverlay;
         recomputeMerged();
