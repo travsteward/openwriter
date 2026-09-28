@@ -21,6 +21,7 @@ import {
   buildFrontmatter,
   inferImageConventions,
   rewriteBodyImages,
+  blogPostPath,
 } from '../../../plugins/github/dist/blog-tools.js';
 import { mergeMetadataUpdates } from '../dist/server/state.js';
 
@@ -250,6 +251,15 @@ console.log('\n[10] rewriteBodyImages — inline BODY refs are ALWAYS absolute, 
   // site still gets a slashless cover value for its template to prefix.
   eq(imageRef('/images/og', 'og-foo-bar.png', pathStyleOf({ image_path_style: 'relative' })), 'images/og/og-foo-bar.png', 'cover on relative site still slashless');
   eq(imageRef('/images/og', 'og-foo-bar.png', pathStyleOf({ image_path_style: 'absolute' })), '/images/og/og-foo-bar.png', 'cover on absolute site still absolute');
+}
+
+console.log('\n[11] blogPostPath — date placeholders resolve from the post date');
+{
+  eq(blogPostPath('/blog/{year}/{month}/{slug}/', 'foo-bar', '2026-03-07'), '/blog/2026/03/foo-bar/', 'year/month from YYYY-MM-DD');
+  eq(blogPostPath('/{year}/{month}/{day}/{slug}', 'x', '2026-03-07T23:30:00-08:00'), '/2026/03/07/x', 'ISO date part used, no timezone shift');
+  eq(blogPostPath(undefined, 'foo-bar', '2026-03-07'), '/blog/foo-bar/', 'default pattern');
+  const today = new Date().toISOString().slice(0, 10).split('-');
+  eq(blogPostPath('{year}/{month}/{slug}/', 'x', undefined), `/${today[0]}/${today[1]}/x/`, 'no date ⇒ today, leading slash added');
 }
 
 console.log(`\n${failed === 0 ? 'OK' : 'FAIL'}: ${passed} passed, ${failed} failed`);

@@ -159,7 +159,8 @@ export interface BlogSite {
    */
   site_url?: string;
   /**
-   * URL path pattern for a blog post, with `{slug}` as the placeholder.
+   * URL path pattern for a blog post, with `{slug}` as the placeholder plus
+   * optional `{year}` / `{month}` / `{day}` (2-digit) from the post date.
    * Default: `/blog/{slug}/`. Used together with `site_url` to build the live URL.
    */
   blog_url_pattern?: string;

@@ -535,6 +535,27 @@ export function coverFilename(template: string | undefined, slug: string, source
 }
 
 /**
+ * Resolve the live post path from the site's `blog_url_pattern`.
+ *   `{slug}`  → post slug
+ *   `{year}`  → 4-digit year of the post date
+ *   `{month}` → 2-digit month
+ *   `{day}`   → 2-digit day
+ * The date is the one the frontmatter emits: blogContext.date's YYYY-MM-DD
+ * part (no Date parsing, so no timezone shift), else today — the same
+ * fallback buildFrontmatter uses. Absent pattern ⇒ `/blog/{slug}/`.
+ */
+export function blogPostPath(pattern: string | undefined, slug: string, date: unknown): string {
+  const ymd = formatDate(date).match(/^(\d{4})-(\d{2})-(\d{2})$/)
+    || new Date().toISOString().slice(0, 10).match(/^(\d{4})-(\d{2})-(\d{2})$/)!;
+  const path = (pattern || '/blog/{slug}/')
+    .replace(/\{slug\}/g, slug)
+    .replace(/\{year\}/g, ymd[1])
+    .replace(/\{month\}/g, ymd[2])
+    .replace(/\{day\}/g, ymd[3]);
+  return path.startsWith('/') ? path : '/' + path;
+}
+
+/**
  * Build the YAML frontmatter from blogContext + site defaults.
  *
  * Order of precedence (low → high):
@@ -806,7 +827,7 @@ export function blogTools(): PluginMcpTool[] {
           },
           blog_url_pattern: {
             type: 'string',
-            description: 'URL path pattern for a blog post with `{slug}` placeholder (e.g. "/blog/{slug}/"). Default: "/blog/{slug}/". Combined with site_url to build the live URL stored on the doc after publish.',
+            description: 'URL path pattern for a blog post with `{slug}` placeholder, plus optional `{year}`, `{month}`, `{day}` (2-digit) from the post date (e.g. "/blog/{slug}/" or "/blog/{year}/{month}/{slug}/"). Default: "/blog/{slug}/". Combined with site_url to build the live URL stored on the doc after publish.',
           },
         },
         required: ['label', 'owner', 'repo', 'content_dir', 'image_dir', 'image_public_prefix', 'framework'],
@@ -905,7 +926,7 @@ export function blogTools(): PluginMcpTool[] {
           frontmatter_field_map: { type: 'object', description: 'Rename map: openwriter blogContext key → site frontmatter key' },
           frontmatter_schema: { type: 'array', items: { type: 'string' }, description: 'List of frontmatter keys the site uses' },
           site_url: { type: 'string', description: 'Public base URL (e.g. "https://example.com"). Pass an empty string to clear it.' },
-          blog_url_pattern: { type: 'string', description: 'URL path pattern with `{slug}` placeholder (e.g. "/blog/{slug}/").' },
+          blog_url_pattern: { type: 'string', description: 'URL path pattern with `{slug}` placeholder, plus optional `{year}`, `{month}`, `{day}` (2-digit) from the post date (e.g. "/blog/{year}/{month}/{slug}/").' },
         },
         required: ['id'],
       },
@@ -1161,9 +1182,7 @@ export function blogTools(): PluginMcpTool[] {
         // Pattern defaults to /blog/{slug}/ — matches the convention proposed by inspect_blog_repo.
         let liveUrl: string | undefined;
         if (site.site_url) {
-          const pattern = site.blog_url_pattern || '/blog/{slug}/';
-          const path = pattern.replace('{slug}', slug);
-          liveUrl = site.site_url.replace(/\/+$/, '') + (path.startsWith('/') ? path : '/' + path);
+          liveUrl = site.site_url.replace(/\/+$/, '') + blogPostPath(site.blog_url_pattern, slug, blogCtx.date);
         }
 
         // Mark the doc as sent so the file-tree right-click menu surfaces
