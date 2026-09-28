@@ -11,17 +11,29 @@ import { ListToolsRequestSchema, CallToolRequestSchema } from '@modelcontextprot
 export async function startMcpClientServer(port: number): Promise<void> {
   const baseUrl = `http://localhost:${port}`;
 
-  // Fetch tool metadata from the primary server
-  const res = await fetch(`${baseUrl}/api/mcp-tools`);
-  if (!res.ok) throw new Error(`Failed to fetch tools from ${baseUrl}: ${res.status}`);
-  const { tools } = await res.json() as { tools: Array<{ name: string; description: string; inputSchema: unknown }> };
+  // Tool metadata is fetched on demand, not at boot: this process may start
+  // while the port holder is mid-restart, and it must stay a client rather
+  // than fail (a client that can't start used to become a second server).
+  // adr: adr/single-server-ownership.md
+  async function fetchTools(): Promise<Array<{ name: string; description: string; inputSchema: unknown }>> {
+    for (let attempt = 0; ; attempt++) {
+      try {
+        const res = await fetch(`${baseUrl}/api/mcp-tools`);
+        if (res.ok) return ((await res.json()) as { tools: Array<{ name: string; description: string; inputSchema: unknown }> }).tools;
+        if (attempt >= 10) throw new Error(`HTTP ${res.status}`);
+      } catch (err) {
+        if (attempt >= 10) throw new Error(`Failed to fetch tools from ${baseUrl}: ${(err as Error).message}`);
+      }
+      await new Promise((r) => setTimeout(r, 1000));
+    }
+  }
 
   const server = new Server(
     { name: 'openwriter-client', version: '0.2.0' },
     { capabilities: { tools: {} } },
   );
 
-  server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools }));
+  server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: await fetchTools() }));
 
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
     try {
@@ -40,7 +52,7 @@ export async function startMcpClientServer(port: number): Promise<void> {
     }
   });
 
-  console.error(`[MCP-Client] Proxying ${tools.length} tools to ${baseUrl}`);
+  console.error(`[MCP-Client] Proxying tools to ${baseUrl}`);
   const transport = new StdioServerTransport();
   await server.connect(transport);
 }

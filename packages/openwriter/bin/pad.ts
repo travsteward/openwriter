@@ -13,7 +13,7 @@
  *
  * Boot order optimized for fast MCP startup:
  *   1. Parse args + config (light imports only)
- *   2. Port check (fast TCP probe)
+ *   2. Claim the port (lose the claim = client mode, no local state)
  *   3. Start MCP stdio transport (what Claude Code waits for)
  *   4. Lazy-load Express server + plugins (heavy deps deferred)
  */
@@ -50,7 +50,7 @@ process.stdin.on('close', () => {
 });
 
 // Only light imports here — helpers.js uses fs/path/os/crypto (all Node stdlib)
-import { createConnection } from 'net';
+import { createServer, type Server as HttpServer } from 'http';
 import { readConfig, saveConfig } from '../server/helpers.js';
 
 const args = process.argv.slice(2);
@@ -115,44 +115,39 @@ if (args[0] === 'setup' || args[0] === 'install-skill') {
   if (avApiKey) process.env.AV_API_KEY = avApiKey;
   if (avBackendUrl) process.env.AV_BACKEND_URL = avBackendUrl;
 
-  // Port check with health verification — detects orphaned servers
-  async function checkPort(): Promise<'free' | 'healthy' | 'orphaned'> {
-    const taken = await new Promise<boolean>((resolve) => {
-      const socket = createConnection({ port, host: '127.0.0.1' });
-      socket.once('connect', () => { socket.destroy(); resolve(true); });
-      socket.once('error', () => { resolve(false); });
+  // Being the server means holding the port. The port is claimed BEFORE any
+  // state loads, so a process that loses the claim never holds a private copy
+  // of the documents — it can only be a pass-through client.
+  // adr: adr/single-server-ownership.md
+  function claimPort(): Promise<HttpServer | null> {
+    return new Promise((resolve, reject) => {
+      // Answers 503 until startHttpServer attaches the real app.
+      const srv = createServer((_req, res) => { res.statusCode = 503; res.end('starting'); });
+      srv.once('error', (err: NodeJS.ErrnoException) => (err.code === 'EADDRINUSE' ? resolve(null) : reject(err)));
+      srv.listen(port, '127.0.0.1', () => resolve(srv));
     });
-    if (!taken) return 'free';
-
-    // Port is taken — verify it's a healthy OpenWriter server
+  }
+  async function holderIsHealthy(): Promise<boolean> {
     try {
       const res = await fetch(`http://127.0.0.1:${port}/api/status`, { signal: AbortSignal.timeout(2000) });
-      return res.ok ? 'healthy' : 'orphaned';
+      return res.ok;
     } catch {
-      return 'orphaned';
+      return false;
     }
   }
 
-  let portState = await checkPort();
-
-  // Orphaned server: wait for it to die, then claim primary mode
-  if (portState === 'orphaned') {
+  let owned = await claimPort();
+  // An unresponsive holder is usually a server mid-exit during a restart —
+  // give it two chances to release the port before settling as a client.
+  for (let attempt = 0; !owned && attempt < 2 && !(await holderIsHealthy()); attempt++) {
     console.error(`[OpenWriter] Port ${port} held by unresponsive process — waiting for release...`);
     await new Promise(r => setTimeout(r, 3000));
-    portState = await checkPort();
-    if (portState === 'orphaned') {
-      // Still held — wait once more
-      await new Promise(r => setTimeout(r, 3000));
-      portState = await checkPort();
-    }
-    if (portState !== 'free') {
-      console.error(`[OpenWriter] Port ${port} still unavailable — entering client mode`);
-    }
+    owned = await claimPort();
   }
 
-  if (portState === 'healthy') {
-    // Client mode: proxy MCP calls to existing primary server via HTTP
-    console.error(`[OpenWriter] Port ${port} in use by healthy server — entering client mode`);
+  if (!owned) {
+    // Client mode: proxy every MCP call to whichever process holds the port
+    console.error(`[OpenWriter] Port ${port} held by another server — entering client mode`);
     const { startMcpClientServer } = await import('../server/mcp-client.js');
     startMcpClientServer(port).catch((err) => {
       console.error('[MCP-Client] Failed to start:', err);
@@ -169,7 +164,7 @@ if (args[0] === 'setup' || args[0] === 'install-skill') {
 
     // Deferred: load Express + plugins (heavy deps) after MCP is connecting
     const { startHttpServer } = await import('../server/index.js');
-    startHttpServer({ port, noOpen, plugins }).catch((err) => {
+    startHttpServer({ server: owned, port, noOpen, plugins }).catch((err) => {
       console.error('[HTTP] Failed to start:', err);
     });
   }

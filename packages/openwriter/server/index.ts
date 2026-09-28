@@ -5,7 +5,7 @@ import { createVariant } from './document-variants.js';
  */
 
 import express from 'express';
-import { createServer } from 'http';
+import type { Server as HttpServer } from 'http';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { existsSync, readFileSync } from 'fs';
@@ -153,7 +153,7 @@ function securityGate(port: number) {
   };
 }
 
-export async function startHttpServer(options: { port?: number; noOpen?: boolean; plugins?: string[] } = {}): Promise<void> {
+export async function startHttpServer(options: { server: HttpServer; port?: number; noOpen?: boolean; plugins?: string[] }): Promise<void> {
   const port = options.port || 5050;
   runtimePort = port;
 
@@ -1424,34 +1424,19 @@ export async function startHttpServer(options: { port?: number; noOpen?: boolean
     });
   }
 
-  const server = createServer(app);
+  // The caller already holds the port (bin/pad.ts claims it before loading
+  // state). Swap its placeholder 503 handler for the real app — this process
+  // never retries for a port it lost. adr: adr/single-server-ownership.md
+  const server = options.server;
+  server.removeAllListeners('request');
+  server.on('request', app);
 
   // Setup WebSocket on same server
   setupWebSocket(server);
 
   // Broadcast agent status now that WS is ready
   broadcastAgentStatus(true);
-
-  await new Promise<void>((resolve, reject) => {
-    server.on('error', (err: NodeJS.ErrnoException) => {
-      if (err.code === 'EADDRINUSE') {
-        console.error(`[HTTP] Port ${port} in use — retrying in 2s...`);
-        setTimeout(() => {
-          server.listen(port, '127.0.0.1', () => {
-            console.log(`OpenWriter running at http://localhost:${port}`);
-            resolve();
-          });
-        }, 2000);
-      } else {
-        console.error(`[HTTP] Server error:`, err);
-        reject(err);
-      }
-    });
-    server.listen(port, '127.0.0.1', () => {
-      console.log(`OpenWriter running at http://localhost:${port}`);
-      resolve();
-    });
-  });
+  console.log(`OpenWriter running at http://localhost:${port}`);
 
   // Sync post history from platform (catch posts made while app was closed)
   syncPostHistory().catch(() => {});
