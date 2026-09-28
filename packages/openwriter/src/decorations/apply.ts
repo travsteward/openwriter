@@ -214,9 +214,14 @@ export function applyRewrite(
   const contentArray = Array.isArray(newContent) ? newContent : [newContent];
   const autoAccept = options?.autoAccept === true;
 
-  // Store baseline (only first rewrite). Skipped in autoAccept — no review surface.
-  const isFirstRewrite = !node.attrs?.pendingOriginalContent;
-  const baselineContent = isFirstRewrite ? node.toJSON() : node.attrs.pendingOriginalContent;
+  // The baseline is the node's canonical form, never a pending proposal. A
+  // pending insert (or a rewrite with no baseline) has none, so rewriting it
+  // stays an insert. Mirrors the server's applyChangesToDoc.
+  // adr: adr/pending-overlay-model.md
+  const status = node.attrs?.pendingStatus;
+  const priorBaseline = status === 'rewrite' ? node.attrs?.pendingOriginalContent : null;
+  const staysInsert = status === 'insert' || (status === 'rewrite' && !priorBaseline);
+  const baselineContent = priorBaseline || node.toJSON();
 
   // When the rewrite content is already a wrapper (listItem) with pending attrs
   // on the inner leaf — produced by the server's wrap-preserving rewrite path —
@@ -237,9 +242,10 @@ export function applyRewrite(
     } : {
       ...contentArray[0].attrs,
       id: nodeId,
-      pendingStatus: 'rewrite',
-      pendingOriginalContent: baselineContent,
-      ...(selectionRange ? {
+      ...(staysInsert
+        ? { pendingStatus: 'insert', pendingOriginalContent: null }
+        : { pendingStatus: 'rewrite', pendingOriginalContent: baselineContent }),
+      ...(selectionRange && !staysInsert ? {
         pendingSelectionFrom: selectionRange.selectionFrom,
         pendingSelectionTo: selectionRange.selectionTo,
         pendingOriginalFrom: selectionRange.originalFrom,

@@ -1230,3 +1230,20 @@ browser echo cannot restore the withdrawn node. Regression:
 scripts/test-delete-pending-insert.mjs covers the active and non-active paths.
 Ghosts already written into a doc's .md body are canonical text now and are not
 repaired by this change.
+
+### 2026-09-28 — Editing a pending insert keeps it a proposal
+
+edit_text (or a rewrite) on a paragraph that was itself a pending insert stamped
+it pendingStatus rewrite with the node as found, the insert, as its
+pendingOriginalContent. Save reverts a rewrite to its baseline, so the agent's
+unapproved text was written into the .md body as if accepted. A second rewrite
+of a pending wrapped (listItem) rewrite had the same shape.
+
+Rule, the same one the delete fix set: a rewrite's baseline is the node's
+canonical form. applyChangesToDoc takes it from canonicalFormOf. A pending
+insert has none, so the edited node stays a pending insert with its new text; a
+pending rewrite keeps its original baseline; an original node is its own
+baseline as before. The browser's applyRewrite (apply.ts, the single node-change
+and context-menu path) applies the same rule, so a browser echo cannot restamp
+the insert as a rewrite. Regression: scripts/test-edit-pending-insert.mjs covers
+the active and non-active paths.

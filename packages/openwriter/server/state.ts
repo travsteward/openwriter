@@ -1483,12 +1483,15 @@ function applyChangesToDoc(doc: PadDocument, changes: NodeChange[], autoAccept: 
         }
       }
 
-      // Empty node rewrite → treat as insert (green, not blue)
-      const originalText = extractText(originalNode.content || []);
-      const isEmptyNode = !originalText.trim();
+      // A rewrite's baseline is the node's canonical form: what reject restores
+      // and what the .md body keeps. A pending proposal is never the baseline.
+      // A pending insert has no canonical form, so rewriting it stays an insert.
+      // Taking the node as found made the insert its own "original" and wrote
+      // its unapproved text to disk. adr: adr/pending-overlay-model.md
+      const baseline = canonicalFormOf(originalNode);
 
-      // Only store original on first rewrite (preserve baseline for reject)
-      const existingOriginal = found.parent[found.index].attrs?.pendingOriginalContent;
+      // No canonical text (pending insert or empty node) → insert (green, not blue)
+      const isEmptyNode = !baseline || !extractText(baseline.content || []).trim();
 
       // Detect partial change: if only a sub-range of the node text changed,
       // attach selection range attrs so the frontend decorates only that part.
@@ -1497,8 +1500,8 @@ function applyChangesToDoc(doc: PadDocument, changes: NodeChange[], autoAccept: 
       let partialRange: ReturnType<typeof computePartialRange> = null;
       if (!isEmptyNode && contentArray.length === 1 && !autoAccept) {
         const baseContent = isWrappedRewrite
-          ? (existingOriginal?.content?.[0]?.content || originalNode.content?.[0]?.content || [])
-          : (existingOriginal?.content || originalNode.content || []);
+          ? (baseline.content?.[0]?.content || [])
+          : (baseline.content || []);
         const newContent = isWrappedRewrite
           ? (contentArray[0].content?.[0]?.content || [])
           : (contentArray[0].content || []);
@@ -1518,7 +1521,7 @@ function applyChangesToDoc(doc: PadDocument, changes: NodeChange[], autoAccept: 
             ...innerLeaf.attrs,
             id: innerLeaf.attrs?.id || generateNodeId(),
             pendingStatus: isEmptyNode ? 'insert' : 'rewrite',
-            ...(isEmptyNode ? {} : { pendingOriginalContent: existingOriginal || originalNode }),
+            ...(isEmptyNode ? {} : { pendingOriginalContent: baseline }),
             ...(partialRange ? {
               pendingSelectionFrom: partialRange.selectionFrom,
               pendingSelectionTo: partialRange.selectionTo,
@@ -1542,7 +1545,7 @@ function applyChangesToDoc(doc: PadDocument, changes: NodeChange[], autoAccept: 
             ...contentArray[0].attrs,
             id: change.nodeId,
             pendingStatus: isEmptyNode ? 'insert' : 'rewrite',
-            ...(isEmptyNode ? {} : { pendingOriginalContent: existingOriginal || originalNode }),
+            ...(isEmptyNode ? {} : { pendingOriginalContent: baseline }),
             ...(partialRange ? {
               pendingSelectionFrom: partialRange.selectionFrom,
               pendingSelectionTo: partialRange.selectionTo,
