@@ -132,8 +132,13 @@ export default function SidebarBoard({ docs, workspaces, assignedFiles, pendingD
   // Horizontal overflow: arrows and edge fades show only where more chips exist;
   // the plain mouse wheel scrolls the strip sideways.
   const [overflow, setOverflow] = useState({ left: false, right: false });
+  const [stripEl, setStripEl] = useState<HTMLDivElement | null>(null);
+  const setStripRef = useCallback((el: HTMLDivElement | null) => {
+    (scrollRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
+    setStripEl(el);
+  }, [scrollRef]);
   useEffect(() => {
-    const el = scrollRef.current;
+    const el = stripEl;
     if (!el) return;
     const update = () => setOverflow({
       left: el.scrollLeft > 1,
@@ -156,10 +161,9 @@ export default function SidebarBoard({ docs, workspaces, assignedFiles, pendingD
       el.removeEventListener('wheel', onWheel);
       ro.disconnect();
     };
-  }, [scrollRef, path, workspaces, docs]);
+  }, [stripEl, path, workspaces, docs]);
   const scrollStrip = (dir: 1 | -1) => {
-    const el = scrollRef.current;
-    if (el) el.scrollBy({ left: dir * el.clientWidth * 0.8, behavior: 'smooth' });
+    if (stripEl) stripEl.scrollLeft += dir * stripEl.clientWidth * 0.8;
   };
 
   const parentLabel = path.length > 1 ? path[path.length - 2].title : 'All';
@@ -211,7 +215,7 @@ export default function SidebarBoard({ docs, workspaces, assignedFiles, pendingD
     {overflow.right && (
       <button type="button" className="board-arrow board-arrow--right" onClick={() => scrollStrip(1)} aria-label="Scroll right">&rsaquo;</button>
     )}
-    <div className={`board-scroll${overflow.left ? ' fade-left' : ''}${overflow.right ? ' fade-right' : ''}`} ref={scrollRef}>
+    <div className={`board-scroll${overflow.left ? ' fade-left' : ''}${overflow.right ? ' fade-right' : ''}`} ref={setStripRef}>
       {/* Search pill */}
       <div className="board-search-pill">
         <svg className="board-search-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
