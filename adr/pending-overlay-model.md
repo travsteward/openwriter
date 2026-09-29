@@ -1256,3 +1256,12 @@ the active and non-active paths.
 re-install the loaded doc through `updateDocument` before saving. No code
 change: legacy `pending:` is still converted on load and dropped from disk on
 the next real save.
+
+### 2026-09-29 — Sidecar changes count as document activity
+Timeline ordered docs by the .md save time, so an agent's new pending changes
+(written only to the sidecar) left the doc in place. The listing now reports
+`lastActivity` as the later of the .md and sidecar modification times, read
+with one scan of `_pending/`. This relies on the existing write pattern: the
+sidecar is rewritten only alongside a canonical save or a real pending change
+(the startup repair rewrites only corrupted files). The client refreshes the
+listing on `pending-docs-changed` so the new order appears live.

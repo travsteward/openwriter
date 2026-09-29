@@ -6,6 +6,8 @@ export interface DocumentInfo {
   filename: string;
   title: string;
   lastModified: string;
+  /** Latest of the file save and its pending agent changes. */
+  lastActivity?: string;
   wordCount: number;
   isActive: boolean;
   archivedAt?: string;

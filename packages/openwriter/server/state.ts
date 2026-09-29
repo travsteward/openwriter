@@ -103,6 +103,8 @@ export interface DocumentInfo {
   title: string;
   path: string;
   lastModified: string;
+  /** Latest of the file save and its pending-changes sidecar. */
+  lastActivity?: string;
   wordCount: number;
   isActive: boolean;
   docId?: string;

@@ -554,6 +554,8 @@ export default function App() {
 
   const handlePendingDocsChanged = useCallback((data: PendingDocsPayload) => {
     setPendingDocs(data);
+    // Pending changes count as doc activity, so the listing's order can move.
+    setSidebarRefreshKey((k) => k + 1);
   }, []);
 
   const { connected, sendMessage, docVersionRef, detached } = useWebSocket({

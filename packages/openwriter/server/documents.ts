@@ -24,7 +24,7 @@ import { ensureDocId } from './versions.js';
 import { renameDocInAllWorkspaces, removeDocFromAllWorkspaces, listWorkspaces, getWorkspace } from './workspaces.js';
 import { collectAllFiles } from './workspace-tree.js';
 import { renameComments } from './comments.js';
-import { deleteOverlay, diagLog } from './pending-overlay.js';
+import { deleteOverlay, diagLog, listOverlayTimes } from './pending-overlay.js';
 import { loadPendingMetadata, savePendingMetadata, type PendingMetadata } from './pending-metadata.js';
 import { getPendingMetadata as getActivePendingMetadata, setPendingMetadata as setActivePendingMetadata, getDocVersion } from './state.js';
 
@@ -115,6 +115,7 @@ export function listDocuments(): DocumentInfo[] {
   ensureDataDir();
   const currentPath = getFilePath();
   const wsTitles = getWorkspaceTitleMap();
+  const overlayTimes = listOverlayTimes();
   const files = readdirSync(getDataDir())
     .filter((f) => f.endsWith('.md'))
     .map((f) => {
@@ -122,6 +123,10 @@ export function listDocuments(): DocumentInfo[] {
       try {
         const { data, content: trimmed, wordCount, mtime } = readListingParse(fullPath);
         const stat = { mtime };
+        // Pending agent changes live in a sidecar, so a doc's latest activity
+        // is whichever of the two files changed last.
+        const overlayTime = data.docId ? overlayTimes.get(data.docId as string) : undefined;
+        const lastActivity = overlayTime && overlayTime > mtime ? overlayTime : mtime;
         const title = resolveListingTitle({ fmTitle: data.title, workspaceTitle: wsTitles.get(f), content: trimmed, filename: f });
 
         // Skip archived docs
@@ -135,6 +140,7 @@ export function listDocuments(): DocumentInfo[] {
           title,
           path: fullPath,
           lastModified: stat.mtime.toISOString(),
+          lastActivity: lastActivity.toISOString(),
           wordCount,
           isActive: fullPath === currentPath,
           ...(data.docId ? { docId: data.docId as string } : {}),

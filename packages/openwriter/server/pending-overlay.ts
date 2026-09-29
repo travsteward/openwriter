@@ -32,7 +32,7 @@
  * adr: adr/pending-overlay-model.md
  */
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync, unlinkSync, readdirSync, rmSync } from 'fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync, unlinkSync, readdirSync, rmSync, statSync } from 'fs';
 import { join } from 'path';
 import { getDataDir, atomicWriteFileSync, resolveDocPath } from './helpers.js';
 import { markdownToTiptap } from './markdown-parse.js';
@@ -313,6 +313,19 @@ export function saveOverlay(docId: string, entries: PendingEntry[]): void {
       }
     }
   }
+}
+
+/** docId → when its sidecar last changed. Sidecar writes happen only with a
+ *  canonical save or a real pending change, so this marks review activity. */
+export function listOverlayTimes(): Map<string, Date> {
+  const times = new Map<string, Date>();
+  const dir = getPendingDir();
+  if (!existsSync(dir)) return times;
+  for (const f of readdirSync(dir)) {
+    if (!f.endsWith('.json')) continue;
+    try { times.set(f.slice(0, -5), statSync(join(dir, f)).mtime); } catch { /* removed mid-scan */ }
+  }
+  return times;
 }
 
 export function deleteOverlay(docId: string): void {

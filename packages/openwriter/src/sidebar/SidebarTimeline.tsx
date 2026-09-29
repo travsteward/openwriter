@@ -16,14 +16,15 @@ export default function SidebarTimeline({ docs, workspaces, assignedFiles, pendi
     return <SearchResults results={searchResults} query={searchQuery} onSwitchDocument={onSwitchDocument} actions={actions} loading={searchLoading} error={searchError} />;
   }
 
-  // Sort all docs by lastModified, most recent first
-  const sorted = [...docs].sort((a, b) => new Date(b.lastModified).getTime() - new Date(a.lastModified).getTime());
+  // Sort by latest activity (saves or pending agent changes), most recent first
+  const activity = (d: DocumentInfo) => d.lastActivity ?? d.lastModified;
+  const sorted = [...docs].sort((a, b) => new Date(activity(b)).getTime() - new Date(activity(a)).getTime());
 
   // Group by date
   const groups: { label: string; docs: DocumentInfo[] }[] = [];
   let currentGroup = '';
   for (const doc of sorted) {
-    const group = dateGroup(doc.lastModified);
+    const group = dateGroup(activity(doc));
     if (group !== currentGroup) {
       groups.push({ label: group, docs: [] });
       currentGroup = group;
@@ -73,7 +74,7 @@ export default function SidebarTimeline({ docs, workspaces, assignedFiles, pendi
                     <span>{doc.title}</span>
                     {pendingDocs.filenames.includes(doc.filename) && <span className="sidebar-pending-dot" />}
                   </div>
-                  <div className="tl-item-meta">{formatDate(doc.lastModified)}</div>
+                  <div className="tl-item-meta">{formatDate(activity(doc))}</div>
                 </div>
                 {confirmDelete === doc.filename ? (
                   <div className="sidebar-confirm-delete" onClick={(e) => e.stopPropagation()}>
