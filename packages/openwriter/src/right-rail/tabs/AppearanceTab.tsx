@@ -6,14 +6,13 @@
 import { useState } from 'react';
 import type { JSX } from 'react';
 import {
-  TYPEFACES, SIDEBAR_MODES, SIDEBAR_STYLES, SPACING_PRESETS, CANVAS_STYLES,
-  getTypeface, getMode, getSidebarMode, getSidebarStyle, getSpacing, getCanvasStyle, applyAppearance,
+  TYPEFACES, SIDEBAR_MODES, SPACING_PRESETS, CANVAS_STYLES,
+  getTypeface, getMode, getSidebarMode, getSpacing, getCanvasStyle, applyAppearance,
 } from '../../themes/appearance-store';
-import type { Typeface, ThemeMode, SidebarMode, SidebarStyle, SpacingPreset, CanvasStyle } from '../../themes/appearance-store';
+import type { Typeface, ThemeMode, SidebarMode, SpacingPreset, CanvasStyle } from '../../themes/appearance-store';
 import type { RightRailTabProps } from '../types';
 
 const ModeIcons: Record<string, JSX.Element> = {
-  tree: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3h7v7H3zM14 3h7v4h-7zM14 10h7v4h-7zM3 13h7v8H3z"/></svg>,
   files: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>,
   timeline: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="2" x2="12" y2="22"/><circle cx="12" cy="6" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="18" r="2"/><line x1="14" y1="6" x2="20" y2="6"/><line x1="14" y1="12" x2="20" y2="12"/><line x1="14" y1="18" x2="20" y2="18"/></svg>,
   board: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="5" height="18" rx="1"/><rect x="10" y="3" width="5" height="12" rx="1"/><rect x="17" y="3" width="5" height="15" rx="1"/></svg>,
@@ -24,7 +23,6 @@ export default function AppearanceTab(_props: RightRailTabProps) {
   const [typeface, setTypeface] = useState<Typeface>(getTypeface);
   const [mode, setMode] = useState<ThemeMode>(getMode);
   const [sidebarMode, setSidebarMode] = useState<SidebarMode>(getSidebarMode);
-  const [sidebarStyle, setSidebarStyle] = useState<SidebarStyle>(getSidebarStyle);
   const [spacing, setSpacing] = useState<SpacingPreset>(getSpacing);
   const [canvasStyle, setCanvasStyle] = useState<CanvasStyle>(getCanvasStyle);
 
@@ -32,11 +30,10 @@ export default function AppearanceTab(_props: RightRailTabProps) {
     tf: Typeface = typeface,
     m: ThemeMode = mode,
     sm: SidebarMode = sidebarMode,
-    ss: SidebarStyle = sidebarStyle,
     sp: SpacingPreset = spacing,
     cs: CanvasStyle = canvasStyle,
   ) => {
-    applyAppearance(tf, m, sm, ss, sp, cs);
+    applyAppearance(tf, m, sm, sp, cs);
   };
 
   const handleTypeface = (id: Typeface) => { setTypeface(id); apply(id); };
@@ -50,9 +47,8 @@ export default function AppearanceTab(_props: RightRailTabProps) {
     apply(undefined, undefined, id);
     window.dispatchEvent(new CustomEvent('ow-sidebar-mode-change', { detail: id }));
   };
-  const handleSpacing = (id: SpacingPreset) => { setSpacing(id); apply(undefined, undefined, undefined, undefined, id); };
-  const handleSidebarStyle = (id: SidebarStyle) => { setSidebarStyle(id); apply(undefined, undefined, undefined, id); };
-  const handleCanvasStyle = (id: CanvasStyle) => { setCanvasStyle(id); apply(undefined, undefined, undefined, undefined, undefined, id); };
+  const handleSpacing = (id: SpacingPreset) => { setSpacing(id); apply(undefined, undefined, undefined, id); };
+  const handleCanvasStyle = (id: CanvasStyle) => { setCanvasStyle(id); apply(undefined, undefined, undefined, undefined, id); };
 
   return (
     <div className="appearance-tab">
@@ -140,21 +136,6 @@ export default function AppearanceTab(_props: RightRailTabProps) {
         </div>
       </div>
 
-      <div className="appearance-section">
-        <div className="appearance-section-header">
-          <span className="appearance-section-title">Sidebar style</span>
-        </div>
-        <div className="appearance-style-grid" role="group" aria-label="Sidebar style">
-          {SIDEBAR_STYLES.map(style => (
-            <button key={style.id} type="button"
-              className={`appearance-style-option ${sidebarStyle === style.id ? 'active' : ''}`}
-              aria-pressed={sidebarStyle === style.id}
-              onClick={() => handleSidebarStyle(style.id)}>
-              {style.label}
-            </button>
-          ))}
-        </div>
-      </div>
     </div>
   );
 }

@@ -4,7 +4,6 @@ import { useSidebarData } from './sidebar-data';
 import { useSidebarActions } from './sidebar-actions';
 import { getSidebarMode } from '../themes/appearance-store';
 import type { SearchResult, DocumentInfo } from './sidebar-types';
-import SidebarDefault from './SidebarDefault';
 import SidebarTimeline from './SidebarTimeline';
 import SidebarBoard from './SidebarBoard';
 import SidebarShelf from './SidebarShelf';
@@ -205,11 +204,10 @@ export default function Sidebar({ open, onSwitchDocument, onCreateDocument, refr
 
   const renderMode = () => {
     switch (mode) {
-      case 'files': return <SidebarFiles {...modeProps} />;
       case 'timeline': return <SidebarTimeline {...modeProps} />;
       case 'board': return <SidebarBoard {...modeProps} />;
       case 'shelf': return <SidebarShelf {...modeProps} />;
-      default: return <SidebarDefault {...modeProps} />;
+      default: return <SidebarFiles {...modeProps} />;
     }
   };
 

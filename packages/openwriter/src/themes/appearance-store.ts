@@ -1,7 +1,6 @@
 export type Typeface = 'charter' | 'source-serif' | 'plex-mono' | 'crimson' | 'inter' | 'baskerville' | 'grotesk' | 'literata' | 'dm-sans';
 export type ThemeMode = 'light' | 'dark';
-export type SidebarMode = 'default' | 'timeline' | 'board' | 'shelf' | 'files';
-export type SidebarStyle = 'cards' | 'compact';
+export type SidebarMode = 'timeline' | 'board' | 'shelf' | 'files';
 export type SidebarDensity = 'full' | 'compact' | 'minimal';
 export type CanvasStyle = 'seamless' | 'outline' | 'page' | 'paper';
 export type SpacingPreset = 'default' | 'butterick' | 'web' | 'blog';
@@ -26,14 +25,8 @@ export const TYPEFACES: TypefaceInfo[] = [
 
 export const SIDEBAR_MODES: { id: SidebarMode; label: string; icon: string }[] = [
   { id: 'files', label: 'Files', icon: 'files' },
-  { id: 'default', label: 'Tree', icon: 'tree' },
   { id: 'timeline', label: 'Timeline', icon: 'timeline' },
   { id: 'board', label: 'Board', icon: 'board' },
-];
-
-export const SIDEBAR_STYLES: { id: SidebarStyle; label: string }[] = [
-  { id: 'cards', label: 'Original' },
-  { id: 'compact', label: 'Compact' },
 ];
 
 export const CANVAS_STYLES: { id: CanvasStyle; label: string }[] = [
@@ -56,7 +49,6 @@ const KEYS = {
   typeface: 'ow-typeface',
   mode: 'ow-theme-mode',
   sidebarMode: 'ow-sidebar-mode',
-  sidebarStyle: 'ow-sidebar-style',
   sidebarDensity: 'ow-sidebar-density',
   spacing: 'ow-spacing',
   canvas: 'ow-canvas',
@@ -81,8 +73,9 @@ function migrateIfNeeded(): void {
     localStorage.removeItem('ow-theme');
   }
 
-  // Clean up stale color key
+  // Clean up stale keys
   localStorage.removeItem('ow-color');
+  localStorage.removeItem('ow-sidebar-style');
 
   // Migrate ow-typography → ow-spacing
   const oldTypography = localStorage.getItem('ow-typography');
@@ -108,12 +101,6 @@ export function getSidebarMode(): SidebarMode {
   const stored = localStorage.getItem(KEYS.sidebarMode);
   if (stored && SIDEBAR_MODES.some(m => m.id === stored)) return stored as SidebarMode;
   return 'files';
-}
-
-export function getSidebarStyle(): SidebarStyle {
-  const stored = localStorage.getItem(KEYS.sidebarStyle);
-  if (stored && SIDEBAR_STYLES.some(style => style.id === stored)) return stored as SidebarStyle;
-  return 'cards';
 }
 
 export function getSidebarDensity(): SidebarDensity {
@@ -143,7 +130,6 @@ export function applyAppearance(
   typeface: Typeface,
   mode: ThemeMode,
   sidebarMode: SidebarMode,
-  sidebarStyle: SidebarStyle,
   spacing: SpacingPreset = 'default',
   canvas: CanvasStyle = 'seamless',
 ): void {
@@ -151,7 +137,7 @@ export function applyAppearance(
   el.setAttribute('data-typeface', typeface);
   el.setAttribute('data-mode', mode);
   el.setAttribute('data-sidebar-mode', sidebarMode);
-  el.setAttribute('data-sidebar-style', sidebarStyle);
+  el.setAttribute('data-sidebar-style', 'compact');
   if (spacing === 'default') {
     el.removeAttribute('data-spacing');
   } else {
@@ -167,13 +153,12 @@ export function applyAppearance(
   localStorage.setItem(KEYS.typeface, typeface);
   localStorage.setItem(KEYS.mode, mode);
   localStorage.setItem(KEYS.sidebarMode, sidebarMode);
-  localStorage.setItem(KEYS.sidebarStyle, sidebarStyle);
   localStorage.setItem(KEYS.spacing, spacing);
   localStorage.setItem(KEYS.canvas, canvas);
 }
 
 export function initAppearance(): void {
   migrateIfNeeded();
-  applyAppearance(getTypeface(), getMode(), getSidebarMode(), getSidebarStyle(), getSpacing(), getCanvasStyle());
+  applyAppearance(getTypeface(), getMode(), getSidebarMode(), getSpacing(), getCanvasStyle());
   document.documentElement.setAttribute('data-sidebar-density', getSidebarDensity());
 }
