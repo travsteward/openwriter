@@ -1292,7 +1292,7 @@ export function promoteTempFile(newTitle: string): string | null {
 // BATCH RESOLVE — accept/reject pending changes across multiple docs
 // ============================================================================
 
-const PENDING_ATTRS = ['pendingStatus', 'pendingOriginalContent', 'pendingGroupId', 'pendingSelectionFrom', 'pendingSelectionTo', 'pendingOriginalFrom', 'pendingOriginalTo'];
+const PENDING_ATTRS = ['pendingStatus', 'pendingOriginalContent', 'pendingGroupId', 'pendingFeedback', 'pendingSelectionFrom', 'pendingSelectionTo', 'pendingOriginalFrom', 'pendingOriginalTo'];
 
 function clearPendingAttrs(attrs: Record<string, any>): Record<string, any> {
   const clean = { ...attrs };

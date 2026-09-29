@@ -83,6 +83,7 @@ export interface ApplyResult {
 export interface ApplyOptions {
   /** When true, content is inserted/replaced as a committed edit (no pending decoration). */
   autoAccept?: boolean;
+  feedback?: string;
 }
 
 export function applyInsert(
@@ -360,18 +361,21 @@ export function applyRangeRewrite(
  * canonical form and is removed outright. Mirrors the server's
  * applyChangesToDoc. adr: adr/pending-overlay-model.md
  */
-export function markDeleteInTr(tr: any, found: { node: any; pos: number }): void {
+export function markDeleteInTr(tr: any, found: { node: any; pos: number }, feedback?: string): void {
   const { node, pos } = found;
   const status = node.attrs?.pendingStatus;
-  if (status === 'delete') return;
+  if (status === 'delete') {
+    tr.setNodeMarkup(pos, undefined, { ...node.attrs, pendingFeedback: feedback || null });
+    return;
+  }
   const original = status === 'rewrite' ? node.attrs?.pendingOriginalContent : null;
   if (status === 'insert' || (status === 'rewrite' && !original)) {
     tr.delete(pos, pos + node.nodeSize);
   } else if (original) {
-    const attrs = { ...original.attrs, id: node.attrs.id, pendingStatus: 'delete', pendingOriginalContent: null };
+    const attrs = { ...original.attrs, id: node.attrs.id, pendingStatus: 'delete', pendingOriginalContent: null, pendingFeedback: feedback || null };
     tr.replaceWith(pos, pos + node.nodeSize, tr.doc.type.schema.nodeFromJSON({ ...original, attrs }));
   } else {
-    tr.setNodeMarkup(pos, undefined, { ...node.attrs, pendingStatus: 'delete' });
+    tr.setNodeMarkup(pos, undefined, { ...node.attrs, pendingStatus: 'delete', pendingFeedback: feedback || null });
   }
 }
 
@@ -393,7 +397,7 @@ export function applyDelete(editor: Editor, nodeId: string, options?: ApplyOptio
     } else {
       editor.chain()
         .command(({ tr }) => {
-          markDeleteInTr(tr, nodeResult);
+          markDeleteInTr(tr, nodeResult, options?.feedback);
           return true;
         })
         .run();

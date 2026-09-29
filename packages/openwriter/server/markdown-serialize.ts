@@ -52,6 +52,7 @@ function collectPendingState(doc: any): Record<string, any> | undefined {
           if (node.attrs.pendingGroupId) {
             entry.g = node.attrs.pendingGroupId;
           }
+          if (node.attrs.pendingFeedback) entry.f = node.attrs.pendingFeedback;
           // Selection range attrs (sub-paragraph enhance)
           if (node.attrs.pendingSelectionFrom != null) entry.sf = node.attrs.pendingSelectionFrom;
           if (node.attrs.pendingSelectionTo != null) entry.st = node.attrs.pendingSelectionTo;
@@ -199,7 +200,7 @@ export function tiptapToBody(doc: any): string {
  * - status='delete' → keep but clear pending attrs
  * - no status → keep, strip stray pending attrs
  */
-const PENDING_KEYS = ['pendingStatus', 'pendingOriginalContent', 'pendingGroupId', 'pendingTextEdits', 'pendingSelectionFrom', 'pendingSelectionTo', 'pendingOriginalFrom', 'pendingOriginalTo', 'pendingOrphan', 'pendingStaleBaseline'];
+const PENDING_KEYS = ['pendingStatus', 'pendingOriginalContent', 'pendingGroupId', 'pendingFeedback', 'pendingTextEdits', 'pendingSelectionFrom', 'pendingSelectionTo', 'pendingOriginalFrom', 'pendingOriginalTo', 'pendingOrphan', 'pendingStaleBaseline'];
 function revertPendingForSerialization(doc: any): any {
   function clean(node: any): any {
     const clone = JSON.parse(JSON.stringify(node));

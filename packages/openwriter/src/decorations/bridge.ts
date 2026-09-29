@@ -11,7 +11,7 @@ export function applyNodeChangeToEditor(
   editor: Editor,
   change: NodeChange
 ): { success: boolean; error?: string } {
-  const options = change.autoAccept ? { autoAccept: true } : undefined;
+  const options = { autoAccept: change.autoAccept === true, feedback: change.feedback };
 
   if (change.operation === 'rewrite' && change.nodeId && change.content) {
     const result = applyRewrite(editor, change.nodeId, change.content, null, options);
@@ -143,7 +143,7 @@ export function applyNodeChangesToEditor(
             // Hard-delete: remove node entirely.
             tr.delete(found.pos, found.pos + found.node.nodeSize);
           } else {
-            markDeleteInTr(tr, found);
+            markDeleteInTr(tr, found, change.feedback);
           }
         }
       } catch {
