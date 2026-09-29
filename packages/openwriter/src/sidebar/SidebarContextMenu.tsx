@@ -127,6 +127,7 @@ interface SidebarContextMenuProps {
   bulkCount?: number;
   onBulkDelete?: () => void;
   onBulkRequestSort?: () => void;
+  onCreateManuscript?: () => void;
 }
 
 /** Group plugin items: plugins with 3+ items get a submenu, others stay flat */
@@ -221,7 +222,7 @@ function PluginSubmenu({ items, onAction }: {
   return <>{result}</>;
 }
 
-export default function SidebarContextMenu({ x, y, filename, title, onClose, onDuplicate, onCreateVariant, onRename, onArchive, onDelete, onPluginAction, pluginItems, onSchedulePost, onPostNow, isAlreadyPublished, onViewAnalytics, viewAnalyticsLabel, onMarkSent, isAlreadySent, isApproved, onToggleApprove, isAutoAccept, onToggleAutoAccept, sortState, sortProposalLabel, sortProposalReasoning, onRequestSort, onCancelSort, onAcceptSortProposal, onRejectSortProposal, folderMode, onNewDoc, onNewContainer, onAcceptAll, onRejectAll, folderAutoAccept, onToggleFolderAutoAccept, folderAutoAcceptLabel, onRequestSortAll, folderDocCount, onDeleteWithDocs, bulkCount, onBulkDelete, onBulkRequestSort }: SidebarContextMenuProps) {
+export default function SidebarContextMenu({ x, y, filename, title, onClose, onDuplicate, onCreateVariant, onRename, onArchive, onDelete, onPluginAction, pluginItems, onSchedulePost, onPostNow, isAlreadyPublished, onViewAnalytics, viewAnalyticsLabel, onMarkSent, isAlreadySent, isApproved, onToggleApprove, isAutoAccept, onToggleAutoAccept, sortState, sortProposalLabel, sortProposalReasoning, onRequestSort, onCancelSort, onAcceptSortProposal, onRejectSortProposal, folderMode, onNewDoc, onNewContainer, onAcceptAll, onRejectAll, folderAutoAccept, onToggleFolderAutoAccept, folderAutoAcceptLabel, onRequestSortAll, folderDocCount, onDeleteWithDocs, bulkCount, onBulkDelete, onBulkRequestSort, onCreateManuscript }: SidebarContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [confirmArchive, setConfirmArchive] = useState(false);
@@ -271,6 +272,11 @@ export default function SidebarContextMenu({ x, y, filename, title, onClose, onD
     return (
       <div ref={menuRef} className="context-menu" style={{ left: adjustedPos.left, top: adjustedPos.top }}>
         <div className="context-menu-section-header">{bulkCount} selected</div>
+        {onCreateManuscript && (
+          <button className="context-menu-item" onClick={() => { onCreateManuscript(); onClose(); }}>
+            <span>Create manuscript</span>
+          </button>
+        )}
         {onBulkRequestSort && (
           <button className="context-menu-item" onClick={() => { onBulkRequestSort(); onClose(); }}>
             <span>Request sort ({bulkCount})</span>
