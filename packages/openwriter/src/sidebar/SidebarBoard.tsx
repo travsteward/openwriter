@@ -210,10 +210,14 @@ export default function SidebarBoard({ docs, workspaces, assignedFiles, pendingD
   return (
     <div className="board-strip">
     {overflow.left && (
-      <button type="button" className="board-arrow board-arrow--left" onClick={() => scrollStrip(-1)} aria-label="Scroll left">&lsaquo;</button>
+      <button type="button" className="board-arrow board-arrow--left" onClick={() => scrollStrip(-1)} aria-label="Scroll left">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
+      </button>
     )}
     {overflow.right && (
-      <button type="button" className="board-arrow board-arrow--right" onClick={() => scrollStrip(1)} aria-label="Scroll right">&rsaquo;</button>
+      <button type="button" className="board-arrow board-arrow--right" onClick={() => scrollStrip(1)} aria-label="Scroll right">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
+      </button>
     )}
     <div className={`board-scroll${overflow.left ? ' fade-left' : ''}${overflow.right ? ' fade-right' : ''}`} ref={setStripRef}>
       {/* Search pill */}
