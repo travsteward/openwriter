@@ -85,6 +85,23 @@ export function reorderDocs(orderedFilenames: string[]): void {
   writeDocOrder(orderedFilenames);
 }
 
+/** Parsed listing input per file, reused until the file's mtime or size changes.
+ *  Listing reads every document, so re-parsing unchanged files dominated its cost. */
+interface ListingParse { mtimeMs: number; size: number; data: Record<string, any>; content: string; wordCount: number }
+const listingCache = new Map<string, ListingParse>();
+
+function readListingParse(fullPath: string): ListingParse & { mtime: Date } {
+  const stat = statSync(fullPath);
+  const cached = listingCache.get(fullPath);
+  if (cached && cached.mtimeMs === stat.mtimeMs && cached.size === stat.size) return { ...cached, mtime: stat.mtime };
+  // Use gray-matter directly — skip full TipTap parse for listing
+  const { data, content } = matter(readFileSync(fullPath, 'utf-8'));
+  const trimmed = content.trim();
+  const parsed = { mtimeMs: stat.mtimeMs, size: stat.size, data, content: trimmed, wordCount: trimmed ? trimmed.split(/\s+/).length : 0 };
+  listingCache.set(fullPath, parsed);
+  return { ...parsed, mtime: stat.mtime };
+}
+
 export function listDocuments(): DocumentInfo[] {
   ensureDataDir();
   const currentPath = getFilePath();
@@ -94,21 +111,15 @@ export function listDocuments(): DocumentInfo[] {
     .map((f) => {
       const fullPath = join(getDataDir(), f);
       try {
-        const stat = statSync(fullPath);
-        const raw = readFileSync(fullPath, 'utf-8');
-
-        // Use gray-matter directly — skip full TipTap parse for listing
-        const { data, content } = matter(raw);
-        const title = resolveListingTitle({ fmTitle: data.title, workspaceTitle: wsTitles.get(f), content, filename: f });
+        const { data, content: trimmed, wordCount, mtime } = readListingParse(fullPath);
+        const stat = { mtime };
+        const title = resolveListingTitle({ fmTitle: data.title, workspaceTitle: wsTitles.get(f), content: trimmed, filename: f });
 
         // Skip archived docs
         if (data.archivedAt) return null;
 
         // Skip empty temp files (not the active doc)
-        const trimmed = content.trim();
         if (f.startsWith(TEMP_PREFIX) && !trimmed && fullPath !== currentPath) return null;
-
-        const wordCount = trimmed ? trimmed.split(/\s+/).length : 0;
 
         return {
           filename: f,
@@ -154,12 +165,9 @@ export function listDocuments(): DocumentInfo[] {
         unregisterExternalDoc(extPath); // Clean up stale registry entries
         continue;
       }
-      const stat = statSync(extPath);
-      const raw = readFileSync(extPath, 'utf-8');
-      const { data, content } = matter(raw);
+      const { data, content, wordCount, mtime } = readListingParse(extPath);
+      const stat = { mtime };
       const title = resolveListingTitle({ fmTitle: data.title, workspaceTitle: wsTitles.get(extPath), content, filename: extPath });
-      const trimmed = content.trim();
-      const wordCount = trimmed ? trimmed.split(/\s+/).length : 0;
 
       files.push({
         filename: extPath, // Full path as identifier
