@@ -38,7 +38,7 @@ import {
   type ExternalWriteConflict,
   type DocumentReloaded,
 } from './state.js';
-import { switchDocument, createDocument, deleteDocument, getActiveFilename, promoteTempFile, listDocuments, acceptPendingTitle, rejectPendingTitle, getPendingTitle } from './documents.js';
+import { switchDocument, createDocument, deleteDocument, getActiveFilename, promoteTempFile, listDocuments, acceptPendingTitle, rejectPendingTitle, getPendingTitle, resolveDocId } from './documents.js';
 import { removeDocFromAllWorkspaces } from './workspaces.js';
 import { commitFromFile } from './commits.js';
 import { canonicalizeIdentifier } from './helpers.js';
@@ -302,8 +302,26 @@ export function setupWebSocket(server: Server): void {
     // moves a tab. adr: adr/per-tab-view.md
     const filePath = getFilePath();
     const filename = filePath ? filePath.split(/[/\\]/).pop() || '' : '';
+    // A fresh page opened on a doc link (?open=<docId>) names its doc in the
+    // handshake. Opening it here is this tab's own navigation; a switch sent
+    // after load would race the socket opening and be lost.
+    const open = !view ? query.get('open') : null;
+    let openFilename = '';
+    if (open) {
+      try { openFilename = resolveDocId(open); } catch { /* unknown doc: show the live one */ }
+    }
     if (view && view !== filename) {
       ws.send(JSON.stringify({ type: 'view-detached', activeFilename: filename }));
+    } else if (openFilename && openFilename !== filename) {
+      try {
+        const result = switchDocument(openFilename);
+        broadcastDocumentSwitched(result.document, result.title, result.filename, undefined, 'open', { tab: ws });
+      } catch (err: any) {
+        console.error('[WS] Open on connect failed:', err.message);
+        ws.send(JSON.stringify(buildDocumentSwitchedPayload(getDocument(), getTitle(), filename, getMetadata())));
+        attached.add(ws);
+        attachedFilename = filename;
+      }
     } else {
       const docOnConnect = getDocument();
       const pendingOnConnect = pendingSummary(docOnConnect);

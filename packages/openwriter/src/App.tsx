@@ -758,7 +758,7 @@ export default function App() {
    *   2. filename → direct switch (legacy fallback)
    *   3. nodeId / quote scroll: stashed in pendingScroll, consumed on editor ready
    */
-  const handleLinkClick = useCallback(async (target: ParsedLinkHref) => {
+  const handleLinkClick = useCallback(async (target: ParsedLinkHref, openedOnConnect = false) => {
     let filename: string | null = null;
     if (target.docId) {
       try {
@@ -790,7 +790,7 @@ export default function App() {
       pendingScroll.current = { filename, toTop: true };
     }
     setScrollRequest(n => n + 1);
-    handleSwitchDocument(filename);
+    if (!openedOnConnect) handleSwitchDocument(filename);
     // Directed open (deep link / backlink / wikilink) — relocate the filetree to
     // this doc. The sidebar hook holds this intent until the doc is active and
     // the tree has loaded, so firing now (even before the switch lands, or when
@@ -812,9 +812,11 @@ export default function App() {
   }, [handleLinkClick]);
 
   // Deep-link boot: /d/{docId} or /d/{docId}#node={nodeId}.
-  // Fires once on mount, hands off to the existing handleLinkClick path which
-  // resolves docId → filename, switches the doc, and consumes pendingScroll
-  // to scroll + flash the target node (if any). The URL bar then flips to the
+  // The WebSocket handshake carries the docId (?open=), so the server opens
+  // the linked doc as this tab's first document; a switch sent from here would
+  // race the socket opening and be dropped. This effect only resolves the
+  // filename, stashes the scroll target, and reveals the doc in the sidebar.
+  // The URL bar then flips to the
   // canonical `#{filename}` form on successful load — the /d/{docId} URL is
   // an entry point, not a persistent state.
   const deepLinkBootRef = useRef(false);
@@ -826,7 +828,7 @@ export default function App() {
     const docId = pathMatch[1];
     const nodeMatch = window.location.hash.match(/^#node=([a-f0-9]{8})$/);
     const nodeId = nodeMatch ? nodeMatch[1] : null;
-    handleLinkClick({ docId, filename: null, nodeId, quote: null });
+    handleLinkClick({ docId, filename: null, nodeId, quote: null }, true);
   }, [handleLinkClick]);
 
   // Consume pendingScroll after a doc loads. Tries nodeId first, then quote

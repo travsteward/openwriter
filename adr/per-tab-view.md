@@ -65,3 +65,14 @@ Chose attach/detach over two alternatives:
 Detaching keeps the one-live-doc model, makes the stale-write path
 unreachable, and costs the user one click when two tabs compete for the
 live doc.
+
+### 2026-09-29 — a doc link opens its doc in the handshake
+A fresh page on `/d/<docId>` sent `switch-document` from a mount effect, before
+the WebSocket was open. `sendMessage` drops messages on a closed socket, so the
+switch was lost and the on-connect message delivered the live doc instead; the
+URL then flipped to that doc. A user accepted all changes in the wrong doc this
+way. The page now sends `?open=<docId>` on its first connect only. The server
+resolves it and opens that doc with audience `{ tab }`, the same as the tab's
+own `switch-document`: other attached tabs are detached, not moved. Reconnects
+still carry `?view=` and never use `open`. An unknown docId falls back to the
+live doc. The mount effect keeps only the scroll target and sidebar reveal.

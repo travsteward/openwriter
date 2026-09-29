@@ -170,7 +170,10 @@ export function useWebSocket({ onNodeChanges, onAgentStatus, onDocumentSwitched,
       // state if it is the live doc, or marks the tab detached — it never
       // moves the tab. adr: adr/per-tab-view.md
       const view = hasConnectedBefore ? getViewFilenameRef.current?.() : '';
-      const wsUrl = `${protocol}//${window.location.host}/ws?tab=${TAB_ID}${view ? `&view=${encodeURIComponent(view)}` : ''}`;
+      // A page opened on a doc link names that doc in its first handshake, so
+      // the server's first document is the linked one.
+      const open = !hasConnectedBefore ? window.location.pathname.match(/^\/d\/([a-f0-9]{8})\/?$/)?.[1] : undefined;
+      const wsUrl = `${protocol}//${window.location.host}/ws?tab=${TAB_ID}${view ? `&view=${encodeURIComponent(view)}` : ''}${open ? `&open=${open}` : ''}`;
       const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
 
