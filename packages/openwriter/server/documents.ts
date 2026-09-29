@@ -102,6 +102,15 @@ function readListingParse(fullPath: string): ListingParse & { mtime: Date } {
   return { ...parsed, mtime: stat.mtime };
 }
 
+/** Fill the listing cache at boot so the first sidebar load skips the full read. */
+export function warmListingCache(): void {
+  ensureDataDir();
+  const paths = readdirSync(getDataDir()).filter(f => f.endsWith('.md')).map(f => join(getDataDir(), f));
+  for (const p of [...paths, ...getExternalDocs()]) {
+    try { readListingParse(p); } catch { /* listing skips unreadable files too */ }
+  }
+}
+
 export function listDocuments(): DocumentInfo[] {
   ensureDataDir();
   const currentPath = getFilePath();

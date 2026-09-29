@@ -16,7 +16,7 @@ import { zodToJsonSchema } from 'zod-to-json-schema';
 import { save, cancelDebouncedSave, load, getDocument, getTitle, getFilePath, getDocId, getMetadata, getStatus, updateDocument, setMetadata, applyTextEdits, isAgentLocked, getPendingDocInfo, getDocTagsByFilename, addDocTag, removeDocTag, markAllNodesAsPending, updatePendingCacheForActiveDoc, removePendingCacheEntry, clearAllCaches, stripPendingAttrs, stripPendingAttrsFromFile, setAutoAcceptOnFile, setSortRequestOnFile, clearSortRequestOnFile, bumpDocVersion, markAsAgentStub, extractText } from './state.js';
 import { syncPostHistory } from './post-sync.js';
 import { enrollManualPostForAutoplug } from './autoplug-enroll.js';
-import { listDocuments, switchDocument, createDocument, deleteDocument, duplicateDocument, reloadDocument, updateDocumentTitle, openFile, reorderDocs, searchDocuments, listArchivedDocuments, archiveDocument, unarchiveDocument, getActiveFilename, batchResolve, listPendingSorts } from './documents.js';
+import { listDocuments, warmListingCache, switchDocument, createDocument, deleteDocument, duplicateDocument, reloadDocument, updateDocumentTitle, openFile, reorderDocs, searchDocuments, listArchivedDocuments, archiveDocument, unarchiveDocument, getActiveFilename, batchResolve, listPendingSorts } from './documents.js';
 import { writePromptDebug, isPromptDebugEnabled } from './prompt-debug.js';
 import { createWorkspaceRouter } from './workspace-routes.js';
 import { createLinkRouter } from './link-routes.js';
@@ -1439,6 +1439,9 @@ export async function startHttpServer(options: { server: HttpServer; port?: numb
   // Broadcast agent status now that WS is ready
   broadcastAgentStatus(true);
   console.log(`OpenWriter running at http://localhost:${port}`);
+
+  // Read every document once now, so the first sidebar load is served from cache.
+  setImmediate(() => { try { warmListingCache(); } catch { /* first listing reads instead */ } });
 
   // Sync post history from platform (catch posts made while app was closed)
   syncPostHistory().catch(() => {});
