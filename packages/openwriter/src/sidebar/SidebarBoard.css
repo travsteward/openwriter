@@ -28,7 +28,43 @@
   height: 40px;
   flex: 1;
   min-width: 0;
+  scrollbar-width: none;
 }
+.board-scroll::-webkit-scrollbar { display: none; }
+.board-scroll.fade-left { mask-image: linear-gradient(to right, transparent 0, #000 40px); }
+.board-scroll.fade-right { mask-image: linear-gradient(to left, transparent 0, #000 40px); }
+.board-scroll.fade-left.fade-right {
+  mask-image: linear-gradient(to right, transparent 0, #000 40px, #000 calc(100% - 40px), transparent 100%);
+}
+
+/* Overflow arrows, pinned over the strip's ends */
+.board-strip {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-width: 0;
+}
+.board-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--bg-primary);
+  color: var(--ink-dark);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+.board-arrow:hover { background: var(--bg-hover); }
+.board-arrow--left { left: 4px; }
+.board-arrow--right { right: 4px; }
 
 /* Back button */
 .board-back {

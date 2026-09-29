@@ -129,6 +129,39 @@ export default function SidebarBoard({ docs, workspaces, assignedFiles, pendingD
     setDropdownKey(null);
   };
 
+  // Horizontal overflow: arrows and edge fades show only where more chips exist;
+  // the plain mouse wheel scrolls the strip sideways.
+  const [overflow, setOverflow] = useState({ left: false, right: false });
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const update = () => setOverflow({
+      left: el.scrollLeft > 1,
+      right: el.scrollLeft + el.clientWidth < el.scrollWidth - 1,
+    });
+    const onScroll = () => { update(); setDropdownKey(null); };
+    const onWheel = (e: WheelEvent) => {
+      if (e.deltaY === 0 || Math.abs(e.deltaX) > Math.abs(e.deltaY) || el.scrollWidth <= el.clientWidth) return;
+      e.preventDefault();
+      el.scrollLeft += e.deltaY;
+    };
+    update();
+    el.addEventListener('scroll', onScroll, { passive: true });
+    el.addEventListener('wheel', onWheel, { passive: false });
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    Array.from(el.children).forEach(c => ro.observe(c));
+    return () => {
+      el.removeEventListener('scroll', onScroll);
+      el.removeEventListener('wheel', onWheel);
+      ro.disconnect();
+    };
+  }, [scrollRef, path, workspaces, docs]);
+  const scrollStrip = (dir: 1 | -1) => {
+    const el = scrollRef.current;
+    if (el) el.scrollBy({ left: dir * el.clientWidth * 0.8, behavior: 'smooth' });
+  };
+
   const parentLabel = path.length > 1 ? path[path.length - 2].title : 'All';
   const searchInputRef = useRef<HTMLInputElement>(null);
   const searchDropdownRef = useRef<HTMLDivElement>(null);
@@ -171,7 +204,14 @@ export default function SidebarBoard({ docs, workspaces, assignedFiles, pendingD
   };
 
   return (
-    <div className="board-scroll" ref={scrollRef}>
+    <div className="board-strip">
+    {overflow.left && (
+      <button type="button" className="board-arrow board-arrow--left" onClick={() => scrollStrip(-1)} aria-label="Scroll left">&lsaquo;</button>
+    )}
+    {overflow.right && (
+      <button type="button" className="board-arrow board-arrow--right" onClick={() => scrollStrip(1)} aria-label="Scroll right">&rsaquo;</button>
+    )}
+    <div className={`board-scroll${overflow.left ? ' fade-left' : ''}${overflow.right ? ' fade-right' : ''}`} ref={scrollRef}>
       {/* Search pill */}
       <div className="board-search-pill">
         <svg className="board-search-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -304,6 +344,7 @@ export default function SidebarBoard({ docs, workspaces, assignedFiles, pendingD
           <SearchResults results={searchResults} query={searchQuery} onSwitchDocument={onSwitchDocument} actions={actions} loading={searchLoading} error={searchError} />
         </div>
       )}
+    </div>
     </div>
   );
 }
