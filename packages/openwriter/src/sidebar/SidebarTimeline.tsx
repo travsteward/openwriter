@@ -68,16 +68,15 @@ export default function SidebarTimeline({ docs, workspaces, assignedFiles, pendi
                 onClick={() => !doc.isActive && onSwitchDocument(doc.filename)}
               >
                 <div className="tl-dot" />
-                <div className="tl-content">
+                <div className="tl-content" title={wsLabel || undefined}>
                   <div className="tl-item-title">
                     <span>{doc.title}</span>
                     {pendingDocs.filenames.includes(doc.filename) && <span className="sidebar-pending-dot" />}
                   </div>
                   {isExternal(doc.filename) && <div className="tl-item-context">{parentDir(doc.filename)}</div>}
                   <div className="tl-item-meta">
-                    {doc.wordCount.toLocaleString()} words &middot; {formatDate(doc.lastModified)}
+                    <span className="tl-words">{doc.wordCount.toLocaleString()} words &middot; </span>{formatDate(doc.lastModified)}
                   </div>
-                  {wsLabel && <div className="tl-badge">{wsLabel}</div>}
                 </div>
                 {confirmDelete === doc.filename ? (
                   <div className="sidebar-confirm-delete" onClick={(e) => e.stopPropagation()}>

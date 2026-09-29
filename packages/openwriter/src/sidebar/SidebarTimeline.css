@@ -123,22 +123,6 @@
   margin-top: 2px;
 }
 
-.tl-badge {
-  display: inline-block;
-  max-width: 100%;
-  padding: 1px 6px;
-  border-radius: 3px;
-  background: var(--bg-hover);
-  border: 1px solid var(--border);
-  font-size: 9px;
-  font-weight: 500;
-  color: var(--ink-light);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin-top: 2px;
-}
-
 /* Delete button — use same absolute positioning as tree sidebar */
 .tl-item .sidebar-delete-btn {
   opacity: 0;
