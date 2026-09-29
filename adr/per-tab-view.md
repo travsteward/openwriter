@@ -22,34 +22,44 @@ stale content over them. That is why the old design moved every tab.
 
 ## Current invariants
 
-- **Attached tabs.** `ws.ts` keeps `attached`, the set of tabs showing the
-  live doc. Only attached tabs receive the live doc's content messages
-  (`node-changes`, `id-rewrites`, `document-reloaded`, `metadata-changed`,
-  `title-changed`, external-write conflicts). Global messages (document list,
-  pending-docs, activity, spinners) still go to every tab.
+- **Every tab has a view.** `ws.ts` keeps `views`, tab to the doc it shows.
+  The server's single live doc is a cache: a tab's write (`doc-update`,
+  `pending-resolved`, `title-update`) for a doc that is not live first
+  switches the server to that doc, then applies. There is no attach, detach
+  or read-only state.
+- **Live doc content messages** (`node-changes`, `id-rewrites`,
+  `document-reloaded`, `metadata-changed`, `title-changed`, external-write
+  conflicts) go to the tabs viewing the live doc. Global messages (document
+  list, pending-docs, activity, spinners) go to every tab.
+- **Other viewers update in the background.** After a tab write, every other
+  tab viewing that doc gets the full doc as `document-switched` with
+  navigation `refresh` (not a navigation, so no scroll or sidebar reveal). A
+  disk write to a doc that is not live (agent tools, accept-all flush,
+  pending strip) is pushed the same way, loaded from disk, via
+  `onDocFileWritten` in `state.ts`.
+- **Revision guard.** Each doc has a revision and the tab that set it. Every
+  `document-switched` carries the revision; the client stamps it on each
+  write. A write whose revision is not current, from a tab that did not make
+  the current revision, is refused: the tab gets the latest copy and a notice
+  that its last change was not saved. So a stale tab can never autosave over
+  newer work. Agent edits to the live doc still go through the docVersion
+  merge path, which bumps the revision for the other viewers.
 - **Who follows a `document-switched`** is the caller's explicit audience:
   - `{ tab }`: a tab's own navigation (WS `switch-document`,
     `create-document`, `create-template`; HTTP create, duplicate, variant,
-    open and switch carrying `X-OW-Tab`). Only that tab moves. Other attached
-    tabs get `view-detached` and keep their view.
-  - `'viewers'` (default): the attached tabs follow the live doc. Used for a
-    refresh of the same doc, a rename, and the fallback after the live doc is
-    deleted or archived.
+    open and switch carrying `X-OW-Tab`, and a first connect with `?open=`).
+    Only that tab moves. Other tabs keep their view.
+  - `'viewers'` (default): the tabs viewing the live doc follow it. Used for
+    a refresh of the same doc, a rename, and the fallback after the live doc
+    is deleted or archived.
   - `'all'`: an explicit "show the user": MCP `switch_document`, MCP
     `open_file`, HTTP open or switch with no tab named, and profile switch.
 - **Agent tools never change the live doc** except those explicit shows (and
   the deletion fallback). `create_document` with `empty: true` writes the file
   without switching, like the two-step create.
-- **Detached tabs are read-only.** The client makes the editor non-editable,
-  shows "This document is open in another tab" with an "Edit here" button,
-  and drops live-doc writes (`doc-update`, `pending-resolved`,
-  `title-update`). The server independently drops those messages from a
-  non-attached tab when they target the live doc. "Edit here" sends
-  `switch-document` for the tab's own doc, which reloads it from the server
-  and re-attaches.
 - **Reconnect never moves a tab.** The WS URL carries `?tab=` and, on
-  reconnect, `?view=<filename>`. A tab whose view is the live doc gets fresh
-  state and attaches. Any other tab is told it is detached.
+  reconnect, `?view=<filename>`. The server makes that doc live if needed and
+  sends it with its current revision.
 
 ## Decision log
 
@@ -100,3 +110,16 @@ refuses every document change and shows "Click Edit here", checked against
 the same flag that drops the saves, so the page can never show work that is
 not saved. The flag clears before the server's copy arrives on "Edit here",
 so re-attaching is unaffected.
+
+### 2026-09-29 — live tabs replace attach/detach
+The detached state kept failing the user: a doc link in a new tab detached the
+review tab, and "Edit here" was one more thing to notice. The user asked for
+any tab to act on its own doc, with other tabs showing that doc changing in
+the background, and no focus concept. The server now treats its live doc as a
+cache that follows whichever tab or agent writes, pushes each change to the
+other viewers, and guards every tab write with a per-doc revision so a stale
+tab's autosave is refused instead of overwriting newer work. Tested on an
+isolated server: two tabs on different docs both save, a background tab sees
+another tab's edits and an agent's pending insert, accept-all from a tab whose
+doc is not live persists to disk and clears the sidecar, and a replayed stale
+save is refused with the notice while the newer text stays.

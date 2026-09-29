@@ -7,9 +7,10 @@ import { showToast } from '../utils/toast';
 export const TAB_ID = Math.random().toString(36).slice(2, 10);
 export const TAB_HEADER = { 'X-OW-Tab': TAB_ID };
 
-// Messages that write the server's live doc. A detached tab never sends them:
-// its copy of that doc missed every edit since it detached.
-const LIVE_DOC_WRITES = new Set(['doc-update', 'pending-resolved', 'title-update']);
+// Messages that change the doc this tab shows. Each carries the revision the
+// tab's copy was built on, so the server can refuse one made from an old copy.
+// adr: adr/per-tab-view.md
+const DOC_WRITES = new Set(['doc-update', 'pending-resolved', 'title-update']);
 const NAVIGATIONS = new Set(['switch-document', 'create-document']);
 
 export interface NodeChange {
@@ -30,7 +31,8 @@ interface WebSocketMessage {
 }
 
 export interface DocumentSwitchedPayload {
-  navigation?: 'open' | 'fallback' | 'create';
+  /** 'refresh': a newer copy of the doc this tab already shows. */
+  navigation?: 'open' | 'fallback' | 'create' | 'refresh';
   /** First document after a reconnect: edits this tab could not send may
    *  still be sent if the server's copy is unchanged. */
   onReconnect?: boolean;
@@ -123,11 +125,8 @@ export function useWebSocket({ onNodeChanges, onAgentStatus, onDocumentSwitched,
   const outboxRef = useRef<Record<string, any>[]>([]);
   // True from a reconnect until the server's first document reaches this tab.
   const reconnectingRef = useRef(false);
-  // True while another tab holds this tab's doc live (or this tab shows a doc
-  // that is no longer live). The editor is read-only until the user takes the
-  // doc back. adr: adr/per-tab-view.md
-  const [detached, setDetached] = useState(false);
-  const detachedRef = useRef(false);
+  // The server's revision of the doc this tab shows, as of its last copy.
+  const revRef = useRef(0);
   const getViewFilenameRef = useRef(getViewFilename);
   getViewFilenameRef.current = getViewFilename;
   // Document version counter — tracks last version seen from agent writes
@@ -226,22 +225,15 @@ export function useWebSocket({ onNodeChanges, onAgentStatus, onDocumentSwitched,
             onAgentStatusRef.current?.(!!msg.agentConnected);
           }
 
-          if (msg.type === 'view-detached') {
-            detachedRef.current = true;
-            setDetached(true);
-            reconnectingRef.current = false;
-            flushOutbox();
-          }
-
           if (msg.type === 'document-switched') {
-            // Receiving the live doc means this tab is attached again.
-            detachedRef.current = false;
-            setDetached(false);
+            revRef.current = typeof msg.rev === 'number' ? msg.rev : 0;
             // Deliver navigation intent before React adopts the new active doc.
-            // adr: adr/sidebar-navigation-intent.md
-            window.dispatchEvent(new CustomEvent('ow-document-navigation', {
-              detail: { filename: msg.filename, navigation: msg.navigation ?? 'open' },
-            }));
+            // A refresh is not navigation. adr: adr/sidebar-navigation-intent.md
+            if (msg.navigation !== 'refresh') {
+              window.dispatchEvent(new CustomEvent('ow-document-navigation', {
+                detail: { filename: msg.filename, navigation: msg.navigation ?? 'open' },
+              }));
+            }
             // Adopt the server's docVersion as our autosave baseline. For a
             // normal switch the server reset it to 0 (fresh lineage), so this
             // is 0 as before. For an auto-title rename — which reaches us via
@@ -438,7 +430,8 @@ export function useWebSocket({ onNodeChanges, onAgentStatus, onDocumentSwitched,
   /** Returns true only when the message went out. A message sent while the
    *  socket is closed waits in the outbox, except edits (see outboxRef). */
   const sendMessage = useCallback((msg: Record<string, any>): boolean => {
-    if (detachedRef.current && LIVE_DOC_WRITES.has(msg.type)) return false;
+    // Stamped once, when first sent: a queued write keeps the revision it was built on.
+    if (DOC_WRITES.has(msg.type) && msg.rev === undefined) msg = { ...msg, rev: revRef.current };
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify(msg));
       return true;
@@ -457,5 +450,5 @@ export function useWebSocket({ onNodeChanges, onAgentStatus, onDocumentSwitched,
     for (const msg of queued) sendMessage(msg);
   }
 
-  return { connected, sendMessage, docVersionRef, detached, detachedRef };
+  return { connected, sendMessage, docVersionRef };
 }

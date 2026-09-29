@@ -31,6 +31,7 @@ import {
   onExternalWriteConflict,
   onDocumentReloaded,
   onAutoTitleApplied,
+  onDocFileWritten,
   isAgentStub,
   unmarkAgentStub,
   type NodeChange,
@@ -42,6 +43,7 @@ import { switchDocument, createDocument, deleteDocument, getActiveFilename, prom
 import { removeDocFromAllWorkspaces } from './workspaces.js';
 import { commitFromFile } from './commits.js';
 import { canonicalizeIdentifier } from './helpers.js';
+import { loadDocFromDisk } from './pending-overlay.js';
 import { nodeTextPreview, diagLog } from './pending-overlay.js';
 import { generateRequestId, withRequestId } from './logger.js';
 import { recordActivity, loadActivityTail, type ActivityEvent } from './activity-log.js';
@@ -72,27 +74,62 @@ function pendingSummary(doc: any): string {
 const clients = new Set<WebSocket>();
 let currentAgentConnected = false;
 
-// Per-tab view. Each tab shows its own document; the server holds one live
-// in-memory doc (the active doc). `attached` is the set of tabs showing that
-// live doc — only they receive its edits and only they may write to it. A tab
-// that navigates takes the live doc for itself; tabs that were attached are
-// told they are detached instead of being moved. adr: adr/per-tab-view.md
-const attached = new Set<WebSocket>();
+// Per-tab view. Each tab shows its own document and can edit it at any time.
+// The server holds one live in-memory doc (the active doc); a tab's write
+// makes that tab's doc live first. Every change to a doc goes to every tab
+// showing it, so no tab works from an old copy. adr: adr/per-tab-view.md
+const views = new Map<WebSocket, string>();
 const tabSockets = new Map<string, WebSocket>();
-// The active filename as last delivered to attached tabs.
-let attachedFilename = '';
+// The live doc as last delivered to tabs: the doc a 'viewers' switch moves them from.
+let liveKey = '';
+
+// Per-doc revision: bumped when a tab changes a doc or an agent writes a doc
+// that is not live. A tab's write names the revision it was built on; if
+// someone else changed the doc since, the write is refused and the tab gets
+// the latest copy. Seeded from the clock so a restart never repeats one.
+let revCounter = Date.now();
+const revs = new Map<string, { rev: number; by: WebSocket | null }>();
+function bumpRev(key: string, by: WebSocket | null): number {
+  const rev = ++revCounter;
+  revs.set(key, { rev, by });
+  return rev;
+}
+
+function viewersOf(key: string): WebSocket[] {
+  const out: WebSocket[] = [];
+  for (const [ws, k] of views) if (k === key) out.push(ws);
+  return out;
+}
 
 /** Messages about the live doc's content go only to the tabs showing it. */
 function sendToAttached(msg: string): void {
-  for (const ws of attached) {
+  for (const ws of viewersOf(getActiveFilename())) {
     if (ws.readyState === WebSocket.OPEN) ws.send(msg);
   }
 }
 
+/** The live doc as a document-switched message for tabs already showing it. */
+function liveDocRefresh(): string {
+  const fp = getFilePath();
+  const filename = fp ? fp.split(/[/\\]/).pop() || '' : '';
+  return JSON.stringify({ ...buildDocumentSwitchedPayload(getDocument(), getTitle(), filename, getMetadata()), navigation: 'refresh' });
+}
+
+/** A tab changed the live doc: record it, and give the other tabs showing
+ *  that doc the new copy. */
+function afterTabWrite(by: WebSocket): void {
+  const key = getActiveFilename();
+  bumpRev(key, by);
+  const others = viewersOf(key).filter((t) => t !== by && t.readyState === WebSocket.OPEN);
+  if (others.length === 0) return;
+  const msg = liveDocRefresh();
+  for (const t of others) t.send(msg);
+}
+
 /** Who follows a document-switched:
- *  - 'viewers': the attached tabs (refresh, rename, or fallback when the live doc is deleted).
+ *  - 'viewers': the tabs showing the live doc (refresh, rename, or fallback when the live doc is deleted).
  *  - 'all': every tab (explicit "show the user": switch_document, open_file, profile switch).
- *  - { tab }: only the tab that navigated (its socket or its tab id); other attached tabs detach. */
+ *  - { tab }: only the tab that navigated (its socket or its tab id). */
 export type SwitchAudience = 'viewers' | 'all' | { tab: WebSocket | string | undefined };
 
 // Debounced auto-save lives in state.ts now — one timer for the whole process.
@@ -131,6 +168,7 @@ function buildDocumentSwitchedPayload(
   metadata: Record<string, any>;
   pendingMetadata: { title?: { from: string; to: string } } | null;
   version: number;
+  rev: number;
 } {
   const docId = getDocId();
   const pendingTitle = docId ? getPendingTitle(docId) : null;
@@ -151,6 +189,8 @@ function buildDocumentSwitchedPayload(
     // subsequent edit gets BLOCKED by isVersionCurrent, silently dropping
     // text typed during the rename. Mirrors the document-reloaded path.
     version: getDocVersion(),
+    // The revision the tab's next write must be built on. adr: adr/per-tab-view.md
+    rev: revs.get(getActiveFilename())?.rev ?? 0,
   };
 }
 
@@ -247,6 +287,33 @@ export function setupWebSocket(server: Server): void {
     broadcastPendingDocsChanged();
   });
 
+  // An agent wrote a doc that is not live: the tabs showing it get the new
+  // copy, and its revision moves so a tab still holding the old one cannot
+  // save over it. adr: adr/per-tab-view.md
+  onDocFileWritten((written: string) => {
+    const key = canonicalizeIdentifier(written);
+    if (key === getActiveFilename()) return;
+    const rev = bumpRev(key, null);
+    const tabs = viewersOf(key).filter((t) => t.readyState === WebSocket.OPEN);
+    if (tabs.length === 0) return;
+    let loaded: ReturnType<typeof loadDocFromDisk>;
+    try { loaded = loadDocFromDisk(key); } catch { return; }
+    const pendingTitle = loaded.docId ? getPendingTitle(loaded.docId) : null;
+    const msg = JSON.stringify({
+      type: 'document-switched',
+      document: loaded.document,
+      title: loaded.title,
+      filename: key,
+      docId: loaded.docId,
+      metadata: loaded.metadata,
+      pendingMetadata: pendingTitle ? { title: { from: pendingTitle.from, to: pendingTitle.to } } : null,
+      version: 0,
+      rev,
+      navigation: 'refresh',
+    });
+    for (const t of tabs) t.send(msg);
+  });
+
   // Legacy: surface external-write conflicts when writeToDisk's mtime
   // guard fires. With the active-doc watcher in place, the watcher should
   // reload before any save races, but the guard remains as a backstop —
@@ -296,40 +363,27 @@ export function setupWebSocket(server: Server): void {
       ws.send(JSON.stringify({ type: 'sync-status', ...lastSyncStatus }));
     }
 
-    // A fresh page, or a reconnecting tab that shows the live doc, gets the
-    // authoritative server state and attaches. A reconnecting tab that shows
-    // some other doc keeps it and is told it is detached — reconnecting never
-    // moves a tab. adr: adr/per-tab-view.md
+    // A tab gets the doc it is showing: a reconnecting tab names it (?view=),
+    // a fresh page on a doc link names it (?open=<docId>), and any other fresh
+    // page shows the live doc. Serving a doc makes it live; other tabs are
+    // unaffected. A switch sent after load would race the socket opening and
+    // be lost, which is why the link travels in the handshake.
+    // adr: adr/per-tab-view.md
+    const open = !view ? query.get('open') : null;
+    let wanted = view ? canonicalizeIdentifier(view) : '';
+    if (open) {
+      try { wanted = resolveDocId(open); } catch { /* unknown doc: show the live one */ }
+    }
+    if (wanted && canonicalizeIdentifier(wanted) !== getActiveFilename()) {
+      try { switchDocument(wanted); } catch (err: any) { console.error('[WS] Open on connect failed:', err.message); }
+    }
     const filePath = getFilePath();
     const filename = filePath ? filePath.split(/[/\\]/).pop() || '' : '';
-    // A fresh page opened on a doc link (?open=<docId>) names its doc in the
-    // handshake. Opening it here is this tab's own navigation; a switch sent
-    // after load would race the socket opening and be lost.
-    const open = !view ? query.get('open') : null;
-    let openFilename = '';
-    if (open) {
-      try { openFilename = resolveDocId(open); } catch { /* unknown doc: show the live one */ }
-    }
-    if (view && view !== filename) {
-      ws.send(JSON.stringify({ type: 'view-detached', activeFilename: filename }));
-    } else if (openFilename && openFilename !== filename) {
-      try {
-        const result = switchDocument(openFilename);
-        broadcastDocumentSwitched(result.document, result.title, result.filename, undefined, 'open', { tab: ws });
-      } catch (err: any) {
-        console.error('[WS] Open on connect failed:', err.message);
-        ws.send(JSON.stringify(buildDocumentSwitchedPayload(getDocument(), getTitle(), filename, getMetadata())));
-        attached.add(ws);
-        attachedFilename = filename;
-      }
-    } else {
-      const docOnConnect = getDocument();
-      const pendingOnConnect = pendingSummary(docOnConnect);
-      diagLog(`[WS] document-switched SEND on-connect docId=${getDocId()} v=${getDocVersion()} pending=[${pendingOnConnect}]`);
-      ws.send(JSON.stringify(buildDocumentSwitchedPayload(docOnConnect, getTitle(), filename, getMetadata())));
-      attached.add(ws);
-      attachedFilename = filename;
-    }
+    const docOnConnect = getDocument();
+    diagLog(`[WS] document-switched SEND on-connect docId=${getDocId()} v=${getDocVersion()} pending=[${pendingSummary(docOnConnect)}]`);
+    ws.send(JSON.stringify({ ...buildDocumentSwitchedPayload(docOnConnect, getTitle(), filename, getMetadata()), navigation: 'open' }));
+    views.set(ws, getActiveFilename());
+    liveKey = getActiveFilename();
 
     // Send pending docs info on connect
     ws.send(JSON.stringify({
@@ -372,14 +426,31 @@ export function setupWebSocket(server: Server): void {
      *  scope above. Returns void. */
     async function handleMessage(msg: any): Promise<void> {
       try {
-        // Only attached tabs write the live doc. A detached tab's copy of it
-        // missed every edit since it detached. adr: adr/per-tab-view.md
-        if (!attached.has(ws) && (msg.type === 'doc-update' || msg.type === 'pending-resolved' || msg.type === 'title-update')) {
-          const target = msg.filename ? canonicalizeIdentifier(msg.filename) : getActiveFilename();
-          if (msg.type === 'title-update' || target === getActiveFilename()) {
-            diagLog(`[WS] ${msg.type} DROPPED from detached tab filename=${target}`);
+        // A tab's write applies to the doc that tab shows (the server's own
+        // record, not the tab's spelling of it), made live first if needed.
+        // A write built on a revision someone else has since replaced is
+        // refused, and the tab gets the latest copy instead: an old copy must
+        // never overwrite newer work. adr: adr/per-tab-view.md
+        if (msg.type === 'doc-update' || msg.type === 'pending-resolved' || msg.type === 'title-update') {
+          const target = views.get(ws) ?? getActiveFilename();
+          const cur = revs.get(target);
+          const stale = !!cur && typeof msg.rev === 'number' && msg.rev !== cur.rev && cur.by !== ws;
+          if (target !== getActiveFilename()) {
+            try { switchDocument(target); } catch (err: any) {
+              console.error(`[WS] ${msg.type} for ${target} failed to open it:`, err.message);
+              return;
+            }
+            liveKey = getActiveFilename();
+          }
+          if (stale) {
+            diagLog(`[WS] ${msg.type} REFUSED stale rev=${msg.rev} current=${cur!.rev} filename=${target}`);
+            if (ws.readyState === WebSocket.OPEN) {
+              ws.send(liveDocRefresh());
+              ws.send(JSON.stringify({ type: 'toast', message: 'This document changed in another tab or by an agent. You are now seeing the latest version; your last change here was not saved.', kind: 'error', durationMs: 9000 }));
+            }
             return;
           }
+          if (msg.filename) msg.filename = getActiveFilename();
         }
 
         if (msg.type === 'doc-update' && msg.document) {
@@ -411,6 +482,7 @@ export function setupWebSocket(server: Server): void {
             diagLog(`[WS] doc-update SYNC-MERGED stale v${browserVersion}→v${serverVersion} preservedServerEntries=${result.preservedServerEntries}`);
             updatePendingCacheForActiveDoc();
             debouncedSave('human');
+            afterTabWrite(ws);
           } else if (browserFilename && browserFilename !== getActiveFilename()) {
             // Browser sent a doc-update for a different document (race: server switched away).
             // Save directly to that file on disk instead of corrupting the active doc.
@@ -436,6 +508,7 @@ export function setupWebSocket(server: Server): void {
             updateDocument(msg.document);
             updatePendingCacheForActiveDoc(); // Keep cache in sync after browser edits/reject-all
             debouncedSave('human');
+            afterTabWrite(ws);
           }
         }
 
@@ -444,8 +517,7 @@ export function setupWebSocket(server: Server): void {
           const filePath = getFilePath();
           const filename = filePath ? filePath.split(/[/\\]/).pop() || '' : '';
           ws.send(JSON.stringify(buildDocumentSwitchedPayload(getDocument(), getTitle(), filename, getMetadata())));
-          attached.add(ws);
-          attachedFilename = filename;
+          views.set(ws, getActiveFilename());
         }
 
         if (msg.type === 'title-update' && msg.title) {
@@ -636,6 +708,7 @@ export function setupWebSocket(server: Server): void {
             if (action === 'accept') unmarkAgentStub(resolvedFilename);
             stripPendingAttrsFromFile(resolvedFilename, action === 'accept');
           }
+          afterTabWrite(ws);
           broadcastPendingDocsChanged();
         }
 
@@ -646,7 +719,7 @@ export function setupWebSocket(server: Server): void {
 
     ws.on('close', () => {
       clients.delete(ws);
-      attached.delete(ws);
+      views.delete(ws);
       if (tabId && tabSockets.get(tabId) === ws) tabSockets.delete(tabId);
       console.log(`[WS] Client disconnected (total: ${clients.size})`);
     });
@@ -657,38 +730,17 @@ export function broadcastDocumentSwitched(document: any, title: string, filename
   const resolvedMeta = metadata ?? getMetadata();
   // adr: adr/sidebar-navigation-intent.md
   const msg = JSON.stringify({ ...buildDocumentSwitchedPayload(document, title, filename, resolvedMeta), navigation });
+  // Only the recipients change view; every other tab keeps showing its doc.
   // adr: adr/per-tab-view.md
-  let recipients: Iterable<WebSocket>;
-  if (audience === 'all') {
-    recipients = clients;
-    attached.clear();
-    for (const ws of clients) attached.add(ws);
-  } else if (audience === 'viewers') {
-    recipients = attached;
-  } else {
-    const tab = typeof audience.tab === 'string' ? tabSockets.get(audience.tab) : audience.tab;
-    if (!tab) {
-      // No live tab to navigate (plugin or agent HTTP call): the tabs showing
-      // the live doc follow it, as before.
-      recipients = attached;
-    } else {
-      recipients = [tab];
-      // Tabs showing a different doc than the one just taken are detached,
-      // not moved. Tabs already on the same doc stay attached.
-      if (filename !== attachedFilename) {
-        const detachMsg = JSON.stringify({ type: 'view-detached', activeFilename: filename });
-        for (const ws of attached) {
-          if (ws !== tab && ws.readyState === WebSocket.OPEN) ws.send(detachMsg);
-        }
-        attached.clear();
-      }
-      attached.add(tab);
-    }
-  }
+  const tab = typeof audience === 'object' ? (typeof audience.tab === 'string' ? tabSockets.get(audience.tab) : audience.tab) : undefined;
+  // No live tab to navigate (plugin or agent HTTP call): the live doc's viewers follow it.
+  const recipients: WebSocket[] = audience === 'all' ? [...clients] : tab ? [tab] : viewersOf(liveKey);
+  const live = getActiveFilename();
   for (const ws of recipients) {
+    views.set(ws, live);
     if (ws.readyState === WebSocket.OPEN) ws.send(msg);
   }
-  attachedFilename = filename;
+  liveKey = live;
 }
 
 export function broadcastMetadataChanged(metadata: Record<string, any>): void {

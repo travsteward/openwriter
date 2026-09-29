@@ -34,3 +34,7 @@ Creation carries explicit intent for foreground caret focus and always refreshes
 ### 2026-09-28 — navigation moves only the tab that navigated
 
 `document-switched` now carries an audience as well as an intent. A tab's own open moves only that tab, and other tabs are detached instead of moved. The deletion fallback still moves the tabs showing the deleted live doc. See adr/per-tab-view.md.
+
+### 2026-09-29 — `refresh` is not navigation
+
+Background pushes of a doc another tab or an agent changed arrive as `document-switched` with navigation `refresh`. The client updates content and revision but dispatches no navigation event, so the tab does not scroll or reveal. See adr/per-tab-view.md.

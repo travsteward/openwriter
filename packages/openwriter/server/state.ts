@@ -414,6 +414,26 @@ export function onAutoTitleApplied(listener: AutoTitleAppliedListener): () => vo
   return () => autoTitleAppliedListeners.delete(listener);
 }
 
+/**
+ * Listener for writes to a doc file that bypass the live doc (agent writes
+ * to a doc that is not active, accept/reject on one). Subscribers (ws.ts)
+ * send the new content to the tabs showing that doc. adr: adr/per-tab-view.md
+ */
+type DocFileWrittenListener = (filename: string) => void;
+const docFileWrittenListeners: Set<DocFileWrittenListener> = new Set();
+
+export function onDocFileWritten(listener: DocFileWrittenListener): () => void {
+  docFileWrittenListeners.add(listener);
+  return () => docFileWrittenListeners.delete(listener);
+}
+
+function notifyDocFileWritten(filename: string): void {
+  for (const listener of docFileWrittenListeners) {
+    try { listener(filename); }
+    catch (err) { console.error('[State] doc-file-written listener threw:', err); }
+  }
+}
+
 function notifyAutoTitleApplied(newTitle: string): void {
   for (const listener of autoTitleAppliedListeners) {
     try { listener(newTitle); }
@@ -3286,6 +3306,7 @@ export function stripPendingAttrsFromFile(filename: string, _legacyClearAgentCre
     const docId = (parsed.metadata && typeof parsed.metadata.docId === 'string') ? parsed.metadata.docId : '';
     if (docId) deleteOverlay(docId);
     removePendingCacheEntry(filename);
+    notifyDocFileWritten(filename);
   } catch { /* best-effort */ }
 }
 
@@ -3374,6 +3395,7 @@ function flushDocToFile(filename: string, doc: PadDocument, title: string, metad
   // computed inverse cache must drop. Mirrors the active-doc invalidate at the
   // tail of writeToDisk.
   invalidateBacklinksCache();
+  notifyDocFileWritten(filename);
 }
 
 export function populateDocumentFile(filename: string, doc: PadDocument): { title: string; wordCount: number; pendingCount: number } {

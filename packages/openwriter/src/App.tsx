@@ -1,7 +1,6 @@
 import { useFocusMode } from './hooks/useFocusMode';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { Editor } from '@tiptap/react';
-import { Plugin, PluginKey } from '@tiptap/pm/state';
 
 import PadEditor from './editor/PadEditor';
 import FormatToolbar from './editor/FormatToolbar';
@@ -398,19 +397,20 @@ export default function App() {
     // resetting the baseline here would strand keystrokes typed during the
     // rename window. Only the filename/title/metadata actually changed.
     const isSilentRename = isSameDoc && !wasEmpty && payload.filename !== prevFilename;
-    // Reconnecting to the same doc while this tab holds edits it could not
-    // send. If nobody changed the doc meanwhile, the tab's copy is newer:
-    // keep it and send it now. Otherwise the server's copy wins, and the user
-    // is told rather than losing the edits silently.
-    const hasUnsent = isSameDoc && !wasEmpty && !!payload.onReconnect
+    // A newer copy of this doc arrived (reconnect, or a change made in another
+    // tab or by an agent) while this tab holds edits it has not sent. On a
+    // reconnect with the doc unchanged, the tab's copy is newer: keep it and
+    // send it now. Otherwise the newer copy wins, and the user is told rather
+    // than losing the edits silently. adr: adr/per-tab-view.md
+    const hasUnsent = isSameDoc && !wasEmpty && (!!payload.onReconnect || payload.navigation === 'refresh')
       && lastDocJson.current != null && JSON.stringify(lastDocJson.current) !== lastSentDocJson.current;
     // Proof of "unchanged" is the server's copy matching what this tab last
     // sent. Versions cannot prove it: a server restart resets them while the
     // file may have changed on disk.
-    const keepUnsent = hasUnsent && lastSentDocJson.current != null
+    const keepUnsent = hasUnsent && !!payload.onReconnect && lastSentDocJson.current != null
       && docKey(payload.document) === docKey(JSON.parse(lastSentDocJson.current));
     if (hasUnsent && !keepUnsent) {
-      showToast('This document changed while you were disconnected, so your last edits could not be saved.', 'error', 9000);
+      showToast('This document changed elsewhere, so your last edits here could not be saved.', 'error', 9000);
     }
     const keepContent = isSilentRename || keepUnsent;
     if (!isSameDoc) setReloadNotice(null);
@@ -589,7 +589,7 @@ export default function App() {
     setSidebarRefreshKey((k) => k + 1);
   }, []);
 
-  const { connected, sendMessage, docVersionRef, detached, detachedRef } = useWebSocket({
+  const { connected, sendMessage, docVersionRef } = useWebSocket({
     onNodeChanges: (changes) => {
       const editors = allEditorsRef.current;
       if (editors.length <= 1) {
@@ -668,33 +668,6 @@ export default function App() {
     },
     getViewFilename: () => currentFilename.current,
   });
-
-  // A detached tab's copy of the doc is frozen: no change to it could ever be
-  // saved. Read-only stops typing; the filter also stops programmatic changes
-  // (Accept all, Reject, focus-mode review) that would otherwise look applied.
-  // It reads the ref, which flips before the server's content arrives on
-  // "Edit here". adr: adr/per-tab-view.md
-  useEffect(() => {
-    const editors = (allEditorsRef.current.length > 0 ? allEditorsRef.current : [editorRef.current])
-      .filter((e): e is Editor => !!e && !e.isDestroyed);
-    for (const editor of editors) editor.setEditable(!detached);
-    if (!detached) return;
-    const key = new PluginKey('detachedReadOnly');
-    let warnedAt = 0;
-    const plugin = new Plugin({
-      key,
-      filterTransaction: (tr) => {
-        if (!tr.docChanged || !detachedRef.current) return true;
-        if (Date.now() - warnedAt > 3000) {
-          warnedAt = Date.now();
-          showToast('This document is open in another tab. Click "Edit here" to make changes in this tab.', 'error', 6000);
-        }
-        return false;
-      },
-    });
-    for (const editor of editors) editor.registerPlugin(plugin);
-    return () => { for (const editor of editors) if (!editor.isDestroyed) editor.unregisterPlugin(key); };
-  }, [detached, detachedRef]);
 
   // Flush current editor content to server synchronously before switching/creating docs.
   // Only sends doc-update (no explicit save) — switchDocument/createDocument call save() internally.
@@ -1179,16 +1152,6 @@ export default function App() {
         />
       )}
       <div className="app-main">
-        {detached && (
-          // Another tab took the live doc. This tab keeps its view but is
-          // read-only until the user takes the doc back. adr: adr/per-tab-view.md
-          <div className="view-detached-banner" role="status">
-            <span>This document is open in another tab. Edits here are paused.</span>
-            <button type="button" onClick={() => sendMessage({ type: 'switch-document', filename: currentFilename.current })}>
-              Edit here
-            </button>
-          </div>
-        )}
         <Titlebar
           title={title}
           onTitleChange={handleTitleChange}
