@@ -2840,9 +2840,6 @@ export function load(): void {
   // Subscribe the active-doc watcher so external writes route through the
   // unified reload pathway. adr: adr/active-doc-watcher.md
   startActiveDocWatcher();
-
-  // Startup lock: block browser doc-updates briefly to prevent stale reconnect pushes
-  setAgentLockGlobal();
 }
 
 /** Migrate legacy .sw.json files to .md format */

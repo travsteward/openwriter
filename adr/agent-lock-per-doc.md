@@ -46,8 +46,8 @@ A write to Document B no longer blocks saves for Document A.
   `state.filePath`). Used when the caller is mutating via
   `updateDocument`/`applyChanges` rather than an explicit filename.
 - `setAgentLockGlobal()` locks every document for one TTL window.
-  Used only at server init so a reconnecting browser can't push state
-  it captured before the restart. Never called from MCP tool paths.
+  Used only as the empty-filename fallback. Never called from MCP tool
+  paths, and not at server init (see 2026-09-29).
 - `isAgentLocked(filename)` returns true if either the global lock is
   active OR the per-doc lock for `filename` is active.
 - Lock TTL: 3000ms. Each new write to the same doc resets the doc's
@@ -80,3 +80,15 @@ A write to Document B no longer blocks saves for Document A.
   user's saves to the same doc the agent is writing to are still
   blocked. A real merge/CRDT story is a separate decision, tracked
   outside this ADR.
+
+### 2026-09-29 — no startup lock
+
+The server used to lock every doc for 3s at startup so a reconnecting tab
+could not push a copy from before the restart. That dropped the one push
+that matters: edits typed while the server was down, resent on reconnect.
+The server logged the drop and told no one, so the tab believed it had
+saved. The browser now owns this decision (adr/per-tab-view.md, same
+date): on reconnect it resends its copy only when the server's copy is
+exactly what the tab last sent, and otherwise takes the server's copy and
+warns the user. The startup call is removed; `setAgentLockGlobal` remains
+only as the empty-filename fallback.

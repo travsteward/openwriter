@@ -1265,3 +1265,11 @@ with one scan of `_pending/`. This relies on the existing write pattern: the
 sidecar is rewritten only alongside a canonical save or a real pending change
 (the startup repair rewrites only corrupted files). The client refreshes the
 listing on `pending-docs-changed` so the new order appears live.
+
+### 2026-09-29 — review actions survive a dropped connection
+Accepting or rejecting during a brief disconnect used to vanish: the final
+`pending-resolved` was dropped by the closed socket, and the reconnect then
+replaced the editor with the server's copy, restoring every decided change.
+Now `pending-resolved` is queued and replayed after reconnect, and the
+per-change accepts, which travel as `doc-update`, are kept and resent when the
+server's copy is unchanged. See adr/per-tab-view.md (same date).

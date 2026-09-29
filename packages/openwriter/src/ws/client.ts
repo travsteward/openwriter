@@ -10,6 +10,7 @@ export const TAB_HEADER = { 'X-OW-Tab': TAB_ID };
 // Messages that write the server's live doc. A detached tab never sends them:
 // its copy of that doc missed every edit since it detached.
 const LIVE_DOC_WRITES = new Set(['doc-update', 'pending-resolved', 'title-update']);
+const NAVIGATIONS = new Set(['switch-document', 'create-document']);
 
 export interface NodeChange {
   operation: 'rewrite' | 'insert' | 'delete';
@@ -30,6 +31,9 @@ interface WebSocketMessage {
 
 export interface DocumentSwitchedPayload {
   navigation?: 'open' | 'fallback' | 'create';
+  /** First document after a reconnect: edits this tab could not send may
+   *  still be sent if the server's copy is unchanged. */
+  onReconnect?: boolean;
   document: any;
   title: string;
   filename: string;
@@ -113,6 +117,12 @@ interface UseWebSocketOptions {
 export function useWebSocket({ onNodeChanges, onAgentStatus, onDocumentSwitched, onDocumentReloaded, onDocumentsChanged, onWorkspacesChanged, onTitleChanged, onPendingDocsChanged, onMetadataChanged, onSyncStatus, onWritingStarted, onWritingFinished, onIdRewrites, onPendingFilenamesChanged, getEditorState, getViewFilename }: UseWebSocketOptions) {
   const wsRef = useRef<WebSocket | null>(null);
   const [connected, setConnected] = useState(false);
+  // Messages sent while the socket was closed, replayed once the server has
+  // told this tab what it shows. Edits are not queued: the app re-sends its
+  // unsent doc on reconnect, where it can check nobody else changed it.
+  const outboxRef = useRef<Record<string, any>[]>([]);
+  // True from a reconnect until the server's first document reaches this tab.
+  const reconnectingRef = useRef(false);
   // True while another tab holds this tab's doc live (or this tab shows a doc
   // that is no longer live). The editor is read-only until the user takes the
   // doc back. adr: adr/per-tab-view.md
@@ -180,6 +190,7 @@ export function useWebSocket({ onNodeChanges, onAgentStatus, onDocumentSwitched,
       ws.onopen = () => {
         setConnected(true);
         backoff = 1000; // Reset backoff on successful connect
+        reconnectingRef.current = hasConnectedBefore;
         hasConnectedBefore = true;
       };
 
@@ -218,6 +229,8 @@ export function useWebSocket({ onNodeChanges, onAgentStatus, onDocumentSwitched,
           if (msg.type === 'view-detached') {
             detachedRef.current = true;
             setDetached(true);
+            reconnectingRef.current = false;
+            flushOutbox();
           }
 
           if (msg.type === 'document-switched') {
@@ -235,8 +248,11 @@ export function useWebSocket({ onNodeChanges, onAgentStatus, onDocumentSwitched,
             // this same message without a server-side reset — the server is at
             // N+1, and adopting it keeps subsequent edits from being BLOCKED as
             // stale (which would drop text typed during the rename).
+            const onReconnect = reconnectingRef.current;
+            reconnectingRef.current = false;
             docVersionRef.current = typeof msg.version === 'number' ? msg.version : 0;
             onDocumentSwitchedRef.current?.({
+              onReconnect,
               navigation: msg.navigation ?? 'open',
               document: msg.document,
               title: msg.title,
@@ -250,6 +266,7 @@ export function useWebSocket({ onNodeChanges, onAgentStatus, onDocumentSwitched,
             window.dispatchEvent(new CustomEvent('ow-pending-metadata-changed', {
               detail: { docId: msg.docId, pendingMetadata: msg.pendingMetadata ?? null },
             }));
+            flushOutbox();
           }
 
           if (msg.type === 'pending-metadata-changed') {
@@ -418,12 +435,27 @@ export function useWebSocket({ onNodeChanges, onAgentStatus, onDocumentSwitched,
     };
   }, []); // Stable — no deps, callbacks via refs
 
-  const sendMessage = useCallback((msg: Record<string, any>) => {
-    if (detachedRef.current && LIVE_DOC_WRITES.has(msg.type)) return;
+  /** Returns true only when the message went out. A message sent while the
+   *  socket is closed waits in the outbox, except edits (see outboxRef). */
+  const sendMessage = useCallback((msg: Record<string, any>): boolean => {
+    if (detachedRef.current && LIVE_DOC_WRITES.has(msg.type)) return false;
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify(msg));
+      return true;
     }
+    if (msg.type !== 'doc-update') {
+      // Only the latest navigation matters.
+      if (NAVIGATIONS.has(msg.type)) outboxRef.current = outboxRef.current.filter((m) => !NAVIGATIONS.has(m.type));
+      outboxRef.current.push(msg);
+    }
+    return false;
   }, []);
+
+  function flushOutbox() {
+    const queued = outboxRef.current;
+    outboxRef.current = [];
+    for (const msg of queued) sendMessage(msg);
+  }
 
   return { connected, sendMessage, docVersionRef, detached };
 }

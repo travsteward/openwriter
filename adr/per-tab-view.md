@@ -76,3 +76,16 @@ resolves it and opens that doc with audience `{ tab }`, the same as the tab's
 own `switch-document`: other attached tabs are detached, not moved. Reconnects
 still carry `?view=` and never use `open`. An unknown docId falls back to the
 live doc. The mount effect keeps only the scroll target and sidebar reveal.
+
+### 2026-09-29 — nothing sent while disconnected is silently lost
+`sendMessage` dropped every message sent while the socket was closed. Now it
+reports whether a message went out, and queues the rest: navigations (only the
+latest is kept) and review actions like `pending-resolved` are replayed after
+the server's first message on the new connection, `document-switched` or
+`view-detached`, so they reach the right view. `doc-update` is never queued,
+because it is a full snapshot and a stale one could overwrite newer work.
+Instead the tab keeps its unsent edits across the reconnect when the server's
+copy equals what the tab last sent (compared without the editor's null
+attributes), resends them at once, and otherwise takes the server's copy and
+shows a warning. The diff baseline only advances when a send succeeded. This
+needed the server's startup lock removed (adr/agent-lock-per-doc.md).

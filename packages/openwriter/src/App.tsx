@@ -12,7 +12,8 @@ import Sidebar, { SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH, SIDEBAR_DEFAULT_WIDTH } 
 import { useRightRail } from './right-rail/RightRailContext';
 import RightRail from './right-rail/RightRail';
 import SyncSetupModal from './sync/SyncSetupModal';
-import { useWebSocket, type PendingDocsPayload, type SyncStatus } from './ws/client';
+import { useWebSocket, type PendingDocsPayload, type SyncStatus, type DocumentSwitchedPayload } from './ws/client';
+import { showToast } from './utils/toast';
 import { applyNodeChangesToEditor, applyIdRewritesToEditor } from './decorations/bridge';
 import { setCommentsData, forceCommentRefresh } from './decorations/comments-plugin';
 import { setBacklinksData, forceBacklinkRefresh } from './decorations/backlinks-plugin';
@@ -38,6 +39,14 @@ const OVERLAY_HYSTERESIS = 48;
 /** A {} context blob is truthy but meaningless — require at least one real key. */
 function hasCtx(ctx: any): boolean {
   return ctx != null && typeof ctx === 'object' && Object.keys(ctx).length > 0;
+}
+
+/** A doc as comparable text: the editor fills unset attributes with null and
+ *  the server leaves them out, so nulls are dropped and keys sorted. */
+function docKey(doc: any): string {
+  return JSON.stringify(doc, (_k, v) => v === null ? undefined
+    : v && typeof v === 'object' && !Array.isArray(v)
+      ? Object.fromEntries(Object.keys(v).sort().map(k => [k, v[k]])) : v);
 }
 
 /**
@@ -363,7 +372,7 @@ export default function App() {
     }
   }, []);
 
-  const handleDocumentSwitched = useCallback((payload: { document: any; title: string; filename: string; docId?: string; metadata?: Record<string, any>; navigation?: 'open' | 'fallback' | 'create'; pendingMetadata?: { title?: { from: string; to: string } } | null }) => {
+  const handleDocumentSwitched = useCallback((payload: DocumentSwitchedPayload) => {
     const tReceive = performance.now();
     const ls = (window as any).__lastSwitch;
     if (ls && ls.filename === payload.filename) {
@@ -388,9 +397,24 @@ export default function App() {
     // resetting the baseline here would strand keystrokes typed during the
     // rename window. Only the filename/title/metadata actually changed.
     const isSilentRename = isSameDoc && !wasEmpty && payload.filename !== prevFilename;
+    // Reconnecting to the same doc while this tab holds edits it could not
+    // send. If nobody changed the doc meanwhile, the tab's copy is newer:
+    // keep it and send it now. Otherwise the server's copy wins, and the user
+    // is told rather than losing the edits silently.
+    const hasUnsent = isSameDoc && !wasEmpty && !!payload.onReconnect
+      && lastDocJson.current != null && JSON.stringify(lastDocJson.current) !== lastSentDocJson.current;
+    // Proof of "unchanged" is the server's copy matching what this tab last
+    // sent. Versions cannot prove it: a server restart resets them while the
+    // file may have changed on disk.
+    const keepUnsent = hasUnsent && lastSentDocJson.current != null
+      && docKey(payload.document) === docKey(JSON.parse(lastSentDocJson.current));
+    if (hasUnsent && !keepUnsent) {
+      showToast('This document changed while you were disconnected, so your last edits could not be saved.', 'error', 9000);
+    }
+    const keepContent = isSilentRename || keepUnsent;
     if (!isSameDoc) setReloadNotice(null);
     if (!isSameDoc) focusCreatedDoc.current = payload.navigation === 'create' && document.hasFocus();
-    if (!isSilentRename) {
+    if (!keepContent) {
       // Cancel any pending debounced doc-update — the server just sent
       // authoritative state, so a stale closure from a prior edit must not
       // overwrite it.
@@ -405,7 +429,13 @@ export default function App() {
     currentFilename.current = payload.filename;
     currentDocId.current = payload.docId ?? '';
     setActiveFilename(payload.filename);
-    if (!isSilentRename) setInitialContent(payload.document);
+    if (!keepContent) setInitialContent(payload.document);
+    if (keepUnsent) {
+      const docStr = JSON.stringify(lastDocJson.current);
+      if (sendMessage({ type: 'doc-update', document: lastDocJson.current, filename: payload.filename, version: docVersionRef.current })) {
+        lastSentDocJson.current = docStr;
+      }
+    }
     setTitle(payload.title);
     setMetadata(payload.metadata || {});
     // Adopt pending title (or clear it) on every switch — the server's
@@ -662,8 +692,9 @@ export default function App() {
     // before switch_document does its own save.
     const docStr = JSON.stringify(doc);
     if (docStr === lastSentDocJson.current) return;
-    sendMessage({ type: 'doc-update', document: doc, filename: currentFilename.current, version: docVersionRef.current });
-    lastSentDocJson.current = docStr;
+    if (sendMessage({ type: 'doc-update', document: doc, filename: currentFilename.current, version: docVersionRef.current })) {
+      lastSentDocJson.current = docStr;
+    }
   }, [sendMessage, docVersionRef]);
 
   // Sync editor content to server via HTTP — guarantees server state is current before MCP calls.
@@ -1077,8 +1108,9 @@ export default function App() {
       // already resolved, or burn save cycles on docs that haven't changed.
       const freshStr = JSON.stringify(fresh);
       if (freshStr === lastSentDocJson.current) return;
-      sendMessage({ type: 'doc-update', document: fresh, filename: currentFilename.current, version: docVersionRef.current });
-      lastSentDocJson.current = freshStr;
+      if (sendMessage({ type: 'doc-update', document: fresh, filename: currentFilename.current, version: docVersionRef.current })) {
+        lastSentDocJson.current = freshStr;
+      }
     }, 1000);
   }, [sendMessage, docVersionRef]);
 
