@@ -89,3 +89,14 @@ copy equals what the tab last sent (compared without the editor's null
 attributes), resends them at once, and otherwise takes the server's copy and
 shows a warning. The diff baseline only advances when a send succeeded. This
 needed the server's startup lock removed (adr/agent-lock-per-doc.md).
+
+### 2026-09-29 — a detached tab refuses changes instead of faking them
+Read-only mode only stops typing. Accept all, Reject and focus-mode review
+change the editor by command, so in a detached tab they still rewrote the
+page, while every save was dropped because the tab is detached. The user saw
+21 rewrites accepted; none reached the server. Seen live: a doc link opened in
+a new tab took the live doc, detaching the review tab. A detached tab now
+refuses every document change and shows "Click Edit here", checked against
+the same flag that drops the saves, so the page can never show work that is
+not saved. The flag clears before the server's copy arrives on "Edit here",
+so re-attaching is unaffected.

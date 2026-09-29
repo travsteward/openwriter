@@ -457,5 +457,5 @@ export function useWebSocket({ onNodeChanges, onAgentStatus, onDocumentSwitched,
     for (const msg of queued) sendMessage(msg);
   }
 
-  return { connected, sendMessage, docVersionRef, detached };
+  return { connected, sendMessage, docVersionRef, detached, detachedRef };
 }

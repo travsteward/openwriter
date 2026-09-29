@@ -1,6 +1,7 @@
 import { useFocusMode } from './hooks/useFocusMode';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { Editor } from '@tiptap/react';
+import { Plugin, PluginKey } from '@tiptap/pm/state';
 
 import PadEditor from './editor/PadEditor';
 import FormatToolbar from './editor/FormatToolbar';
@@ -588,7 +589,7 @@ export default function App() {
     setSidebarRefreshKey((k) => k + 1);
   }, []);
 
-  const { connected, sendMessage, docVersionRef, detached } = useWebSocket({
+  const { connected, sendMessage, docVersionRef, detached, detachedRef } = useWebSocket({
     onNodeChanges: (changes) => {
       const editors = allEditorsRef.current;
       if (editors.length <= 1) {
@@ -668,14 +669,32 @@ export default function App() {
     getViewFilename: () => currentFilename.current,
   });
 
-  // A detached tab's copy of the doc is frozen: typing into it could never be
-  // saved. adr: adr/per-tab-view.md
+  // A detached tab's copy of the doc is frozen: no change to it could ever be
+  // saved. Read-only stops typing; the filter also stops programmatic changes
+  // (Accept all, Reject, focus-mode review) that would otherwise look applied.
+  // It reads the ref, which flips before the server's content arrives on
+  // "Edit here". adr: adr/per-tab-view.md
   useEffect(() => {
-    const editors = allEditorsRef.current.length > 0 ? allEditorsRef.current : [editorRef.current];
-    for (const editor of editors) {
-      if (editor && !editor.isDestroyed) editor.setEditable(!detached);
-    }
-  }, [detached]);
+    const editors = (allEditorsRef.current.length > 0 ? allEditorsRef.current : [editorRef.current])
+      .filter((e): e is Editor => !!e && !e.isDestroyed);
+    for (const editor of editors) editor.setEditable(!detached);
+    if (!detached) return;
+    const key = new PluginKey('detachedReadOnly');
+    let warnedAt = 0;
+    const plugin = new Plugin({
+      key,
+      filterTransaction: (tr) => {
+        if (!tr.docChanged || !detachedRef.current) return true;
+        if (Date.now() - warnedAt > 3000) {
+          warnedAt = Date.now();
+          showToast('This document is open in another tab. Click "Edit here" to make changes in this tab.', 'error', 6000);
+        }
+        return false;
+      },
+    });
+    for (const editor of editors) editor.registerPlugin(plugin);
+    return () => { for (const editor of editors) if (!editor.isDestroyed) editor.unregisterPlugin(key); };
+  }, [detached, detachedRef]);
 
   // Flush current editor content to server synchronously before switching/creating docs.
   // Only sends doc-update (no explicit save) — switchDocument/createDocument call save() internally.
