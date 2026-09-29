@@ -79,18 +79,7 @@
 }
 [data-sidebar-style="compact"] .tl-item:hover .tl-item-meta { visibility: hidden; }
 
-/* Tree: unboxed parent rows, restrained indentation, existing state markers. */
-[data-sidebar-style="compact"] .sidebar-section-header {
-  min-height: 28px;
-  padding: 4px 10px;
-  border-left: 0;
-}
-[data-sidebar-style="compact"] .sidebar-label {
-  font-size: 12px;
-  text-transform: none;
-  letter-spacing: normal;
-}
-[data-sidebar-style="compact"] .sidebar-section-list { padding: 0 6px 4px; }
+/* Shared document rows (search results, variants). */
 [data-sidebar-style="compact"] .sidebar-item {
   min-height: 26px;
   padding: 4px 8px;
@@ -106,20 +95,11 @@
   margin-bottom: 0;
   box-shadow: none;
 }
-[data-sidebar-style="compact"] .sidebar-container-header { min-height: 26px; padding: 3px 8px; }
-[data-sidebar-style="compact"] .sidebar-container-name { font-weight: 500; }
-[data-sidebar-style="compact"] .sidebar-container-list { padding: 0 4px 2px; }
 [data-sidebar-style="compact"] .sidebar-new-btn { width: 24px; height: 24px; border: 0; background: transparent; }
 [data-sidebar-style="compact"] .sidebar-delete-btn { top: 1px; right: 4px; width: 24px; height: 24px; }
-[data-sidebar-style="compact"] .sidebar-workspace-actions { opacity: 0; }
-[data-sidebar-style="compact"] .sidebar-section-header:hover .sidebar-workspace-actions,
-[data-sidebar-style="compact"] .sidebar-section-header:focus-within .sidebar-workspace-actions,
-[data-sidebar-style="compact"] .sidebar-container-header:focus-within .sidebar-container-actions,
 [data-sidebar-style="compact"] .sidebar-item:focus-within .sidebar-delete-btn { opacity: 1; }
 
-[data-sidebar-style="compact"] .sidebar-item:focus-visible,
-[data-sidebar-style="compact"] .sidebar-section-header:focus-visible,
-[data-sidebar-style="compact"] .sidebar-container-header:focus-visible {
+[data-sidebar-style="compact"] .sidebar-item:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: -2px;
 }

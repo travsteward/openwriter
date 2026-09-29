@@ -281,11 +281,3 @@
 .board-search-dropdown {
   min-width: 260px;
 }
-
-.board-search-snippet {
-  display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 240px;
-}
