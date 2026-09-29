@@ -62,6 +62,9 @@ interface CapturedSelection {
   to: number;
   nodes: any[];
   nodeIds: string[];
+  /** Selected text, read at right-click. Positions go stale if an agent edit
+   *  lands above the selection while a comment is being typed. */
+  text: string;
 }
 
 export default function ContextMenu({ editorRef, allEditors, documentId }: ContextMenuProps) {
@@ -293,7 +296,8 @@ export default function ContextMenu({ editorRef, allEditors, documentId }: Conte
         }
       }
 
-      capturedSelection.current = { from, to, nodes, nodeIds };
+      const text = from !== to ? editor.state.doc.textBetween(from, to, '\n') : '';
+      capturedSelection.current = { from, to, nodes, nodeIds, text };
     };
 
     const handleContextMenu = (e: MouseEvent) => {
@@ -865,11 +869,8 @@ export default function ContextMenu({ editorRef, allEditors, documentId }: Conte
     const captured = capturedSelection.current;
     if (!editor || !captured) return;
 
-    const { from, to, nodeIds } = captured;
-    if (from === to || nodeIds.length === 0) return;
-
-    const selectedText = editor.state.doc.textBetween(from, to, '\n');
-    if (!selectedText.trim()) return;
+    const { text: selectedText, nodeIds } = captured;
+    if (nodeIds.length === 0 || !selectedText.trim()) return;
 
     fetch('/api/comments', {
       method: 'POST',
@@ -1023,12 +1024,7 @@ export default function ContextMenu({ editorRef, allEditors, documentId }: Conte
         <div className="context-menu-comment-editor">
           {(() => {
             const quoted = editingComment?.text
-              ?? (() => {
-                const editor = activeEditorRef.current || editorRef.current;
-                const captured = capturedSelection.current;
-                if (!editor || !captured || captured.from === captured.to) return '';
-                return editor.state.doc.textBetween(captured.from, captured.to, '\n');
-              })();
+              ?? capturedSelection.current?.text ?? '';
             return quoted ? <div className="context-menu-comment-quote">{quoted}</div> : null;
           })()}
           <textarea
