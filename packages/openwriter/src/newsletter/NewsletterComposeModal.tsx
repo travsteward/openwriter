@@ -231,7 +231,7 @@ export default function NewsletterComposeModal({ connectionId, subject, filename
               </div>
 
               <div className="newsletter-modal__actions">
-                <button className="newsletter-modal__btn" onClick={onClose}>Cancel</button>
+                <button className="newsletter-modal__btn" onClick={() => onClose()}>Cancel</button>
                 <button
                   className="newsletter-modal__btn newsletter-modal__btn--primary"
                   disabled={audienceMode === 'exclude_issue' && !excludeIssueId}
@@ -265,7 +265,7 @@ export default function NewsletterComposeModal({ connectionId, subject, filename
             <>
               <div className="newsletter-modal__error">{error}</div>
               <div className="newsletter-modal__actions">
-                <button className="newsletter-modal__btn" onClick={onClose}>Cancel</button>
+                <button className="newsletter-modal__btn" onClick={() => onClose()}>Cancel</button>
                 <button
                   className="newsletter-modal__btn newsletter-modal__btn--primary"
                   onClick={() => callSend()}

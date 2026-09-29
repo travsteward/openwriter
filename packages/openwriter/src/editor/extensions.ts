@@ -102,7 +102,7 @@ export const padExtensions = [
 export const articleExtensions = [
   StarterKit.configure({
     codeBlock: false,
-    horizontalRule: true,
+    horizontalRule: {},
     heading: { levels: [1, 2, 3] },
     link: false,
     underline: false,

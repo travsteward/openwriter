@@ -119,7 +119,7 @@ export default function BacklinksTab({ docId, currentFilename, onSwitchDocument 
 
   const inboundResolved = useMemo<ResolvedEntry[]>(() => {
     return inbound
-      .map((entry) => {
+      .map((entry): ResolvedEntry | null => {
         const summary = docsById.get(entry.from_doc);
         if (!summary) return null;
         return {

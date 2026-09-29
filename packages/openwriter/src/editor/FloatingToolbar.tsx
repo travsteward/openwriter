@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Editor } from '@tiptap/react';
+import { NodeSelection } from '@tiptap/pm/state';
 
 import { insertFootnoteAt } from './Footnotes';
 import './floating-toolbar.css';
@@ -96,7 +97,7 @@ export default function FloatingToolbar({ editor }: { editor: Editor }) {
       const contextMenu = !!document.querySelector('.context-menu');
       const focused = editor.view.hasFocus();
 
-      const isNodeSel = !empty && editor.state.selection.node;
+      const isNodeSel = !empty && editor.state.selection instanceof NodeSelection;
       if (empty || isNodeSel || inCodeBlock || contextMenu || !focused) {
         setVisible(false);
         lastFrom.current = -1;
