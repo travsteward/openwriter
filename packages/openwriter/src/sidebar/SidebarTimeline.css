@@ -28,10 +28,10 @@
   content: '';
   position: absolute;
   left: 13px;
-  top: 28px;
   bottom: 0;
   width: 1.5px;
   background: var(--border);
+  top: 22px;
 }
 
 .tl-group:last-child::before {
@@ -39,23 +39,24 @@
 }
 
 .tl-date {
-  padding: 12px 10px 4px 0;
-  font-size: 11px;
   font-weight: 600;
   color: var(--ink-light);
   text-transform: uppercase;
   letter-spacing: 0.3px;
   position: relative;
+  padding: 8px 10px 2px 0;
+  font-size: 10px;
 }
 
 .tl-item {
   display: flex;
-  align-items: flex-start;
   gap: 8px;
-  padding: 8px 10px 8px 0;
   cursor: pointer;
   position: relative;
   border-radius: 0 6px 6px 0;
+  align-items: center;
+  height: 26px;
+  padding: 0 10px 0 0;
 }
 
 .tl-item:hover {
@@ -74,11 +75,11 @@
   border-radius: 50%;
   border: 2px solid var(--border);
   background: var(--bg-primary);
-  margin-top: 5px;
   margin-left: -15px;
   margin-right: 4px;
   position: relative;
   z-index: 1;
+  margin-top: 0;
 }
 
 .tl-item.active .tl-dot {
@@ -90,17 +91,22 @@
   flex: 1;
   min-width: 0;
   padding-left: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .tl-item-title {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 13px;
-  font-weight: 500;
   color: var(--ink-dark);
-  padding-right: 20px;
   min-width: 0;
+  flex: 1;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 18px;
+  padding-right: 0;
 }
 
 .tl-item-title > span:first-child {
@@ -110,17 +116,11 @@
   min-width: 0;
 }
 
-.tl-item-context {
-  font-size: 10px;
-  color: var(--ink-light);
-  font-style: italic;
-  margin-top: 1px;
-}
-
 .tl-item-meta {
-  font-size: 11px;
   color: var(--ink-light);
-  margin-top: 2px;
+  margin-top: 0;
+  font-size: 10px;
+  white-space: nowrap;
 }
 
 /* Delete button — use same absolute positioning as tree sidebar */
@@ -135,3 +135,5 @@
 .tl-item .sidebar-delete-btn:hover {
   opacity: 1;
 }
+
+.tl-item:hover .tl-item-meta { visibility: hidden; }

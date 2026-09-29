@@ -8,7 +8,8 @@
 }
 
 .files-section + .files-section {
-  border-top: 1px solid var(--border);
+  border-top: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+  padding-top: 4px;
 }
 
 .files-section-list {
@@ -19,11 +20,12 @@
 .files-row {
   display: flex;
   align-items: center;
-  height: 36px;
   padding: 0 12px;
   cursor: pointer;
   user-select: none;
   position: relative;
+  height: 26px;
+  padding-right: 10px;
 }
 
 .files-row:hover {
@@ -46,8 +48,6 @@
 
 /* Chevron — shared disclosure shape; leading on expandable rows. */
 .files-row-chevron {
-  width: 20px;
-  height: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -56,6 +56,8 @@
   margin-left: auto;
   transition: transform 0.15s ease;
   opacity: 0.5;
+  width: 16px;
+  height: 24px;
 }
 
 .files-row:hover .files-row-chevron {
@@ -80,8 +82,8 @@
 
 /* A parent disclosure occupies exactly the document icon's slot. */
 .files-row-chevron.variant-toggle {
-  width: 18px;
-  margin-right: 7px;
+  width: 16px;
+  margin-right: 6px;
 }
 
 .files-row-chevron svg {
@@ -90,19 +92,19 @@
 
 /* Row icon */
 .files-row-icon {
-  width: 18px;
-  height: 18px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  margin-right: 7px;
   color: var(--ink-light);
+  width: 16px;
+  height: 16px;
+  margin-right: 6px;
 }
 
 .files-row-icon svg {
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
 }
 
 /* Active row icon gets accent */
@@ -117,10 +119,10 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 14px;
-  font-weight: 500;
   color: var(--ink-dark);
-  line-height: 36px;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 18px;
 }
 
 .files-row.active .files-row-label {
@@ -129,8 +131,8 @@
 
 /* Section header rows — bolder, no icon. Bright (workspace identity) */
 .files-row.is-section .files-row-label {
-  font-weight: 600;
   color: var(--ink-dark);
+  font-weight: 600;
 }
 
 .files-row.is-section .files-row-icon {
@@ -139,8 +141,8 @@
 
 /* Container rows — dim middle tier (organizational scaffolding, not focus) */
 .files-row.is-container .files-row-label {
-  font-weight: 600;
   color: var(--ink-body);
+  font-weight: 500;
 }
 
 /* Collapsed ancestor of the active doc — the open doc's row is hidden, so its
@@ -161,8 +163,6 @@
   border: none;
   cursor: pointer;
   padding: 0;
-  width: 20px;
-  height: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -172,6 +172,8 @@
   opacity: 0;
   transition: opacity 0.15s ease, background 0.1s ease, color 0.1s ease;
   flex-shrink: 0;
+  width: 24px;
+  height: 24px;
 }
 
 .files-row:hover .files-section-btn {
@@ -194,11 +196,11 @@
 
 /* Count badge */
 .files-row-count {
-  font-size: 11px;
   color: var(--ink-light);
   margin-left: 4px;
   flex-shrink: 0;
   opacity: 0.6;
+  font-size: 10px;
 }
 
 /* Badges */
@@ -419,3 +421,31 @@
   color: var(--ink-dark);
   background: var(--bg-hover);
 }
+
+.files-row.is-section { height: 28px; }
+
+.files-row.is-container > .files-row-icon svg,
+.files-row-chevron svg { display: none; }
+
+.files-row-chevron::before,
+.files-row.is-container > .files-row-icon::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(45deg);
+  margin-top: -3px;
+}
+
+.files-row.is-container > .files-row-icon {
+  transition: transform 0.15s ease;
+}
+
+.files-row.is-container:has(+ .files-children.collapsed) > .files-row-icon {
+  transform: rotate(-90deg);
+}
+
+.files-row:focus-within .files-section-btn { opacity: .8; }
+
+.files-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }

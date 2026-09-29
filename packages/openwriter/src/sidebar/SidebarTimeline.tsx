@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { SidebarModeProps, DocumentInfo } from './sidebar-types';
-import { formatDate, dateGroup, isExternal, parentDir } from './sidebar-utils';
+import { formatDate, dateGroup, isExternal } from './sidebar-utils';
 import { useRevealActiveDoc } from './use-reveal-active-doc';
 import SearchResults from './SearchResults';
 import './SidebarTimeline.css';
@@ -73,10 +73,7 @@ export default function SidebarTimeline({ docs, workspaces, assignedFiles, pendi
                     <span>{doc.title}</span>
                     {pendingDocs.filenames.includes(doc.filename) && <span className="sidebar-pending-dot" />}
                   </div>
-                  {isExternal(doc.filename) && <div className="tl-item-context">{parentDir(doc.filename)}</div>}
-                  <div className="tl-item-meta">
-                    <span className="tl-words">{doc.wordCount.toLocaleString()} words &middot; </span>{formatDate(doc.lastModified)}
-                  </div>
+                  <div className="tl-item-meta">{formatDate(doc.lastModified)}</div>
                 </div>
                 {confirmDelete === doc.filename ? (
                   <div className="sidebar-confirm-delete" onClick={(e) => e.stopPropagation()}>

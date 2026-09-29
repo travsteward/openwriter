@@ -137,7 +137,6 @@ export function applyAppearance(
   el.setAttribute('data-typeface', typeface);
   el.setAttribute('data-mode', mode);
   el.setAttribute('data-sidebar-mode', sidebarMode);
-  el.setAttribute('data-sidebar-style', 'compact');
   if (spacing === 'default') {
     el.removeAttribute('data-spacing');
   } else {
