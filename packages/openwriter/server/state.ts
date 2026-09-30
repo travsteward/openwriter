@@ -3326,7 +3326,16 @@ export function countPending(nodes: any[]): number {
   return count;
 }
 
-/** Write a mutated doc back to disk and update the pending cache. */
+/** Persist a non-active doc after its pending changes were accepted or
+ *  rejected in bulk: canonical to disk and the (now empty) overlay to its
+ *  sidecar via flushDocToFile, then refresh the pending cache and any open
+ *  viewers. adr: adr/pending-overlay-model.md */
+export function writeResolvedDocFile(filename: string, doc: PadDocument, title: string, metadata: Record<string, any>): void {
+  flushDocToFile(filename, doc, title, metadata);
+  removePendingCacheEntry(filename);
+  notifyDocFileWritten(filename);
+}
+
 /** Write a mutated doc back to disk and update the pending cache.
  *
  *  Disk gets canonical (pending stripped by `tiptapToMarkdown`). The

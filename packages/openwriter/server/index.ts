@@ -9,7 +9,7 @@ import type { Server as HttpServer } from 'http';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { existsSync, readFileSync } from 'fs';
-import { setupWebSocket, broadcastAgentStatus, broadcastDocumentSwitched, broadcastDocumentsChanged, broadcastWorkspacesChanged, broadcastMetadataChanged, broadcastPendingDocsChanged, broadcastSyncStatus, broadcastWritingStarted, broadcastWritingFinished, broadcastCommentsChanged, broadcastActivityLogSeed } from './ws.js';
+import { setupWebSocket, broadcastAgentStatus, broadcastDocumentSwitched, broadcastDocumentsChanged, broadcastWorkspacesChanged, broadcastMetadataChanged, broadcastPendingDocsChanged, broadcastSyncStatus, broadcastWritingStarted, broadcastWritingFinished, broadcastCommentsChanged, broadcastActivityLogSeed, refreshLiveDocViewers } from './ws.js';
 import { TOOL_REGISTRY } from './mcp.js';
 import { z } from 'zod';
 import { zodToJsonSchema } from 'zod-to-json-schema';
@@ -871,6 +871,7 @@ export async function startHttpServer(options: { server: HttpServer; port?: numb
         // Clear pending cache for resolved docs + broadcast
         for (const fn of filenames) removePendingCacheEntry(fn);
         updatePendingCacheForActiveDoc();
+        if (result.activeResolved) refreshLiveDocViewers();
         broadcastPendingDocsChanged();
         broadcastDocumentsChanged();
       }

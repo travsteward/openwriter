@@ -115,6 +115,15 @@ function liveDocRefresh(): string {
   return JSON.stringify({ ...buildDocumentSwitchedPayload(getDocument(), getTitle(), filename, getMetadata()), navigation: 'refresh' });
 }
 
+/** The server changed the live doc on its own (bulk accept/reject): move its
+ *  revision and give every tab showing it the new copy. adr: adr/per-tab-view.md */
+export function refreshLiveDocViewers(): void {
+  const key = getActiveFilename();
+  bumpRev(key, null);
+  const msg = liveDocRefresh();
+  for (const t of viewersOf(key)) if (t.readyState === WebSocket.OPEN) t.send(msg);
+}
+
 /** A tab changed the live doc: record it, and give the other tabs showing
  *  that doc the new copy. */
 function afterTabWrite(by: WebSocket): void {

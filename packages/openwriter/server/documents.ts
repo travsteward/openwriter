@@ -15,7 +15,7 @@ import {
   getDocument, getTitle, getFilePath, getIsTemp, getMetadata, save, cancelDebouncedSave, setActiveDocument,
   registerExternalDoc, unregisterExternalDoc, getExternalDocs,
   cacheActiveDocument, getCachedDocument, invalidateDocCache, removePendingCacheEntry, setPendingCacheEntry,
-  resetDocVersion, markAsAgentStub, unmarkAgentStub, isAgentStub,
+  resetDocVersion, markAsAgentStub, unmarkAgentStub, isAgentStub, updateDocument, writeResolvedDocFile,
   type PadDocument, type DocumentInfo,
 } from './state.js';
 import { getDataDir, TEMP_PREFIX, ensureDataDir, filePathForTitle, tempFilePath, generateNodeId, resolveDocPath, isExternalDoc, atomicWriteFileSync, canonicalizePath } from './helpers.js';
@@ -25,7 +25,7 @@ import { renameDocInAllWorkspaces, removeDocFromAllWorkspaces, listWorkspaces, g
 import { collectAllFiles } from './workspace-tree.js';
 import { renameComments } from './comments.js';
 import { renameBookmarks } from './bookmarks.js';
-import { deleteOverlay, diagLog, listOverlayTimes } from './pending-overlay.js';
+import { deleteOverlay, diagLog, listOverlayTimes, loadDocFromDisk } from './pending-overlay.js';
 import { loadPendingMetadata, savePendingMetadata, type PendingMetadata } from './pending-metadata.js';
 import { getPendingMetadata as getActivePendingMetadata, setPendingMetadata as setActivePendingMetadata, getDocVersion } from './state.js';
 
@@ -1365,51 +1365,49 @@ function rejectAllInDoc(doc: any): number {
   return count;
 }
 
-/** Resolve a single doc file on disk. Returns number of changes resolved. */
-function resolveDocFile(filePath: string, action: 'accept' | 'reject'): number {
-  const raw = readFileSync(filePath, 'utf-8');
-  const { data } = matter(raw);
-
-  // Skip docs with no pending changes
-  if (!data.pending) return 0;
-
-  // Pass full raw file — markdownToTiptap calls matter() internally and rehydrates pending state
-  const parsed = markdownToTiptap(raw);
-  const doc = parsed.document;
-
-  const count = action === 'accept' ? acceptAllInDoc(doc) : rejectAllInDoc(doc);
-  if (count === 0) return 0;
-
-  // Re-serialize — pending attrs are cleared so pending key will be removed from frontmatter
-  const { markdown: newRaw } = tiptapToMarkdownChecked(doc, parsed.title, parsed.metadata);
-  atomicWriteFileSync(filePath, newRaw);
-
-  return count;
-}
-
-export function batchResolve(filenames: string[], action: 'accept' | 'reject'): { docsResolved: number; changesResolved: number } {
+/** Accept or reject every pending change in the given docs. Pending changes
+ *  live in the sidecar overlay, so each doc is read in its merged form: the
+ *  live doc from memory (it may hold unsaved edits), any other doc through
+ *  `loadDocFromDisk`. Writes go through the same paired canonical + overlay
+ *  paths as every other save. `activeResolved` tells the caller to refresh
+ *  the tabs showing the live doc; other docs' viewers are refreshed by the
+ *  file-written notification.
+ *  adr: adr/pending-overlay-model.md */
+export function batchResolve(filenames: string[], action: 'accept' | 'reject'): { docsResolved: number; changesResolved: number; activeResolved: boolean } {
   let docsResolved = 0;
   let changesResolved = 0;
+  let activeResolved = false;
+  const resolveAll = action === 'accept' ? acceptAllInDoc : rejectAllInDoc;
 
   for (const filename of filenames) {
-    const filePath = isExternalDoc(filename) ? filename : join(getDataDir(), filename);
+    const filePath = resolveDocPath(filename);
     if (!existsSync(filePath)) continue;
 
     try {
-      const count = resolveDocFile(filePath, action);
+      let count: number;
+      if (filePath === getFilePath()) {
+        // updateDocument re-splits the merged doc into canonical + overlay,
+        // the same door the browser's own accept/reject uses.
+        const resolved = structuredClone(getDocument());
+        count = resolveAll(resolved);
+        if (count > 0) {
+          updateDocument(resolved);
+          save();
+          activeResolved = true;
+        }
+      } else {
+        const loaded = loadDocFromDisk(filename);
+        count = resolveAll(loaded.document);
+        if (count > 0) writeResolvedDocFile(filename, loaded.document, loaded.title, loaded.metadata);
+      }
       if (count > 0) {
         docsResolved++;
         changesResolved += count;
-        // Active doc: update in-memory state directly (no reload flicker)
-        if (filePath === getFilePath()) {
-          const currentDoc = getDocument();
-          if (action === 'accept') acceptAllInDoc(currentDoc);
-          else rejectAllInDoc(currentDoc);
-          save();
-        }
       }
-    } catch { /* skip unreadable files */ }
+    } catch (err) {
+      console.error(`[batchResolve] ${action} failed for ${filename}:`, err);
+    }
   }
 
-  return { docsResolved, changesResolved };
+  return { docsResolved, changesResolved, activeResolved };
 }

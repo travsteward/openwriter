@@ -129,3 +129,10 @@ save is refused with the notice while the newer text stays.
 Added `bookmarks-changed` as a global message, like `comments-changed`. It
 carries only a filename; each tab refetches when it shows that file, so no
 per-view routing is needed. See [bookmarks.md](bookmarks.md).
+
+### 2026-09-30 — Server-side change to the live doc
+
+Bulk accept/reject changes the live doc without any tab writing it. Added
+`refreshLiveDocViewers`: bump the doc's revision with no owning tab and send
+the live copy to every tab viewing it, so none can autosave the pre-resolve
+copy over it. See adr/pending-overlay-model.md (same date).

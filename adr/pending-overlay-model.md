@@ -1273,3 +1273,15 @@ replaced the editor with the server's copy, restoring every decided change.
 Now `pending-resolved` is queued and replayed after reconnect, and the
 per-change accepts, which travel as `doc-update`, are kept and resent when the
 server's copy is unchanged. See adr/per-tab-view.md (same date).
+
+### 2026-09-30 — bulk accept/reject reads the overlay
+The sidebar folder "Accept all" / "Reject all" (`batchResolve`) still looked
+for pending state in `data.pending` frontmatter, which this model no longer
+writes, so it always found nothing. Its live-doc branch also saved without a
+version bump, so even a hit would have been a no-op save. Now a non-active doc
+is read merged via `loadDocFromDisk` and written back through `flushDocToFile`
+(new `writeResolvedDocFile` wrapper), which clears the sidecar; the live doc is
+resolved on a copy and handed to `updateDocument`, which re-splits canonical
+and overlay exactly as the browser's own accept/reject does. Live-doc viewers
+get a refresh via `refreshLiveDocViewers` (see adr/per-tab-view.md). Locked by
+`scripts/test-batch-resolve.mjs`.
