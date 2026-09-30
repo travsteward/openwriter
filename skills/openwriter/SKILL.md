@@ -3,9 +3,9 @@ name: openwriter
 description: |
   OpenWriter — the writing surface for AI agents. A markdown-native rich text
   editor where agents write via MCP tools and users accept or reject changes
-  in-browser. 40 core MCP tools for document editing, multi-doc workspaces,
-  and organization, plus 21 publish platform tools for newsletter, social
-  posting, and scheduling. Tweet compose mode for drafting replies/QTs with
+  in-browser. MCP tools for document editing, multi-doc workspaces, and
+  organization, plus publish platform tools for newsletter, social posting,
+  and scheduling. Tweet compose mode for drafting replies/QTs with
   pixel-accurate X/Twitter UI. Plain .md files on disk — no database, no lock-in.
 
   Use when user says: "open writer", "openwriter", "write in openwriter",
@@ -16,7 +16,7 @@ description: |
   Requires: OpenWriter MCP server configured. Browser UI at localhost:5050.
 metadata:
   author: travsteward
-  version: "0.22.0"
+  version: "0.23.0"
   repository: https://github.com/travsteward/openwriter
 license: MIT
 ---
@@ -46,6 +46,8 @@ You are a writing collaborator. You read documents and make edits **exclusively 
 
 ## FIRM RULES
 
+0. **NEVER OPEN THE OPENWRITER UI (localhost:5050) IN A BROWSER — Chrome, the browser pane, or any other.** The browser is the user's view; every tab shares the server's one open document, so an agent tab opening a doc moves the user's screen mid-review. Read and verify through MCP tools only (`read_pad`, `peek_doc`, `get_pad_status`). Need the user to look at something? Tell them the docId, or `switch_document` on their explicit request. Checking a *published* page (the live blog URL) in a browser is fine.
+
 1. **ALWAYS write content in the editor, never in the terminal.** OpenWriter is a collaborative writing surface. All content — drafts, rewrites, brainstorms, outlines — goes on the pad via `write_to_pad` or `populate_document`. Dumping content into the chat/terminal is bad UX: it's hard to read, ugly, and the user can't accept/reject or iterate on it. If you're generating text the user will read, it goes in the editor.
 2. **The terminal is for discussion only.** Use chat messages to explain your edits, ask questions, discuss direction, or summarize what you changed. Never use it as the writing surface.
 3. **Name every document.** When you encounter a generically named doc ("Quote Tweet", "Article", "Untitled", etc.), rename it based on its content before proceeding. Titles are the human scanning layer — a sidebar full of "Quote Tweet" is useless. Use `rename_item` with the docId. Short, descriptive titles: "Venezuela Proxy States QT", "Feature Blindness Article".
@@ -62,7 +64,7 @@ You are a writing collaborator. You read documents and make edits **exclusively 
    )
    ```
 
-   **Why a minion, not inline.** Earlier this was "handle it inline, no minion — sorting is a judgment call." That never drained: marks rotted for days because raising them meant derailing the user's actual task. The judgment is real but it does **not** need a synchronous human turn — a sort-marked doc has no user-expected location to violate (that's why it was marked), a misfile is one `move_item` to undo, and the minion reports every move. Reversible + visible replaces the gate. This is the same autonomous-drain rail enrichment rides (firm rule 5).
+   **Why a minion, not inline.** Handled inline, marks rot because raising them derails the user's actual task. The judgment is real but it does **not** need a synchronous human turn — a sort-marked doc has no user-expected location to violate (that's why it was marked), a misfile is one `move_item` to undo, and the minion reports every move. Reversible + visible replaces the gate. This is the same autonomous-drain rail enrichment rides (firm rule 5).
 
    **Surfacing to the user:** treat sorting like enrichment and the inbox — a maintenance reflex, not a feature they ask for. Dispatch silently and relay a one-line aside in your response: "Filed 3 docs in the background — RecipeBox → RecipeBox/Marketing, …. Now, …". For a large backlog (N > 12), the minion self-bounds to 12 per run; the footer re-fires and you re-dispatch to drain the rest.
 
@@ -155,7 +157,7 @@ Every document has an immutable **docId** (8-char hex, e.g. `a1b2c3d4`) in its Y
 
 **MCP params:** `metadata`, `changes`, `content` are objects — never stringify them.
 
-## MCP Tools Reference (40 core + 21 publish platform)
+## MCP Tools Reference
 
 ### Document Operations
 
@@ -165,7 +167,6 @@ Every document has an immutable **docId** (8-char hex, e.g. `a1b2c3d4`) in its Y
 | `write_to_pad` | `docId`, `changes` | Apply edits as pending decorations (rewrite, insert, delete) |
 | `populate_document` | `docId?`, `content` | Populate an empty doc with content (two-step creation flow) |
 | `get_pad_status` | — | Lightweight poll: word count, pending changes, userSignaledReview |
-| `get_nodes` | `nodeIds` | DEPRECATED — use `peek_doc({ nodes: [ids] })`. Alias kept for one release. |
 | `outline_doc` | `docId`, `underHeading?`, `depth?`, `offset?`, `limit?` | Structural skeleton — heading tree by default (~5 tokens/heading). Drill into a section with `underHeading`. Block-preview fallback for docs without headings. The cheap orientation tool before any body read. |
 | `peek_doc` | `docId`, `target` (one of: `{node}` / `{nodes}` / `{around,before,after}` / `{from,to}` / `{first}` / `{last}` / `{position,span}`) | Windowed node read once oriented. Six target shapes for different access patterns. Use this instead of `read_pad` whenever you only need part of a doc. |
 | `search_docs` | `query`, `docId?`, `limit?` | Full-text search. Default: ranked docs across the workspace (snippets). With `docId`: matching nodes inside that doc (nodeId + type + snippet). The content-to-node bridge — pairs with `peek_doc` for the read. |
@@ -212,7 +213,7 @@ Every document has an immutable **docId** (8-char hex, e.g. `a1b2c3d4`) in its Y
 | `move_item` | Move or reorder a doc, container, or workspace (type: doc/container/workspace). To nest a doc into a container: `move_item({ type: 'doc', workspaceFile, itemId: <docId>, targetContainerId: <containerId>, afterId? })`. The target param is **`targetContainerId`** — passing `containerId`/`container` instead is silently ignored and the doc lands at workspace root. |
 | `rename_item` | Rename a workspace, container, or document (type: workspace/container/document) |
 
-### Enrichment (three-field schema — v0.19.0)
+### Enrichment (three-field schema)
 
 OpenWriter detects when a doc has drifted past enrichment thresholds (sentence-hash Jaccard drift, character-count volume ratio) on every save and stamps `enrichmentStale: true`. The agent's job is to dispatch the enrichment minion (see firm rule 5 + `docs/enrichment.md` in this skill) to refresh the logline.
 
@@ -235,7 +236,7 @@ OpenWriter detects when a doc has drifted past enrichment thresholds (sentence-h
 | `list_dirty_docs` | `workspaceFile?` | List docs that need enrichment (never enriched OR explicitly flagged stale). Returns identity + reason only — no bodies. Optionally scoped to one workspace. Docs in opted-out workspaces (`enrichmentDisabled: true`) are excluded. |
 | `claim_enrichment` | `workspaceFile?`, `docIds?`, `limit?` | Acquire up to 12 exclusive full canonical snapshots with claimToken, revision and expiry. Empty docs means stop. |
 | `mark_enriched` | `docs: [{docId, claimToken, logline}]` | Stamp one or more docs as freshly enriched. **Strict schema** — passing `domain` / `concepts` / `docRole` / `status` fails validation. OpenWriter auto-computes baselines (`lastEnrichedAt`, `lastEnrichedCharCount`, `lastEnrichedSentences`), clears `enrichmentStale`, and retires legacy fields from frontmatter. The minion calls this once at the end of its run with the full batch. |
-| `browse_docs` | `workspaceFile?`, `tags?`, `status?` (`canonical`/`draft`), `hasLogline?` | Bulk-read concept-level frontmatter per doc with AND-composed filters. The agent's "scan the shelf" primitive — ~60 tokens per doc, no bodies, no tree shape. Pairs with `get_workspace_structure` (tree shape), `outline_doc` (skeleton), `peek_doc` (windowed read), and `read_pad` (full body) as the read ladder. Renamed from `crawl` / `browse` — both kept as DEPRECATED aliases for one release. |
+| `browse_docs` | `workspaceFile?`, `tags?`, `status?` (`canonical`/`draft`), `hasLogline?` | Bulk-read concept-level frontmatter per doc with AND-composed filters. The agent's "scan the shelf" primitive — ~60 tokens per doc, no bodies, no tree shape. Pairs with `get_workspace_structure` (tree shape), `outline_doc` (skeleton), `peek_doc` (windowed read), and `read_pad` (full body) as the read ladder. |
 
 ### Sort Requests
 
@@ -254,7 +255,7 @@ User-triggered file-this-for-me marker. See firm rule 6 for the full procedure. 
 | `get_comments` | `docId?`, `scope?` | Get comments left by the user. Default scope is `workspace` when a docId is given (returns comments for every doc in the same project); pass `scope: "document"` to narrow, or `scope: "all"` for every doc on disk |
 | `resolve_comments` | `comment_ids` | Remove comments after addressing feedback (pass comment IDs) |
 
-The older names `get_agent_marks` and `resolve_agent_marks` remain as deprecated aliases.
+Aliases: `get_nodes` → `peek_doc`, `crawl` → `browse_docs`, `get_agent_marks` / `resolve_agent_marks` → `get_comments` / `resolve_comments`. Use the canonical names.
 
 ### Task Management
 
@@ -302,7 +303,7 @@ For making changes to existing documents — rewrites, insertions, deletions:
   - **Short doc broad edit** (≤ ~2,000 words): `read_pad({ docId })` returns the full body with all node IDs in one call.
   - **Long doc broad edit**: either `read_pad({ docId, force: true })` for the whole body in one shot (cost acknowledged), or `read_pad({ docId, slice: {from, to} })` walking 10% chunks if the edit spans the whole doc but you want predictable per-call cost.
   - **Surgical edit** (you already know the anchor from `outline_doc` / `search_docs` / deep-link click): `peek_doc({ around: anchor })` returns just the relevant region's current IDs — much cheaper than any read_pad form for targeted work.
-- Respect `pendingChanges > 0` — wait for the user to accept/reject before sending more
+- Editing a node that is already pending is safe: it stays ONE pending change reviewed against the true original. Don't make the user accept first just to revise a pending edit.
 - Content accepts markdown strings (preferred) or TipTap JSON
 - **`rewrite` preserves the target node's type.** Sending plain prose to rewrite a heading keeps it a heading; the same for list items and blockquotes. To intentionally change a node's type, use `delete` + `insert`. For surgical text-only edits inside a node (no risk of restructuring), `edit_text` is the smaller hammer.
 - Decoration colors: **blue** = rewrite, **green** = insert, **red** = delete
@@ -337,7 +338,7 @@ The user can turn on **auto-accept** on a per-doc basis (right-click the doc in 
 
 ### Workspace-Integrated Creation
 
-`create_document` takes placement in **either** convention (unified 2026-07-09):
+`create_document` takes placement in **either** convention:
 
 ```
 create_document({
@@ -357,7 +358,7 @@ create_document({
 - **`containerId`** (string) — existing container id (8-char hex). Must already exist in the resolved workspace. Alternative to `container`. Requires a workspace param.
 
 **Both conventions:**
-- **`afterId`** (string, optional) — docId (8-char hex) or containerId to place the new doc immediately after. Omit and the doc lands at the **bottom** of its parent (the default since 0.18.0, matching the ascending-order convention: oldest at top, newest at bottom). `afterId` alone does NOT set a workspace — pass a workspace param too.
+- **`afterId`** (string, optional) — docId (8-char hex) or containerId to place the new doc immediately after. Omit and the doc lands at the **bottom** of its parent (the ascending-order convention: oldest at top, newest at bottom). `afterId` alone does NOT set a workspace — pass a workspace param too.
 - Omit all placement params for a standalone doc — the result then says **UNFILED** (a doc created in no workspace announces it, rather than reading as a bland success).
 - A placement that can't be honored (unknown `workspaceFile`/`containerId`, or a container with no workspace) is a **hard error** — the doc is never silently created unplaced. The result always states where it landed.
 
@@ -576,7 +577,7 @@ For composing X content in OpenWriter — `tweetContext` and `articleContext` me
 5. **Respect pending changes.** If `pendingChanges > 0`, wait for the user
 6. **Watch for the review signal.** When `userSignaledReview` is true, the user is asking for your input — reading status clears it (one-shot)
 
-## Publish Platform (21 tools)
+## Publish Platform
 
 Requires authentication via `request_login_code` + `verify_login`. All publish tools are provided by the `@openwriter/plugin-publish` plugin.
 
