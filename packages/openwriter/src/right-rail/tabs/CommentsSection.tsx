@@ -1,7 +1,9 @@
 /**
- * Comments in the Review tab: every open comment on the active doc in reading
- * order, with previous/next stepping like pending changes. Navigation only;
- * editing and resolving stay on the in-editor comment menu and popover.
+ * Comments in the Review tab: previous/next stepping through the active doc's
+ * open comments in reading order, like pending changes. Deliberately no list —
+ * the underline's hover popover shows each comment. The one exception is a
+ * comment whose words were reworded: it has no underline, so landing on it
+ * shows its note and a Resolve button here.
  * adr: adr/bookmarks.md
  */
 
@@ -72,8 +74,6 @@ export default function CommentsSection({ editors, filename }: Props) {
     if (!row) return;
     setCurrent(index);
     jumpToBlock(editors, row.nodeId);
-    // Keep the active row visible in the capped-height list.
-    requestAnimationFrame(() => document.querySelector('.comments-list .bookmarks-row--active')?.scrollIntoView({ block: 'nearest' }));
   };
   const step = (delta: number) => {
     if (rows.length === 0) return;
@@ -82,6 +82,7 @@ export default function CommentsSection({ editors, filename }: Props) {
   };
 
   if (rows.length === 0) return null;
+  const currentRow = current >= 0 ? rows[current] : undefined;
 
   return (
     <div className="review-tab__section">
@@ -91,35 +92,21 @@ export default function CommentsSection({ editors, filename }: Props) {
         <button className="review-panel__btn" onClick={() => step(1)} title="Next comment"><ChevronDown /></button>
         <span className="review-panel__counter">{current >= 0 ? `${current + 1} / ${rows.length}` : `${rows.length}`}</span>
       </div>
-      <ul className="bookmarks-list comments-list">
-        {rows.map(({ comment, target, stale }, i) => (
-          <li key={comment.id} className={`bookmarks-row${i === current ? ' bookmarks-row--active' : ''}${stale ? ' comments-row--stale' : ''}`}>
-            <button
-              type="button"
-              className="bookmarks-row__main"
-              onClick={() => go(i)}
-              disabled={!target}
-              title={!target ? 'The commented paragraph was removed' : stale ? 'The commented words were changed; jumps to the paragraph' : 'Jump to comment'}
-            >
-              <span className="bookmarks-row__note">{comment.note || '(no note)'}</span>
-              <span className="bookmarks-row__preview">
-                {stale && <span className="comments-row__stale-tag">Wording changed · </span>}
-                “{comment.text.replace(/\s+/g, ' ').trim()}”
-              </span>
-            </button>
-            {stale && (
-              <button
-                type="button"
-                className="comments-row__resolve"
-                onClick={() => resolve(comment.id)}
-                title="Resolve this comment"
-              >
-                Resolve
-              </button>
-            )}
-          </li>
-        ))}
-      </ul>
+      {currentRow?.stale && (
+        <div className="comments-stale">
+          <span className="comments-stale__text" title={currentRow.comment.note}>
+            <em>Wording changed</em> · {currentRow.comment.note || '(no note)'}
+          </span>
+          <button
+            type="button"
+            className="comments-stale__resolve"
+            onClick={() => { resolve(currentRow.comment.id); setCurrent(-1); }}
+            title="Resolve this comment"
+          >
+            Resolve
+          </button>
+        </div>
+      )}
     </div>
   );
 }

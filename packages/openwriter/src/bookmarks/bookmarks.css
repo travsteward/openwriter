@@ -59,14 +59,24 @@
   text-overflow: ellipsis;
 }
 
-/* Comments list can be long; it scrolls inside the rail. */
-.comments-list { max-height: 40vh; overflow-y: auto; }
-/* A comment whose words were edited away: muted, with its own Resolve. */
-.comments-row--stale .bookmarks-row__note { color: var(--ink-light); }
-.comments-row__stale-tag { font-style: italic; }
-.comments-row__resolve {
-  align-self: center;
-  margin-right: 6px;
+/* Shown under the comment arrows only when the current comment's words were
+ * reworded (no underline to hover): its note plus a Resolve button. */
+.comments-stale {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--ink-light);
+}
+.comments-stale__text {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.comments-stale__resolve {
+  flex-shrink: 0;
   padding: 3px 8px;
   border: 1px solid var(--border);
   border-radius: 4px;
@@ -76,9 +86,9 @@
   font-size: 11px;
   cursor: pointer;
 }
-.comments-row__resolve:hover { color: var(--ink-body); border-color: var(--ink-light); }
+.comments-stale__resolve:hover { color: var(--ink-body); border-color: var(--ink-light); }
 
-/* Review rail lists (bookmarks, comments) — mirror the Manuscripts rows. */
+/* Bookmarks list in the Review rail — mirrors the Manuscripts rows. */
 .bookmarks-empty {
   font-size: 12px;
   line-height: 1.5;

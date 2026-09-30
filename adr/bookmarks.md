@@ -29,7 +29,9 @@ stays until the user removes it.
   selection that comments use.
 - Bookmarks are few, so the rail has no stepping for them: a "Back to
   bookmark" button at the top of the Review tab jumps to the newest one.
-  Comments are many, so their rail section steps previous/next.
+  Comments are many, so their rail section steps previous/next with no
+  list; the underline's hover shows each one. Only a reworded (unplaced)
+  comment shows its note and a Resolve button, since it has no underline.
 - Bookmark and comment jumps share one path (`jumpToBlock`), and its
   highlight is drawn by the bookmark plugin for any block.
 
@@ -75,3 +77,12 @@ plugin where it underlines each comment (`locateComment`, the same matching
 the decorations use), so the two can never disagree. Unplaced comments show
 "Wording changed", jump to their paragraph when it exists, and carry their own
 Resolve button.
+
+### 2026-09-30 — Comments: arrows only
+
+The comment list cluttered the rail; the user reads comments by hovering the
+underline. The section is now just previous/next and a counter. The one line
+kept: when the current comment is unplaced, its note and Resolve appear under
+the arrows, because it has no underline to hover or right-click. Verified on
+an isolated server: no list, stale line only on the reworded comment, Resolve
+drops the count, the placed comment keeps its underline.
