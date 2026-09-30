@@ -1,0 +1,19 @@
+/* Zero-height sticky anchor as the scroll area's first child, so the button
+ * stays pinned at the top right while the doc scrolls under it. */
+.back-to-top-anchor {
+  position: sticky;
+  top: 0;
+  height: 0;
+  z-index: 5;
+}
+
+/* Reuses the Review panel's square arrow button; solid fill because it
+ * floats over text. */
+.back-to-top.review-panel__btn,
+[data-mode="dark"] .back-to-top.review-panel__btn {
+  position: absolute;
+  top: -1.25rem;
+  right: -0.25rem;
+  background: var(--bg-surface);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+}

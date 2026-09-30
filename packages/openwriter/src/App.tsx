@@ -7,6 +7,7 @@ import FormatToolbar from './editor/FormatToolbar';
 import Titlebar from './titlebar/Titlebar';
 import UpdateBanner from './UpdateBanner';
 import ContextMenu from './context-menu/ContextMenu';
+import BackToTop from './editor/BackToTop';
 import CommentPopover from './comment-popover/CommentPopover';
 import Sidebar, { SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH, SIDEBAR_DEFAULT_WIDTH } from './sidebar/Sidebar';
 import { useRightRail } from './right-rail/RightRailContext';
@@ -1235,6 +1236,7 @@ export default function App() {
           </div>
         )}
         <div className="editor-container">
+          <BackToTop />
           {isArticle ? (
             <ArticleComposeView
               title={title}
