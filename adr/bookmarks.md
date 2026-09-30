@@ -41,3 +41,11 @@ allowed. The jump highlight is a decoration because ProseMirror redraws away
 classes set directly on its DOM. Verified on an isolated server: add, a note,
 an insert between two bookmarks, reload persistence, stepping with wraparound,
 margin-icon edit, removal, and a clean `.md` file.
+
+### 2026-09-30 — Bookmark items on the comment menu
+
+Right-clicking commented text opens the comment-only menu, which offered no
+bookmark items, so a paragraph could not be bookmarked from its commented
+words. The comment menu now appends the same bookmark items the main menu
+builds. Verified on an isolated server: add from commented text, then
+Edit/Remove offered, comment intact.

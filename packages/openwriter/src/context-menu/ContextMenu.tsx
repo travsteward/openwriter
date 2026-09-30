@@ -1165,6 +1165,14 @@ export default function ContextMenu({ editorRef, allEditors, documentId }: Conte
           <button className="context-menu-item" onClick={handleCommentDelete}>
             <span>Delete comment</span>
           </button>
+          {getActions().filter((item) => item.action === 'bookmark' || item.action === 'remove-bookmark').map((item, idx) => (
+            <span key={item.action}>
+              {idx === 0 && <div className="context-menu-divider" />}
+              <button className="context-menu-item" onClick={() => handleAction(item)}>
+                <span>{item.label}</span>
+              </button>
+            </span>
+          ))}
         </>
       ) : showCustom ? (
         <div className="context-menu-custom">
