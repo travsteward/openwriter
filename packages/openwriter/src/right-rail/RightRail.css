@@ -1248,8 +1248,9 @@
   flex-direction: column;
 }
 
+/* Small bottom padding: Comments/Bookmarks sections follow directly below. */
 .review-tab__empty {
-  padding: 32px 18px;
+  padding: 32px 18px 4px;
   display: flex;
   flex-direction: column;
   gap: 8px;
