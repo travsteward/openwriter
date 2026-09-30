@@ -14,7 +14,7 @@
  * Run: `node scripts/test-comments-integration.mjs`
  */
 
-import { mkdirSync, readFileSync, rmSync, existsSync } from 'fs';
+import { mkdirSync, readFileSync, readdirSync, rmSync, existsSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
 import matter from 'gray-matter';
@@ -28,7 +28,7 @@ import {
 import { markdownToTiptap } from '../dist/server/markdown.js';
 import { markdownToNodes, resolvePreviousNodes, resolveGraveyard } from '../dist/server/markdown-parse.js';
 import { tiptapToBlocks } from '../dist/server/node-blocks.js';
-import { addComment, getComments, resolveComments } from '../dist/server/comments.js';
+import { addComment, getComments, resolveComments, deleteComments } from '../dist/server/comments.js';
 import { setActiveProfile, ensureDataDir } from '../dist/server/helpers.js';
 
 let passed = 0;
@@ -248,6 +248,25 @@ try {
     const after = getComments(filename)[filename] ?? [];
     assert(after.length === 1, `1 mark remains after resolving 1 (got ${after.length})`);
     assert(!after.find((m) => m.id === single.id), 'resolved mark id no longer in sidecar');
+  }
+
+  // ==========================================================================
+  // N-G: Resolve/delete on a doc whose filename has underscores writes back
+  // to the same sidecar (no stray file) and listings keep the real filename
+  // ==========================================================================
+  console.log('\nN-G: underscore filenames resolve in place');
+  {
+    const uFile = '_untitled-a_b.md';
+    const marksDir = join(TEST_PROFILE_DIR, '_marks');
+    const c1 = addComment(uFile, 'one', 'n', 'aa000001');
+    const c2 = addComment(uFile, 'two', 'n', 'aa000001');
+    assert(Object.keys(getComments()).includes(uFile), 'global listing keys by the real filename');
+    resolveComments([c1.id]);
+    assert(!(getComments(uFile)[uFile] ?? []).some((m) => m.id === c1.id), 'resolved comment hidden');
+    deleteComments([c2.id]);
+    assert(!getComments(uFile)[uFile], 'deleted comment gone');
+    const sidecars = readdirSync(marksDir).filter((f) => f.includes('untitled'));
+    assert(sidecars.length === 1 && sidecars[0] === `${uFile}.json`, `no stray sidecar (got ${sidecars.join(', ')})`);
   }
 
 } finally {

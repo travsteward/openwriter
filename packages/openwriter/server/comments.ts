@@ -6,7 +6,7 @@
  */
 
 import { join } from 'path';
-import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync, unlinkSync, renameSync } from 'fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync, unlinkSync } from 'fs';
 import { randomUUID } from 'crypto';
 import { getDataDir, ensureDataDir } from './helpers.js';
 
@@ -26,6 +26,10 @@ export interface Comment {
 }
 
 interface CommentFile {
+  /** The document this sidecar belongs to. The sidecar's own name is lossy
+   *  (path separators become `_`), so the doc filename is stored here rather
+   *  than reverse-mapped from it. Absent on sidecars written before this field. */
+  filename?: string;
   marks: Comment[];
 }
 
@@ -57,12 +61,22 @@ function readCommentFile(filename: string): CommentFile {
 
 function writeCommentFile(filename: string, data: CommentFile): void {
   ensureCommentsDir();
-  const path = commentFilePath(filename);
+  writeCommentPath(commentFilePath(filename), { ...data, filename });
+}
+
+/** Write a sidecar back to the exact path it was read from. */
+function writeCommentPath(path: string, data: CommentFile): void {
   if (data.marks.length === 0) {
     if (existsSync(path)) unlinkSync(path);
     return;
   }
   writeFileSync(path, JSON.stringify(data, null, 2));
+}
+
+/** The document a sidecar belongs to. Legacy sidecars without a stored
+ *  filename fall back to their own name, exact for any top-level doc. */
+function sidecarDocFilename(file: string, data: CommentFile): string {
+  return data.filename ?? file.replace(/\.json$/, '');
 }
 
 export function addComment(filename: string, text: string, note: string, nodeId: string, nodeIds?: string[]): Comment {
@@ -101,12 +115,11 @@ export function getComments(filename?: string, opts: GetCommentsOptions = {}): R
     const files: string[] = readdirSync(getCommentsDir());
     for (const file of files) {
       if (!file.endsWith('.json')) continue;
-      const docFilename = file.replace(/\.json$/, '').replace(/_/g, ' ');
       const path = join(getCommentsDir(), file);
       try {
         const data: CommentFile = JSON.parse(readFileSync(path, 'utf-8'));
         const list = keep(data.marks);
-        if (list.length > 0) result[docFilename] = list;
+        if (list.length > 0) result[sidecarDocFilename(file, data)] = list;
       } catch { /* skip corrupt files */ }
     }
   } catch { /* dir doesn't exist yet */ }
@@ -177,10 +190,7 @@ export function resolveComments(ids: string[]): string[] {
             changed = true;
           }
         }
-        if (changed) {
-          const docFilename = file.replace(/\.json$/, '').replace(/_/g, ' ');
-          writeCommentFile(docFilename, data);
-        }
+        if (changed) writeCommentPath(filePath, data);
       } catch { /* skip */ }
     }
   } catch { /* dir doesn't exist */ }
@@ -209,10 +219,7 @@ export function unresolveComments(ids: string[]): string[] {
             changed = true;
           }
         }
-        if (changed) {
-          const docFilename = file.replace(/\.json$/, '').replace(/_/g, ' ');
-          writeCommentFile(docFilename, data);
-        }
+        if (changed) writeCommentPath(filePath, data);
       } catch { /* skip */ }
     }
   } catch { /* dir doesn't exist */ }
@@ -243,10 +250,7 @@ export function deleteComments(ids: string[]): string[] {
           }
           return true;
         });
-        if (data.marks.length !== before) {
-          const docFilename = file.replace(/\.json$/, '').replace(/_/g, ' ');
-          writeCommentFile(docFilename, data);
-        }
+        if (data.marks.length !== before) writeCommentPath(filePath, data);
       } catch { /* skip */ }
     }
   } catch { /* dir doesn't exist */ }
@@ -275,6 +279,8 @@ export function pruneStaleComments(filename: string, validNodeIds: string[]): nu
 export function renameComments(oldFilename: string, newFilename: string): void {
   const oldPath = commentFilePath(oldFilename);
   if (!existsSync(oldPath)) return;
-  const newPath = commentFilePath(newFilename);
-  renameSync(oldPath, newPath);
+  // Rewrite rather than rename so the stored doc filename follows the doc.
+  const data = readCommentFile(oldFilename);
+  unlinkSync(oldPath);
+  writeCommentFile(newFilename, data);
 }
