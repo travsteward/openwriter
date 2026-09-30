@@ -23,7 +23,8 @@ import { resolveListingTitle, getWorkspaceTitleMap } from './title-resolve.js';
 import { ensureDocId } from './versions.js';
 import { renameDocInAllWorkspaces, removeDocFromAllWorkspaces, listWorkspaces, getWorkspace } from './workspaces.js';
 import { collectAllFiles } from './workspace-tree.js';
-import { renameComments } from './comments.js';
+import { renameComments, getComments, resolveComments } from './comments.js';
+import { commentsCoveredByChange } from './comment-coverage.js';
 import { renameBookmarks } from './bookmarks.js';
 import { deleteOverlay, diagLog, listOverlayTimes, loadDocFromDisk } from './pending-overlay.js';
 import { loadPendingMetadata, savePendingMetadata, type PendingMetadata } from './pending-metadata.js';
@@ -1365,6 +1366,23 @@ function rejectAllInDoc(doc: any): number {
   return count;
 }
 
+/** Resolve the comments that accepting this merged doc's pending changes
+ *  covers. Runs before the accept strips the pending attrs.
+ *  adr: adr/comment-auto-resolve.md */
+function resolveCoveredComments(filename: string, doc: any): void {
+  const comments = getComments(filename)[filename] ?? [];
+  if (comments.length === 0) return;
+  const covered: string[] = [];
+  const walk = (nodes: any[] = []) => {
+    for (const node of nodes) {
+      if (node.attrs?.pendingStatus) covered.push(...commentsCoveredByChange(node, comments));
+      walk(node.content);
+    }
+  };
+  walk(doc.content);
+  if (covered.length > 0) resolveComments([...new Set(covered)]);
+}
+
 /** Accept or reject every pending change in the given docs. Pending changes
  *  live in the sidecar overlay, so each doc is read in its merged form: the
  *  live doc from memory (it may hold unsaved edits), any other doc through
@@ -1389,6 +1407,7 @@ export function batchResolve(filenames: string[], action: 'accept' | 'reject'): 
         // updateDocument re-splits the merged doc into canonical + overlay,
         // the same door the browser's own accept/reject uses.
         const resolved = structuredClone(getDocument());
+        if (action === 'accept') resolveCoveredComments(filename, resolved);
         count = resolveAll(resolved);
         if (count > 0) {
           updateDocument(resolved);
@@ -1397,6 +1416,7 @@ export function batchResolve(filenames: string[], action: 'accept' | 'reject'): 
         }
       } else {
         const loaded = loadDocFromDisk(filename);
+        if (action === 'accept') resolveCoveredComments(filename, loaded.document);
         count = resolveAll(loaded.document);
         if (count > 0) writeResolvedDocFile(filename, loaded.document, loaded.title, loaded.metadata);
       }

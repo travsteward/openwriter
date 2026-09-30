@@ -3,8 +3,10 @@
  * open comments in reading order, like pending changes. Deliberately no list —
  * the underline's hover popover shows each comment. The one exception is a
  * comment whose words were reworded: it has no underline, so landing on it
- * shows its note and a Resolve button here.
- * adr: adr/bookmarks.md
+ * shows its note and a Resolve button here. Resolved comments (by hand, or
+ * by accepting the fix that covered them) sit behind a collapsed "N resolved"
+ * toggle, each with Restore.
+ * adr: adr/bookmarks.md, adr/comment-auto-resolve.md
  */
 
 import { useEffect, useState } from 'react';
@@ -23,17 +25,24 @@ const ChevronUp = () => <svg width="16" height="16" viewBox="0 0 16 16" fill="no
 const ChevronDown = () => <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 6l5 5 5-5" stroke="currentColor" {...s} /></svg>;
 
 export default function CommentsSection({ editors, filename }: Props) {
-  const [comments, setComments] = useState<CommentData[]>([]);
+  const [all, setAll] = useState<CommentData[]>([]);
   const [current, setCurrent] = useState(-1);
+  const [showResolved, setShowResolved] = useState(false);
+  const comments = all.filter((c) => !c.resolvedAt);
+  // Resolved by hand or by accepting a fix; newest first, each restorable.
+  const resolved = all
+    .filter((c) => c.resolvedAt)
+    .sort((a, b) => (b.resolvedAt ?? '').localeCompare(a.resolvedAt ?? ''));
 
   useEffect(() => {
     let cancelled = false;
     setCurrent(-1);
+    setShowResolved(false);
     const load = () => {
-      if (!filename) { setComments([]); return; }
-      fetch(`/api/comments/${encodeURIComponent(filename)}`)
+      if (!filename) { setAll([]); return; }
+      fetch(`/api/comments/${encodeURIComponent(filename)}?resolved=1`)
         .then((r) => r.json())
-        .then((data) => { if (!cancelled) setComments(Array.isArray(data.comments) ? data.comments : []); })
+        .then((data) => { if (!cancelled) setAll(Array.isArray(data.comments) ? data.comments : []); })
         .catch(() => {});
     };
     load();
@@ -61,13 +70,15 @@ export default function CommentsSection({ editors, filename }: Props) {
     })
     .sort((a, b) => a.order - b.order);
 
-  const resolve = (id: string) => {
-    fetch('/api/comments/resolve', {
+  const post = (path: 'resolve' | 'unresolve', id: string) => {
+    fetch(`/api/comments/${path}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ids: [id] }),
-    }).catch((err) => console.error('[Comments] resolve failed:', err));
+    }).catch((err) => console.error(`[Comments] ${path} failed:`, err));
   };
+  const resolve = (id: string) => post('resolve', id);
+  const restore = (id: string) => post('unresolve', id);
 
   const go = (index: number) => {
     const row = rows[index];
@@ -81,17 +92,19 @@ export default function CommentsSection({ editors, filename }: Props) {
     go((base + delta + rows.length) % rows.length);
   };
 
-  if (rows.length === 0) return null;
+  if (rows.length === 0 && resolved.length === 0) return null;
   const currentRow = current >= 0 ? rows[current] : undefined;
 
   return (
     <div className="review-tab__section">
       <div className="review-tab__section-label">Comments</div>
-      <div className="review-tab__row">
-        <button className="review-panel__btn" onClick={() => step(-1)} title="Previous comment"><ChevronUp /></button>
-        <button className="review-panel__btn" onClick={() => step(1)} title="Next comment"><ChevronDown /></button>
-        <span className="review-panel__counter">{current >= 0 ? `${current + 1} / ${rows.length}` : `${rows.length}`}</span>
-      </div>
+      {rows.length > 0 && (
+        <div className="review-tab__row">
+          <button className="review-panel__btn" onClick={() => step(-1)} title="Previous comment"><ChevronUp /></button>
+          <button className="review-panel__btn" onClick={() => step(1)} title="Next comment"><ChevronDown /></button>
+          <span className="review-panel__counter">{current >= 0 ? `${current + 1} / ${rows.length}` : `${rows.length}`}</span>
+        </div>
+      )}
       {currentRow?.stale && (
         <div className="comments-stale">
           <span className="comments-stale__text" title={currentRow.comment.note}>
@@ -106,6 +119,36 @@ export default function CommentsSection({ editors, filename }: Props) {
             Resolve
           </button>
         </div>
+      )}
+      {resolved.length > 0 && (
+        <button
+          type="button"
+          className="comments-resolved__toggle"
+          onClick={() => setShowResolved((v) => !v)}
+          aria-expanded={showResolved}
+        >
+          {showResolved ? 'Hide resolved' : `${resolved.length} resolved`}
+        </button>
+      )}
+      {showResolved && (
+        <ul className="bookmarks-list comments-resolved">
+          {resolved.map((c) => (
+            <li key={c.id} className="bookmarks-row">
+              <div className="bookmarks-row__main comments-resolved__main">
+                <span className="bookmarks-row__note">{c.note || '(no note)'}</span>
+                <span className="bookmarks-row__preview">{c.text}</span>
+              </div>
+              <button
+                type="button"
+                className="comments-stale__resolve comments-resolved__restore"
+                onClick={() => restore(c.id)}
+                title="Reopen this comment"
+              >
+                Restore
+              </button>
+            </li>
+          ))}
+        </ul>
       )}
     </div>
   );

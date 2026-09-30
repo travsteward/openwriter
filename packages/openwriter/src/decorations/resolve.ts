@@ -7,6 +7,8 @@ import type { Editor } from '@tiptap/core';
 import { findNodeById, findGroupMembers } from './apply';
 import { forceDecorationRefresh } from './plugin';
 import { getPendingNodeIds } from '../hooks/usePendingState';
+import { getCommentsData } from './comments-plugin';
+import { commentsCoveredByChange } from '../../server/comment-coverage';
 
 // ============================================================================
 // HELPERS
@@ -209,7 +211,35 @@ function rejectGroup(editor: Editor, groupId: string): boolean {
 // UNIFIED ACCEPT / REJECT
 // ============================================================================
 
+/** Comments the change at this node covers, read before accepting strips
+ *  the pending attrs. adr: adr/comment-auto-resolve.md */
+function coveredComments(editor: Editor, nodeId: string): string[] {
+  const nodeResult = findNodeById(editor, nodeId);
+  if (!nodeResult) return [];
+  const groupId = nodeResult.node.attrs?.pendingGroupId;
+  const nodes = groupId ? findGroupMembers(editor, groupId).map((m) => m.node) : [nodeResult.node];
+  const comments = getCommentsData();
+  return nodes.flatMap((n) => commentsCoveredByChange(n.toJSON(), comments));
+}
+
+function resolveComments(ids: string[]): void {
+  if (ids.length === 0) return;
+  fetch('/api/comments/resolve', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ids: [...new Set(ids)] }),
+  }).catch((err) => console.error('[Comments] auto-resolve failed:', err));
+}
+
+/** Accept a change and resolve the comments it covers. */
 export function acceptChange(editor: Editor, nodeId: string): boolean {
+  const covered = coveredComments(editor, nodeId);
+  const ok = applyAccept(editor, nodeId);
+  if (ok) resolveComments(covered);
+  return ok;
+}
+
+function applyAccept(editor: Editor, nodeId: string): boolean {
   const nodeResult = findNodeById(editor, nodeId);
   if (!nodeResult) return false;
 
@@ -249,9 +279,11 @@ export function rejectChange(editor: Editor, nodeId: string): boolean {
 
 export function acceptAllChanges(editor: Editor): void {
   const nodeIds = getPendingNodeIds(editor).reverse();
+  const covered = nodeIds.flatMap((nodeId) => coveredComments(editor, nodeId));
   for (const nodeId of nodeIds) {
-    acceptChange(editor, nodeId);
+    applyAccept(editor, nodeId);
   }
+  resolveComments(covered);
   if (editor.view) forceDecorationRefresh(editor.view);
 }
 

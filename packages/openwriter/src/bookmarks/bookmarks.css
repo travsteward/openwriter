@@ -96,6 +96,23 @@
 }
 .comments-stale__resolve:hover { color: var(--ink-body); border-color: var(--ink-light); }
 
+/* Resolved comments: a quiet toggle under the comment arrows, expanding to
+ * rows styled like the bookmark list, each with Restore. */
+.comments-resolved__toggle {
+  align-self: flex-start;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--ink-light);
+  font-family: var(--font-body);
+  font-size: 12px;
+  cursor: pointer;
+}
+.comments-resolved__toggle:hover { color: var(--ink-body); text-decoration: underline; }
+.comments-resolved .bookmarks-row { align-items: center; }
+.comments-resolved__main { cursor: default; }
+.comments-resolved__restore { margin-right: 6px; }
+
 /* Bookmarks list in the Review rail — mirrors the Manuscripts rows. */
 .bookmarks-empty {
   font-size: 12px;

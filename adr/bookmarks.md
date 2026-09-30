@@ -86,3 +86,9 @@ kept: when the current comment is unplaced, its note and Resolve appear under
 the arrows, because it has no underline to hover or right-click. Verified on
 an isolated server: no list, stale line only on the reworded comment, Resolve
 drops the count, the placed comment keeps its underline.
+
+### 2026-09-30 — Resolved comments behind a toggle
+
+The Comments section now also shows a collapsed "N resolved" toggle that
+expands to the resolved comments, each with Restore. Collapsed by default so
+the section stays arrows-only. See adr/comment-auto-resolve.md.

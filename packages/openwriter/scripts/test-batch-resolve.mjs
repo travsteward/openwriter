@@ -23,6 +23,7 @@ import {
 } from '../dist/server/state.js';
 import { batchResolve } from '../dist/server/documents.js';
 import { markdownToTiptap } from '../dist/server/markdown.js';
+import { addComment, getComments } from '../dist/server/comments.js';
 import { setActiveProfile, ensureDataDir } from '../dist/server/helpers.js';
 
 let passed = 0;
@@ -89,8 +90,11 @@ try {
       content: { type: 'paragraph', attrs: { id: nodeId }, content: [{ type: 'text', text: 'Accepted rewrite sentence.' }] },
     }]);
     assert(existsSync(sidecarPath('acc00001')), 'sidecar exists before accept');
+    const covered = addComment(file, 'Original sentence', 'tighten this', nodeId);
 
     const result = batchResolve([file], 'accept');
+    const after = getComments(file, { includeResolved: true })[file] ?? [];
+    assert(after.find((c) => c.id === covered.id)?.resolvedAt, 'the comment on the accepted words is resolved, not deleted');
     assert(result.changesResolved === 1, `resolved 1 change (got ${result.changesResolved})`);
     assert(!existsSync(sidecarPath('acc00001')), 'sidecar removed after accept');
     assert(body(file).includes('Accepted rewrite sentence.'), 'accepted text is on disk');

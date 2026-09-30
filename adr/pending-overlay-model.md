@@ -1285,3 +1285,8 @@ resolved on a copy and handed to `updateDocument`, which re-splits canonical
 and overlay exactly as the browser's own accept/reject does. Live-doc viewers
 get a refresh via `refreshLiveDocViewers` (see adr/per-tab-view.md). Locked by
 `scripts/test-batch-resolve.mjs`.
+
+### 2026-09-30 — Batch accept resolves covered comments
+
+Before stripping pending attrs, batch accept resolves the comments each
+pending node covers (adr/comment-auto-resolve.md). Reject is unchanged.

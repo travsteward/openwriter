@@ -872,6 +872,8 @@ export async function startHttpServer(options: { server: HttpServer; port?: numb
         for (const fn of filenames) removePendingCacheEntry(fn);
         updatePendingCacheForActiveDoc();
         if (result.activeResolved) refreshLiveDocViewers();
+        // Accepting resolves the comments the changes covered.
+        if (action === 'accept') for (const fn of filenames) broadcastCommentsChanged(fn);
         broadcastPendingDocsChanged();
         broadcastDocumentsChanged();
       }
@@ -1066,7 +1068,9 @@ export async function startHttpServer(options: { server: HttpServer; port?: numb
 
   app.get('/api/comments/:filename', (req, res) => {
     try {
-      const byFile = getComments(req.params.filename);
+      // ?resolved=1 also returns resolved comments, for the Review tab's
+      // resolved list (each carries resolvedAt).
+      const byFile = getComments(req.params.filename, { includeResolved: req.query.resolved === '1' });
       res.json({ comments: byFile[req.params.filename] || [] });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
