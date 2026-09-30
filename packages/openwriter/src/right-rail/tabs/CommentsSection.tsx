@@ -7,7 +7,7 @@
 
 import { useEffect, useState } from 'react';
 import type { Editor } from '@tiptap/react';
-import type { CommentData } from '../../decorations/comments-plugin';
+import { locateComment, type CommentData } from '../../decorations/comments-plugin';
 import { findBlock } from '../../bookmarks/bookmarks-store';
 import { jumpToBlock } from '../../bookmarks/bookmark-plugin';
 
@@ -41,15 +41,31 @@ export default function CommentsSection({ editors, filename }: Props) {
   }, [filename]);
 
   // Reading order: block position, then where the quoted text sits in it.
-  // Comments whose paragraph is gone sort last and cannot be jumped to.
+  // A comment is "placed" exactly when the editor underlines it. One whose
+  // words were edited away is stale: it jumps to its paragraph if that still
+  // exists, and can only be resolved from here since it has no underline.
   const rows = comments
     .map((c) => {
+      for (const editor of editors) {
+        if (!editor || editor.isDestroyed) continue;
+        const from = locateComment(editor.state.doc, c);
+        if (from === null) continue;
+        const nodeId = editor.state.doc.resolve(from).parent.attrs?.id ?? c.nodeId;
+        return { comment: c, nodeId, target: true, stale: false, order: from };
+      }
       const nodeId = c.nodeIds?.[0] ?? c.nodeId;
-      const target = findBlock(editors, nodeId);
-      const offset = target ? Math.max(0, target.text.indexOf(c.text.split('\n')[0])) : 0;
-      return { comment: c, nodeId, target, order: target ? target.pos + offset / 1e6 : Infinity };
+      const block = findBlock(editors, nodeId);
+      return { comment: c, nodeId, target: !!block, stale: true, order: block ? block.pos : Infinity };
     })
     .sort((a, b) => a.order - b.order);
+
+  const resolve = (id: string) => {
+    fetch('/api/comments/resolve', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids: [id] }),
+    }).catch((err) => console.error('[Comments] resolve failed:', err));
+  };
 
   const go = (index: number) => {
     const row = rows[index];
@@ -76,18 +92,31 @@ export default function CommentsSection({ editors, filename }: Props) {
         <span className="review-panel__counter">{current >= 0 ? `${current + 1} / ${rows.length}` : `${rows.length}`}</span>
       </div>
       <ul className="bookmarks-list comments-list">
-        {rows.map(({ comment, target }, i) => (
-          <li key={comment.id} className={i === current ? 'bookmarks-row bookmarks-row--active' : 'bookmarks-row'}>
+        {rows.map(({ comment, target, stale }, i) => (
+          <li key={comment.id} className={`bookmarks-row${i === current ? ' bookmarks-row--active' : ''}${stale ? ' comments-row--stale' : ''}`}>
             <button
               type="button"
               className="bookmarks-row__main"
               onClick={() => go(i)}
               disabled={!target}
-              title={target ? 'Jump to comment' : 'The commented paragraph was removed'}
+              title={!target ? 'The commented paragraph was removed' : stale ? 'The commented words were changed; jumps to the paragraph' : 'Jump to comment'}
             >
               <span className="bookmarks-row__note">{comment.note || '(no note)'}</span>
-              <span className="bookmarks-row__preview">“{comment.text.replace(/\s+/g, ' ').trim()}”</span>
+              <span className="bookmarks-row__preview">
+                {stale && <span className="comments-row__stale-tag">Wording changed · </span>}
+                “{comment.text.replace(/\s+/g, ' ').trim()}”
+              </span>
             </button>
+            {stale && (
+              <button
+                type="button"
+                className="comments-row__resolve"
+                onClick={() => resolve(comment.id)}
+                title="Resolve this comment"
+              >
+                Resolve
+              </button>
+            )}
           </li>
         ))}
       </ul>

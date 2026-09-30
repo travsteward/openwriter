@@ -61,6 +61,22 @@
 
 /* Comments list can be long; it scrolls inside the rail. */
 .comments-list { max-height: 40vh; overflow-y: auto; }
+/* A comment whose words were edited away: muted, with its own Resolve. */
+.comments-row--stale .bookmarks-row__note { color: var(--ink-light); }
+.comments-row__stale-tag { font-style: italic; }
+.comments-row__resolve {
+  align-self: center;
+  margin-right: 6px;
+  padding: 3px 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--ink-light);
+  font-family: var(--font-body);
+  font-size: 11px;
+  cursor: pointer;
+}
+.comments-row__resolve:hover { color: var(--ink-body); border-color: var(--ink-light); }
 
 /* Review rail lists (bookmarks, comments) — mirror the Manuscripts rows. */
 .bookmarks-empty {

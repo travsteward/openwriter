@@ -108,8 +108,16 @@ function tryDecorateMultiNode(
   return decorations;
 }
 
-function buildCommentDecorations(doc: any): DecorationSet {
-  if (currentComments.length === 0) return DecorationSet.empty;
+/** Where the editor underlines this comment, or null when its words are no
+ *  longer in the doc. Same matching as the decorations, so the Review rail
+ *  and the editor always agree on which comments are placed. */
+export function locateComment(doc: any, comment: CommentData): number | null {
+  const found = buildCommentDecorations(doc, [comment]).find();
+  return found.length > 0 ? found[0].from : null;
+}
+
+function buildCommentDecorations(doc: any, comments: CommentData[] = currentComments): DecorationSet {
+  if (comments.length === 0) return DecorationSet.empty;
 
   const decorations: Decoration[] = [];
   const matched = new Set<string>();
@@ -123,7 +131,7 @@ function buildCommentDecorations(doc: any): DecorationSet {
   });
 
   // Pass 1: match multi-node comments by nodeIds array
-  for (const comment of currentComments) {
+  for (const comment of comments) {
     if (comment.nodeIds && comment.nodeIds.length > 1) {
       const decs = tryDecorateMultiNode(comment, textblockByNodeId);
       if (decs.length > 0) {
@@ -134,7 +142,7 @@ function buildCommentDecorations(doc: any): DecorationSet {
   }
 
   // Pass 2: match single-node comments by nodeId
-  for (const comment of currentComments) {
+  for (const comment of comments) {
     if (matched.has(comment.id)) continue;
     const entry = textblockByNodeId.get(comment.nodeId);
     if (!entry) continue;
@@ -146,7 +154,7 @@ function buildCommentDecorations(doc: any): DecorationSet {
   }
 
   // Pass 3: text fallback for unmatched comments
-  const unmatched = currentComments.filter((c) => !matched.has(c.id));
+  const unmatched = comments.filter((c) => !matched.has(c.id));
   if (unmatched.length > 0) {
     doc.descendants((node: any, pos: number) => {
       if (!node.isTextblock) return true;

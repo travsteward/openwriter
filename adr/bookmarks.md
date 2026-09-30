@@ -65,3 +65,13 @@ and highlight were generalized from bookmarked blocks to any block so both
 lists use them. Verified on an isolated server: return button targets the
 newest bookmark, comments list in reading order, stepping wraps, and each jump
 highlights the referenced block.
+
+### 2026-09-30 — Rail uses the editor's comment placement
+
+A comment whose quoted words were later reworded had no underline, but the
+rail found its paragraph by node ID and listed it as normal, with no way to
+resolve it (resolve lives on the underline). The rail now asks the comment
+plugin where it underlines each comment (`locateComment`, the same matching
+the decorations use), so the two can never disagree. Unplaced comments show
+"Wording changed", jump to their paragraph when it exists, and carry their own
+Resolve button.
