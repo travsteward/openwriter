@@ -79,8 +79,8 @@ export function addBookmark(nodeId: string, note: string): void { send('POST', {
 export function editBookmark(id: string, note: string): void { send('PATCH', { id, note }); }
 export function removeBookmark(id: string): void { send('DELETE', { id }); }
 
-/** Locate a bookmarked block in whichever editor holds it. */
-export function findBookmarkTarget(editors: Editor[], nodeId: string): { editor: Editor; pos: number; text: string } | null {
+/** Locate a block by node ID in whichever editor holds it. */
+export function findBlock(editors: Editor[], nodeId: string): { editor: Editor; pos: number; text: string } | null {
   for (const editor of editors) {
     if (!editor || editor.isDestroyed) continue;
     let found: { editor: Editor; pos: number; text: string } | null = null;

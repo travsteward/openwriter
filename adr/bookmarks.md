@@ -27,6 +27,11 @@ stays until the user removes it.
   it shows that file.
 - Right-click targets the paragraph under the pointer, not the prior cursor
   selection that comments use.
+- Bookmarks are few, so the rail has no stepping for them: a "Back to
+  bookmark" button at the top of the Review tab jumps to the newest one.
+  Comments are many, so their rail section steps previous/next.
+- Bookmark and comment jumps share one path (`jumpToBlock`), and its
+  highlight is drawn by the bookmark plugin for any block.
 
 ## Decision log
 
@@ -49,3 +54,14 @@ bookmark items, so a paragraph could not be bookmarked from its commented
 words. The comment menu now appends the same bookmark items the main menu
 builds. Verified on an isolated server: add from commented text, then
 Edit/Remove offered, comment intact.
+
+### 2026-09-30 — Quick return and comment navigation
+
+Bookmarks proved low-volume, so their previous/next arrows were replaced by a
+one-click "Back to bookmark" button at the top of the Review tab (newest
+bookmark, hidden when none). Comments gained a Review section with
+previous/next stepping and a scrolling list, above Bookmarks. The jump helper
+and highlight were generalized from bookmarked blocks to any block so both
+lists use them. Verified on an isolated server: return button targets the
+newest bookmark, comments list in reading order, stepping wraps, and each jump
+highlights the referenced block.

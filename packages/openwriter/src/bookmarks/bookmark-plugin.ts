@@ -9,7 +9,7 @@ import { Extension } from '@tiptap/core';
 import { Plugin, PluginKey } from '@tiptap/pm/state';
 import { Decoration, DecorationSet } from '@tiptap/pm/view';
 import type { Editor } from '@tiptap/react';
-import { getBookmarks, subscribeBookmarks, findBookmarkTarget, type Bookmark } from './bookmarks-store';
+import { getBookmarks, subscribeBookmarks, findBlock, type Bookmark } from './bookmarks-store';
 import './bookmarks.css';
 
 const bookmarkKey = new PluginKey<DecorationSet>('bookmarkDecoration');
@@ -19,9 +19,10 @@ const bookmarkKey = new PluginKey<DecorationSet>('bookmarkDecoration');
 let flashNodeId: string | null = null;
 let flashTimer: number | undefined;
 
-/** Scroll a bookmarked block to the middle of the view and flash it. */
-export function jumpToBookmark(editors: Editor[], nodeId: string): boolean {
-  const target = findBookmarkTarget(editors, nodeId);
+/** Scroll a block (bookmarked or commented) to the middle of the view and
+ *  flash it. The Review rail's bookmark and comment lists both jump here. */
+export function jumpToBlock(editors: Editor[], nodeId: string): boolean {
+  const target = findBlock(editors, nodeId);
   if (!target) return false;
   const { view } = target.editor;
   const dom = view.nodeDOM(target.pos) as HTMLElement | null;
@@ -62,14 +63,16 @@ function renderIcon(bookmark: Bookmark): HTMLElement {
 
 function build(doc: any): DecorationSet {
   const list = getBookmarks();
-  if (list.length === 0) return DecorationSet.empty;
+  if (list.length === 0 && !flashNodeId) return DecorationSet.empty;
   const byNode = new Map(list.map((b) => [b.nodeId, b]));
   const decorations: Decoration[] = [];
   doc.descendants((node: any, pos: number) => {
-    const bookmark = node.isTextblock && node.attrs?.id ? byNode.get(node.attrs.id) : undefined;
+    const id = node.isTextblock ? node.attrs?.id : undefined;
+    if (!id) return true;
+    const bookmark = byNode.get(id);
+    const classes = [bookmark ? 'ow-bookmarked' : '', id === flashNodeId ? 'ow-bookmark-flash' : ''].filter(Boolean).join(' ');
+    if (classes) decorations.push(Decoration.node(pos, pos + node.nodeSize, { class: classes }));
     if (bookmark) {
-      const flash = bookmark.nodeId === flashNodeId ? ' ow-bookmark-flash' : '';
-      decorations.push(Decoration.node(pos, pos + node.nodeSize, { class: `ow-bookmarked${flash}` }));
       decorations.push(Decoration.widget(pos + 1, () => renderIcon(bookmark), {
         side: -1,
         ignoreSelection: true,

@@ -30,7 +30,39 @@
   margin-left: auto;
 }
 
-/* Review rail list — mirrors the Manuscripts launcher rows. */
+/* One-click return to the newest bookmark, top of the Review tab. */
+.bookmark-return {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--accent);
+  font-family: var(--font-body);
+  font-size: 13px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.12s ease;
+}
+.bookmark-return:hover { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.bookmark-return__label { font-weight: 600; white-space: nowrap; }
+.bookmark-return__note {
+  flex: 1;
+  min-width: 0;
+  color: var(--ink-light);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Comments list can be long; it scrolls inside the rail. */
+.comments-list { max-height: 40vh; overflow-y: auto; }
+
+/* Review rail lists (bookmarks, comments) — mirror the Manuscripts rows. */
 .bookmarks-empty {
   font-size: 12px;
   line-height: 1.5;

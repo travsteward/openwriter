@@ -19,7 +19,8 @@ import { findNodeById, findGroupMembers } from '../../decorations/apply';
 import type { RightRailTabProps } from '../types';
 import type { WorkspaceFull, WorkspaceNode, WorkspaceWithData } from '../../sidebar/sidebar-types';
 import ManuscriptRailSections from './ManuscriptRailSections';
-import BookmarksSection from './BookmarksSection';
+import BookmarksSection, { BookmarkReturn } from './BookmarksSection';
+import CommentsSection from './CommentsSection';
 
 /** Scope filter — which subset of pending docs the navigator cycles through.
  *  Persisted to localStorage so the choice survives reloads.
@@ -593,11 +594,13 @@ export default function ReviewTab({
   if (!hasPending && !pendingTitle) {
     return (
       <>
+        <BookmarkReturn editors={editors} filename={currentFilename} />
         <div className="review-tab__empty">
           <div className="review-tab__empty-title">All caught up</div>
           <div className="review-tab__empty-note">No pending agent changes. New writes from agents will land here for review.</div>
         </div>
         <div className="review-tab">
+          <CommentsSection editors={editors} filename={currentFilename} />
           <BookmarksSection editors={editors} filename={currentFilename} />
           <ManuscriptRailSections contentType={contentType} docId={docId} manuscriptStyle={manuscriptStyle} onSwitchDocument={onSwitchDocument} />
         </div>
@@ -607,6 +610,7 @@ export default function ReviewTab({
 
   return (
     <div className="review-tab">
+      <BookmarkReturn editors={editors} filename={currentFilename} />
       {scopeSection}
       {totalPendingDocs > 1 && (
         <div className="review-tab__section">
@@ -675,6 +679,7 @@ export default function ReviewTab({
         </div>
       </div>
 
+      <CommentsSection editors={editors} filename={currentFilename} />
       <BookmarksSection editors={editors} filename={currentFilename} />
 
       <ManuscriptRailSections contentType={contentType} docId={docId} manuscriptStyle={manuscriptStyle} onSwitchDocument={onSwitchDocument} />
