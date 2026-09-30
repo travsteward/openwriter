@@ -25,7 +25,7 @@ export function BookmarkReturn({ editors, filename }: Props) {
     (a, b) => (!a || b.createdAt > a.createdAt ? b : a), null);
   if (!latest || !findBlock(editors, latest.nodeId)) return null;
   return (
-    <div className="review-tab__section">
+    <div className="review-tab__section bookmark-return-section">
       <button
         type="button"
         className="bookmark-return"

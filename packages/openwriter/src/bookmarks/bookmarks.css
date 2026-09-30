@@ -30,6 +30,14 @@
   margin-left: auto;
 }
 
+/* Top of the Review tab: even breathing room above and below the button.
+ * With nothing pending it sits alone above "All caught up", whose own large
+ * top padding is trimmed; with pending changes it is inside .review-tab,
+ * which already pads the top. */
+.review-tab__section.bookmark-return-section { padding-top: 14px; }
+.review-tab > .review-tab__section.bookmark-return-section { padding-top: 6px; }
+.bookmark-return-section + .review-tab__empty { padding-top: 14px; }
+
 /* One-click return to the newest bookmark, top of the Review tab. */
 .bookmark-return {
   display: flex;
