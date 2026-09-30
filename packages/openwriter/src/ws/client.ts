@@ -359,6 +359,10 @@ export function useWebSocket({ onNodeChanges, onAgentStatus, onDocumentSwitched,
             window.dispatchEvent(new CustomEvent('ow-comments-changed', { detail: { filename: msg.filename } }));
           }
 
+          if (msg.type === 'bookmarks-changed' && msg.filename) {
+            window.dispatchEvent(new CustomEvent('ow-bookmarks-changed', { detail: { filename: msg.filename } }));
+          }
+
           if (msg.type === 'documents-changed') {
             window.dispatchEvent(new CustomEvent('ow-documents-changed'));
           }

@@ -21,6 +21,7 @@ import { writePromptDebug, isPromptDebugEnabled } from './prompt-debug.js';
 import { createWorkspaceRouter } from './workspace-routes.js';
 import { createLinkRouter } from './link-routes.js';
 import { createTweetRouter } from './tweet-routes.js';
+import { createBookmarkRouter } from './bookmark-routes.js';
 import { markdownToTiptap } from './markdown.js';
 import { importGoogleDoc } from './gdoc-import.js';
 import { createVersionRouter } from './version-routes.js';
@@ -1151,6 +1152,9 @@ export async function startHttpServer(options: { server: HttpServer; port?: numb
 
   // Mount tweet embed proxy
   app.use(createTweetRouter());
+
+  // Mount bookmark routes (user-private paragraph markers)
+  app.use(createBookmarkRouter());
 
   // Text edit (fine-grained find/replace + mark changes within a node)
   app.post('/api/edit-text', (req, res) => {

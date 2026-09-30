@@ -972,6 +972,14 @@ export function broadcastCommentsChanged(filename: string): void {
   }
 }
 
+/** Global message; each tab refetches only when it shows that file. */
+export function broadcastBookmarksChanged(filename: string): void {
+  const msg = JSON.stringify({ type: 'bookmarks-changed', filename });
+  for (const ws of clients) {
+    if (ws.readyState === WebSocket.OPEN) ws.send(msg);
+  }
+}
+
 /**
  * Record an agent-attributed activity event AND push it to every connected
  * client. The on-disk log is authoritative; broadcast is purely for live UI.

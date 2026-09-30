@@ -24,6 +24,7 @@ import { ensureDocId } from './versions.js';
 import { renameDocInAllWorkspaces, removeDocFromAllWorkspaces, listWorkspaces, getWorkspace } from './workspaces.js';
 import { collectAllFiles } from './workspace-tree.js';
 import { renameComments } from './comments.js';
+import { renameBookmarks } from './bookmarks.js';
 import { deleteOverlay, diagLog, listOverlayTimes } from './pending-overlay.js';
 import { loadPendingMetadata, savePendingMetadata, type PendingMetadata } from './pending-metadata.js';
 import { getPendingMetadata as getActivePendingMetadata, setPendingMetadata as setActivePendingMetadata, getDocVersion } from './state.js';
@@ -1282,8 +1283,9 @@ export function promoteTempFile(newTitle: string): string | null {
   // Update workspace references
   renameDocInAllWorkspaces(oldFilename, newFilename, newTitle);
 
-  // Rename comments sidecar
+  // Rename comments + bookmarks sidecars
   renameComments(oldFilename, newFilename);
+  renameBookmarks(oldFilename, newFilename);
 
   return newFilename;
 }

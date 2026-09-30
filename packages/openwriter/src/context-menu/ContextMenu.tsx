@@ -10,6 +10,7 @@ import { injectSelectionMarkers, stripSelectionMarkers } from './selection-marke
 import { formatLinkHref, linkHrefIdentifier } from '../editor/link-href';
 import { showToast } from '../utils/toast';
 import { openTopupCheckout } from '../utils/av-billing';
+import { useBookmarks, getBookmarks, addBookmark, editBookmark, removeBookmark } from '../bookmarks/bookmarks-store';
 
 /** Client-side selection cap — mirrors the AV API's apply-editor guard. Toast + cancel
  *  before the request so the user gets instant feedback (not a 413 round-trip). */
@@ -101,6 +102,12 @@ export default function ContextMenu({ editorRef, allEditors, documentId }: Conte
     paragraphs: Array<{ nodeId: string; type: string; level?: number; preview: string }>;
     loading: boolean;
   } | null>(null);
+  // Bookmarks: the paragraph under the right-click (not the prior selection),
+  // and the note editor when adding or editing one.
+  const bookmarks = useBookmarks(documentId || '');
+  const [bookmarkTarget, setBookmarkTarget] = useState<string | null>(null);
+  const [bookmarkEditor, setBookmarkEditor] = useState<{ nodeId: string; id?: string } | null>(null);
+  const [bookmarkNote, setBookmarkNote] = useState('');
   const menuRef = useRef<HTMLDivElement>(null);
   // Capture selection at right-click time (before the click changes cursor position)
   const capturedSelection = useRef<CapturedSelection | null>(null);
@@ -174,6 +181,7 @@ export default function ContextMenu({ editorRef, allEditors, documentId }: Conte
         setEditingComment(null);
         setCommentOnlyMenu(null);
         setDocLinkTarget(null);
+        setBookmarkEditor(null);
       }
     };
     document.addEventListener('mousedown', handleClick);
@@ -245,6 +253,11 @@ export default function ContextMenu({ editorRef, allEditors, documentId }: Conte
     if (isOnLink()) {
       items.push({ action: 'unlink', label: 'Unlink' });
     }
+    if (bookmarkTarget) {
+      const existing = bookmarks.find((b) => b.nodeId === bookmarkTarget);
+      items.push({ action: 'bookmark', label: existing ? 'Edit bookmark' : 'Add bookmark' });
+      if (existing) items.push({ action: 'remove-bookmark', label: 'Remove bookmark' });
+    }
     // "See connections" surfaces when right-click landed on a linked paragraph.
     // Show it first — it's the most relevant action for a linked node.
     if (backlinksMenu && backlinksMenu.entries.length > 0) {
@@ -262,7 +275,7 @@ export default function ContextMenu({ editorRef, allEditors, documentId }: Conte
       items.unshift({ action: 'go-to-target', label });
     }
     return items;
-  }, [editorRef, isOnLink, pluginItems, selectionHasPending, backlinksMenu, docLinkTarget]);
+  }, [editorRef, isOnLink, pluginItems, selectionHasPending, backlinksMenu, docLinkTarget, bookmarkTarget, bookmarks]);
 
   // Open on right-click in editor — capture selection BEFORE the click changes it
   useEffect(() => {
@@ -320,6 +333,20 @@ export default function ContextMenu({ editorRef, allEditors, documentId }: Conte
       // (see editor/extensions.ts). data-doc is everything after the `doc:` prefix.
       const docLinkEl = (e.target as Element | null)?.closest?.('span.doc-link[data-doc]') as HTMLElement | null;
       const docLinkData = docLinkEl?.getAttribute('data-doc') || null;
+
+      // The paragraph actually under the pointer; the captured selection is
+      // wherever the cursor was before the right-click.
+      let clickedBlockId: string | null = null;
+      const hit = editor.view.posAtCoords({ left: e.clientX, top: e.clientY });
+      if (hit) {
+        const $pos = editor.state.doc.resolve(hit.pos);
+        for (let d = $pos.depth; d > 0; d--) {
+          const node = $pos.node(d);
+          if (node.isTextblock && node.attrs?.id) { clickedBlockId = node.attrs.id; break; }
+        }
+      }
+      setBookmarkTarget(clickedBlockId);
+      setBookmarkEditor(null);
 
       e.preventDefault();
       setPosition({ x: e.clientX, y: e.clientY });
@@ -814,6 +841,18 @@ export default function ContextMenu({ editorRef, allEditors, documentId }: Conte
       setShowBacklinksPanel(true);
       return;
     }
+    if (action === 'bookmark' && bookmarkTarget) {
+      const existing = getBookmarks().find((b) => b.nodeId === bookmarkTarget);
+      setBookmarkEditor({ nodeId: bookmarkTarget, id: existing?.id });
+      setBookmarkNote(existing?.note || '');
+      return;
+    }
+    if (action === 'remove-bookmark') {
+      const existing = getBookmarks().find((b) => b.nodeId === bookmarkTarget);
+      if (existing) removeBookmark(existing.id);
+      setVisible(false);
+      return;
+    }
     if (action === 'go-to-target') {
       if (docLinkTarget) {
         window.dispatchEvent(new CustomEvent('ow-navigate-to-link', {
@@ -824,7 +863,47 @@ export default function ContextMenu({ editorRef, allEditors, documentId }: Conte
       setDocLinkTarget(null);
       return;
     }
-  }, [callPluginAction, editorRef, docLinkTarget]);
+  }, [callPluginAction, editorRef, docLinkTarget, bookmarkTarget]);
+
+  // Clicking a margin bookmark icon opens its note editor at the icon.
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const { id, x, y } = (e as CustomEvent).detail || {};
+      const bookmark = getBookmarks().find((b) => b.id === id);
+      if (!bookmark) return;
+      setCommentOnlyMenu(null);
+      setShowCommentInput(false);
+      setShowCustom(false);
+      setShowLinkPicker(false);
+      setShowBacklinksPanel(false);
+      setParagraphPicker(null);
+      setBookmarkTarget(bookmark.nodeId);
+      setBookmarkEditor({ nodeId: bookmark.nodeId, id: bookmark.id });
+      setBookmarkNote(bookmark.note);
+      setPosition({ x, y });
+      setVisible(true);
+    };
+    window.addEventListener('ow-bookmark-open', handler);
+    return () => window.removeEventListener('ow-bookmark-open', handler);
+  }, []);
+
+  const closeBookmarkEditor = useCallback(() => {
+    setVisible(false);
+    setBookmarkEditor(null);
+    setBookmarkNote('');
+  }, []);
+
+  const handleBookmarkSave = useCallback(() => {
+    if (!bookmarkEditor) return;
+    if (bookmarkEditor.id) editBookmark(bookmarkEditor.id, bookmarkNote.trim());
+    else addBookmark(bookmarkEditor.nodeId, bookmarkNote.trim());
+    closeBookmarkEditor();
+  }, [bookmarkEditor, bookmarkNote, closeBookmarkEditor]);
+
+  const handleBookmarkRemove = useCallback(() => {
+    if (bookmarkEditor?.id) removeBookmark(bookmarkEditor.id);
+    closeBookmarkEditor();
+  }, [bookmarkEditor, closeBookmarkEditor]);
 
   const handleCustomSubmit = useCallback(() => {
     if (customInput.trim()) {
@@ -1020,6 +1099,29 @@ export default function ContextMenu({ editorRef, allEditors, documentId }: Conte
     >
       {loading ? (
         <div className="context-menu-loading">Applying...</div>
+      ) : bookmarkEditor ? (
+        <div className="context-menu-comment-editor">
+          <textarea
+            autoFocus
+            className="context-menu-comment-textarea"
+            value={bookmarkNote}
+            onChange={(e) => setBookmarkNote(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleBookmarkSave();
+              }
+              if (e.key === 'Escape') closeBookmarkEditor();
+            }}
+            placeholder="Note to self (optional)..."
+            rows={3}
+          />
+          <div className="context-menu-comment-actions">
+            <span className="context-menu-comment-hint">↵ to save · Esc to cancel</span>
+            {bookmarkEditor.id && <button className="context-menu-bookmark-remove" onClick={handleBookmarkRemove}>Remove</button>}
+            <button onClick={handleBookmarkSave}>{bookmarkEditor.id ? 'Save' : 'Add bookmark'}</button>
+          </div>
+        </div>
       ) : showCommentInput ? (
         <div className="context-menu-comment-editor">
           {(() => {

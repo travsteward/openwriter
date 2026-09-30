@@ -22,6 +22,7 @@ import { InsertionLoadingNode } from './InsertionLoadingNode';
 import { PendingAttributes } from './PendingAttributes';
 import { FootnoteReference, FootnoteSection, FootnoteDefinition } from './Footnotes';
 import TweetImage from '../tweet-compose/TweetImage';
+import { Bookmarks } from '../bookmarks/bookmark-plugin';
 
 const lowlight = createLowlight(common);
 
@@ -84,6 +85,7 @@ export const padExtensions = [
   FootnoteReference,
   FootnoteSection,
   FootnoteDefinition,
+  Bookmarks,
   Placeholder.configure({
     placeholder: 'Start writing...',
   }),

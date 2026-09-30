@@ -234,3 +234,9 @@ Removed the separate reader link and Shared label. Existing Focus controls still
 close and restore panels while keeping the editable document mounted. Revision
 creation belongs to the existing sidebar variant menu; the manuscript rail no
 longer offers a second creation action. Review and Versions remain unchanged.
+
+### 2026-09-30 — Bookmarks section in Review
+
+The Review tab shows the user's bookmarks for the active doc, below the
+approval controls or under "All caught up", above Manuscripts. See
+[bookmarks.md](bookmarks.md).

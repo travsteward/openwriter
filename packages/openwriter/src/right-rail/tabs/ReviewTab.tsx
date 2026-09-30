@@ -19,6 +19,7 @@ import { findNodeById, findGroupMembers } from '../../decorations/apply';
 import type { RightRailTabProps } from '../types';
 import type { WorkspaceFull, WorkspaceNode, WorkspaceWithData } from '../../sidebar/sidebar-types';
 import ManuscriptRailSections from './ManuscriptRailSections';
+import BookmarksSection from './BookmarksSection';
 
 /** Scope filter — which subset of pending docs the navigator cycles through.
  *  Persisted to localStorage so the choice survives reloads.
@@ -597,6 +598,7 @@ export default function ReviewTab({
           <div className="review-tab__empty-note">No pending agent changes. New writes from agents will land here for review.</div>
         </div>
         <div className="review-tab">
+          <BookmarksSection editors={editors} filename={currentFilename} />
           <ManuscriptRailSections contentType={contentType} docId={docId} manuscriptStyle={manuscriptStyle} onSwitchDocument={onSwitchDocument} />
         </div>
       </>
@@ -672,6 +674,8 @@ export default function ReviewTab({
           <button className="review-tab__bulk-btn review-tab__bulk-btn--reject" onClick={handleRejectAll} title="Reject all (Shift+R)"><XIcon /><span>Reject all</span></button>
         </div>
       </div>
+
+      <BookmarksSection editors={editors} filename={currentFilename} />
 
       <ManuscriptRailSections contentType={contentType} docId={docId} manuscriptStyle={manuscriptStyle} onSwitchDocument={onSwitchDocument} />
     </div>

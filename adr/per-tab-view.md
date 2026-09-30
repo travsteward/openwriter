@@ -123,3 +123,9 @@ isolated server: two tabs on different docs both save, a background tab sees
 another tab's edits and an agent's pending insert, accept-all from a tab whose
 doc is not live persists to disk and clears the sidecar, and a replayed stale
 save is refused with the notice while the newer text stays.
+
+### 2026-09-30 — Bookmarks message
+
+Added `bookmarks-changed` as a global message, like `comments-changed`. It
+carries only a filename; each tab refetches when it shows that file, so no
+per-view routing is needed. See [bookmarks.md](bookmarks.md).

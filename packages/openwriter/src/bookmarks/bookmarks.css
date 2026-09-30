@@ -1,0 +1,94 @@
+/* Bookmarks: margin icon in the editor, note editor button, Review rail list.
+ * adr: adr/bookmarks.md */
+
+/* Margin icon sits left of the pending gutter bar (which uses -1rem). */
+.ow-bookmarked { position: relative; }
+.ow-bookmark-icon {
+  position: absolute;
+  left: -2.25rem;
+  top: 0.35em;
+  display: inline-flex;
+  color: var(--accent);
+  opacity: 0.85;
+  cursor: pointer;
+  user-select: none;
+  line-height: 0;
+}
+.ow-bookmark-icon:hover { opacity: 1; }
+
+@keyframes ow-bookmark-flash {
+  from { background-color: color-mix(in srgb, var(--accent) 18%, transparent); }
+  to { background-color: transparent; }
+}
+.ow-bookmark-flash { animation: ow-bookmark-flash 1.5s ease-out; border-radius: 4px; }
+
+/* Note editor: Remove is secondary to Save. */
+.context-menu-comment-actions .context-menu-bookmark-remove {
+  background: transparent;
+  color: var(--ink-light);
+  border: 1px solid var(--border);
+  margin-left: auto;
+}
+
+/* Review rail list — mirrors the Manuscripts launcher rows. */
+.bookmarks-empty {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--ink-light);
+}
+.bookmarks-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.bookmarks-row {
+  display: flex;
+  align-items: flex-start;
+  border-radius: 5px;
+  transition: background 0.12s ease;
+}
+.bookmarks-row:hover { background: color-mix(in srgb, var(--ink-body) 6%, transparent); }
+.bookmarks-row--active { background: color-mix(in srgb, var(--ink-body) 10%, transparent); }
+.bookmarks-row__main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+  border: none;
+  background: transparent;
+  padding: 6px 8px;
+  cursor: pointer;
+  font-family: var(--font-body);
+}
+.bookmarks-row__main:disabled { cursor: default; opacity: 0.6; }
+.bookmarks-row__note {
+  font-size: 13px;
+  color: var(--ink-body);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.bookmarks-row__preview {
+  font-size: 11px;
+  color: var(--ink-light);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.bookmarks-row__remove {
+  border: none;
+  background: transparent;
+  color: var(--ink-light);
+  padding: 8px 6px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+.bookmarks-row:hover .bookmarks-row__remove,
+.bookmarks-row__remove:focus-visible { opacity: 1; }
+.bookmarks-row__remove:hover { color: var(--ink-body); }
