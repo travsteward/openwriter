@@ -4,8 +4,8 @@
  * Behavior:
  *  - Mouse enters a `[data-comment-id]` span → popover appears anchored above
  *    (or below, if no room above) the span, showing the comment's note.
- *  - If multiple comments share a node with the hovered one (same range, or
- *    sub-range within a larger range), all of them stack as cards.
+ *  - Only the hovered comment shows. Comments on the exact same words stack
+ *    as cards, since their underlines overlap and only one can be hovered.
  *  - Each card has four icon actions: Edit, Add (new sibling on same range),
  *    Resolve (state change), Delete (destructive).
  *  - Mouse leaves the span OR the popover → close after a short grace period.
@@ -38,31 +38,22 @@ const POPOVER_GAP_PX = 8;
 const VIEWPORT_PAD_PX = 8;
 const MAX_HEIGHT_PX = 400;
 
-function nodeIdsOf(c: CommentData): string[] {
-  return c.nodeIds && c.nodeIds.length > 0 ? c.nodeIds : [c.nodeId];
+function rangeKey(c: CommentData): string {
+  const ids = c.nodeIds && c.nodeIds.length > 0 ? c.nodeIds : [c.nodeId];
+  return `${ids.join(',')}|${c.text}`;
 }
 
-function isSubset(small: string[], large: string[]): boolean {
-  const largeSet = new Set(large);
-  return small.every((id) => largeSet.has(id));
-}
-
-/** Find every comment whose range fully contains or is fully contained by
- *  the anchor's range. Covers:
- *   - Same range (identical nodeIds — bidirectional subset)
- *   - Sub-range nesting (inner's nodeIds ⊆ outer's nodeIds)
- *  Rejects coincidental sharing — two comments that merely happen to share
- *  a parent container node don't stack. Sorted oldest-first. */
+/** The hovered comment, plus any comment on the exact same words (the "+"
+ *  sibling action). Identical ranges draw overlapping underlines, so only one
+ *  of them can ever be hovered; they must share a card to stay reachable.
+ *  Other comments in the same paragraph, including nested sub-ranges, are
+ *  separate underlines and get their own card. Sorted oldest-first. */
 function stackForAnchor(anchorId: string, all: CommentData[]): CommentData[] {
   const anchor = all.find((c) => c.id === anchorId);
   if (!anchor) return [];
-  const anchorIds = nodeIdsOf(anchor);
+  const key = rangeKey(anchor);
   return all
-    .filter((c) => {
-      if (c.id === anchor.id) return true;
-      const cIds = nodeIdsOf(c);
-      return isSubset(cIds, anchorIds) || isSubset(anchorIds, cIds);
-    })
+    .filter((c) => c.id === anchor.id || rangeKey(c) === key)
     .sort((a, b) => (a.createdAt || '').localeCompare(b.createdAt || ''));
 }
 
