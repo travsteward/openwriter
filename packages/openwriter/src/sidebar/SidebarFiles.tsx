@@ -10,7 +10,9 @@ import FocusInstructionsModal from './FocusInstructionsModal';
 import SchedulePostModal from './SchedulePostModal';
 import PostToBlogModal from './PostToBlogModal';
 import CreateDocDropdown from './CreateDocDropdown';
+import ManuscriptCreateModal, { type ManuscriptCreateItem } from './ManuscriptCreateModal';
 import { TAB_HEADER } from '../ws/client';
+import { showToast } from '../utils/toast';
 import NewsletterAnalyticsModal from '../newsletter/NewsletterAnalyticsModal';
 import SearchResults from './SearchResults';
 import './SidebarFiles.css';
@@ -226,6 +228,7 @@ export default function SidebarFiles({
   const [postBlogModal, setPostBlogModal] = useState<{ filename: string; title: string; isActive: boolean } | null>(null);
   const [analyticsModal, setAnalyticsModal] = useState<{ docId: string; title: string } | null>(null);
   const [createDropdown, setCreateDropdown] = useState<{ anchor: DOMRect; wsFilename?: string; containerId?: string | null } | null>(null);
+  const [manuscriptItems, setManuscriptItems] = useState<ManuscriptCreateItem[] | null>(null);
 
   // Folder context menu state
   const [folderMenu, setFolderMenu] = useState<{ x: number; y: number; type: 'workspace' | 'container'; wsFilename: string; containerId?: string; title: string; nodes: WorkspaceNode[]; autoAccept?: boolean } | null>(null);
@@ -461,6 +464,23 @@ export default function SidebarFiles({
     setSelection(new Set());
     setAnchor(null);
   }, [selection, actions]);
+
+  const handleCreateManuscript = useCallback(() => {
+    // Capture the visible sidebar order when the action is chosen, not the
+    // order in which Ctrl/Cmd-clicks happened.
+    const selected = orderedFilenames.filter(filename => selection.has(filename));
+    if (selected.length !== selection.size || selected.length < 2) {
+      showToast('Select at least two visible documents.', 'error');
+      return;
+    }
+    const byFilename = new Map(docs.map(doc => [doc.filename, doc]));
+    const items = selected.map(filename => byFilename.get(filename));
+    if (items.some(doc => !doc?.docId || !/^[0-9a-f]{8}$/i.test(doc.docId) || doc.contentType === 'manuscript')) {
+      showToast('Select documents with IDs, excluding manuscripts.', 'error');
+      return;
+    }
+    setManuscriptItems(items.map(doc => ({ docId: doc!.docId!, title: doc!.title })));
+  }, [orderedFilenames, selection, docs]);
 
   const requestSortFor = useCallback((filenames: string[]) => {
     if (filenames.length === 0) return;
@@ -815,6 +835,7 @@ export default function SidebarFiles({
           title={ctxMenu.title}
           bulkCount={ctxMenu.bulkCount}
           onBulkDelete={handleBulkDelete}
+          onCreateManuscript={ctxMenu.bulkCount ? handleCreateManuscript : undefined}
           onBulkRequestSort={ctxMenu.bulkCount ? () => requestSortFor([...selection]) : undefined}
           onClose={() => setCtxMenu(null)}
           onDuplicate={() => handleDuplicate(ctxMenu.filename)}
@@ -963,6 +984,18 @@ export default function SidebarFiles({
             } else {
               onCreateDocument();
             }
+          }}
+        />
+      )}
+      {manuscriptItems && (
+        <ManuscriptCreateModal
+          items={manuscriptItems}
+          onClose={() => setManuscriptItems(null)}
+          onCreated={() => {
+            setManuscriptItems(null);
+            setSelection(new Set());
+            setAnchor(null);
+            actions.fetchDocs();
           }}
         />
       )}
