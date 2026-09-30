@@ -121,6 +121,25 @@ function scrollToNode(editor: Editor, nodeId: string): void {
   }
 }
 
+/** Is any part of this node inside the editor's visible scroll area? */
+function isNodeVisible(editor: Editor, nodeId: string): boolean {
+  if (editor.isDestroyed) return false;
+  let targetPos = -1;
+  editor.state.doc.descendants((node: any, pos: number) => {
+    if (targetPos !== -1) return false;
+    if (node.attrs?.id === nodeId) { targetPos = pos; return false; }
+    return true;
+  });
+  if (targetPos === -1) return false;
+  const dom = editor.view.nodeDOM(targetPos);
+  const el = dom instanceof HTMLElement ? dom : dom?.parentElement;
+  const container = editor.view.dom.closest('.editor-container');
+  if (!el || !container) return false;
+  const r = el.getBoundingClientRect();
+  const c = container.getBoundingClientRect();
+  return r.bottom > c.top && r.top < c.bottom;
+}
+
 // ============================================================================
 // HOOK
 // ============================================================================
@@ -216,23 +235,37 @@ export function usePendingState(editors: Editor[]) {
   const counts = countPending(pendingNodes);
   const currentNode = pendingNodes[currentIndex] ?? null;
 
-  const goToNext = useCallback(() => {
-    if (pendingNodes.length === 0) return;
+  // When the current change is off screen, an arrow press first brings it
+  // into view instead of skipping past it (e.g. 1/10 on load, doc at the top).
+  const showCurrentIfHidden = useCallback((): boolean => {
+    const node = pendingNodes[currentIndex];
+    if (!node || isNodeVisible(node.editor, node.nodeId)) return false;
+    scrollToNode(node.editor, node.nodeId);
+    return true;
+  }, [pendingNodes, currentIndex]);
+
+  /** Returns false when it only revealed the current change. */
+  const goToNext = useCallback((opts?: { skipReveal?: boolean }): boolean => {
+    if (pendingNodes.length === 0) return false;
+    if (!opts?.skipReveal && showCurrentIfHidden()) return false;
     const next = (currentIndex + 1) % pendingNodes.length;
     setCurrentIndex(next);
     if (pendingNodes[next]) {
       scrollToNode(pendingNodes[next].editor, pendingNodes[next].nodeId);
     }
-  }, [pendingNodes, currentIndex]);
+    return true;
+  }, [pendingNodes, currentIndex, showCurrentIfHidden]);
 
-  const goToPrevious = useCallback(() => {
-    if (pendingNodes.length === 0) return;
+  const goToPrevious = useCallback((opts?: { skipReveal?: boolean }): boolean => {
+    if (pendingNodes.length === 0) return false;
+    if (!opts?.skipReveal && showCurrentIfHidden()) return false;
     const prev = (currentIndex - 1 + pendingNodes.length) % pendingNodes.length;
     setCurrentIndex(prev);
     if (pendingNodes[prev]) {
       scrollToNode(pendingNodes[prev].editor, pendingNodes[prev].nodeId);
     }
-  }, [pendingNodes, currentIndex]);
+    return true;
+  }, [pendingNodes, currentIndex, showCurrentIfHidden]);
 
   const scrollAfterResolve = useCallback(() => {
     const valid = editors.filter(e => e && !e.isDestroyed);

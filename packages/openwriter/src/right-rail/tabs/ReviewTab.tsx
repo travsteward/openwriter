@@ -452,9 +452,9 @@ export default function ReviewTab({
     // cursor === 'body'
     if (hasTitleSlot && currentIndex >= counts.total - 1) {
       // At last body → wrap body to body[0] (so the invariant holds), then
-      // flip cursor to title.
-      goToNext();
-      setCursor('title');
+      // flip cursor to title. If the press only revealed an off-screen
+      // current change, stay on it.
+      if (goToNext()) setCursor('title');
       return;
     }
     goToNext();
@@ -464,8 +464,9 @@ export default function ReviewTab({
     if (totalSlots <= 1) return;
     if (cursor === 'title') {
       // Title → body[last]. Body's internal cursor is 0 by invariant, so
-      // goToPrevious wraps 0 → last via modulo. Then flip cursor.
-      goToPrevious();
+      // goToPrevious wraps 0 → last via modulo. Then flip cursor. The title
+      // is the current slot here, so body[0] being off screen doesn't matter.
+      goToPrevious({ skipReveal: true });
       setCursor('body');
       return;
     }

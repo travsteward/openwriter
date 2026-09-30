@@ -1290,3 +1290,12 @@ get a refresh via `refreshLiveDocViewers` (see adr/per-tab-view.md). Locked by
 
 Before stripping pending attrs, batch accept resolves the comments each
 pending node covers (adr/comment-auto-resolve.md). Reject is unchanged.
+
+### 2026-09-30 — Arrow press reveals an off-screen current change first
+
+On load the counter reads 1/N while the doc sits at the top, so the first
+"next" skipped change 1 unseen. Now next/previous first scroll to the
+current change when it is out of view, and only step when it is visible.
+They return whether they stepped, so ReviewTab only flips its title/body
+cursor on a real step; from the title slot, the body reveal is skipped
+since the title is the current slot.
