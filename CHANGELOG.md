@@ -6,6 +6,36 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ## [Unreleased]
 
+## [0.42.0] - 2026-09-30
+
+### Added
+- Bookmarks: right-click any paragraph and choose Add bookmark, with an optional note. A marker shows in the margin, and the Review panel has a one-click Back to bookmark button plus a list of all your bookmarks.
+- Step through comments with next/previous arrows in the Review panel. Hover an underline to read the comment.
+- Accepting a change now resolves the comments on the words it changed. Rejecting leaves them open, and comments elsewhere in the paragraph stay open.
+- Resolved comments can be seen and restored from the Review panel.
+- A back-to-top arrow appears beside the scrollbar once you scroll down a screen.
+- Every browser tab can edit its own document. Other tabs showing the same document update live, and an outdated tab can no longer save over newer work.
+- Timeline orders documents by latest activity, including new pending agent changes.
+- The Board strip scrolls sideways with the mouse wheel, with edge arrows and fades.
+
+### Changed
+- Compact is now the only sidebar style, and the Tree layout has been removed.
+- Compact timeline rows match the file list's sizing.
+- The first document list loads faster at startup, and later listings only re-read files that changed.
+
+### Fixed
+- When the current change is off screen, the first next/previous press now shows it instead of skipping past it.
+- Accept all and Reject all on a folder now actually resolve its pending changes.
+- Hovering a comment shows only that comment, not every comment in the paragraph.
+- Comments whose words were reworded show as "Wording changed" in Review, with a Resolve button.
+- Resolving or deleting comments works on documents with an underscore in their name.
+- Right-clicking commented text offers Add bookmark.
+- A comment keeps the text you selected even if an agent edit lands above it while you type.
+- Actions sent while the connection is down are no longer silently lost.
+- Document links open the linked document instead of whichever one the server had open.
+- Accept all in a tab that is open elsewhere no longer looks applied when nothing saved.
+- Newsletter Cancel no longer records a send that never happened.
+
 ## [0.41.3] - 2026-09-28
 
 ### Fixed
