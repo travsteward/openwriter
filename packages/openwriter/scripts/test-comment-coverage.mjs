@@ -78,6 +78,17 @@ console.log('\nReworded comment');
 const lone = [{ id: 'reworded', text: 'words since changed', nodeId: 'p1' }];
 assert(commentsCoveredByChange(rewrite, lone)[0] === 'reworded', "the paragraph's only open comment, reworded, is covered");
 assert(!commentsCoveredByChange(rewrite, comments).includes('gone'), 'a reworded comment beside other open comments stays open');
+// Two reworded comments on one paragraph, each placed by its surviving words.
+const two = [
+  { id: 'in-span', text: 'It was really very tired', nodeId: 'p1' },  // "It was" survives, old text ran over the fix
+  { id: 'elsewhere', text: 'Then it slept soundly', nodeId: 'p1' },   // "Then it slept" survives, after the fix
+];
+assert(JSON.stringify(commentsCoveredByChange(rewrite, two)) === '["in-span"]', 'of several reworded comments, the one whose old text the fix touched resolves');
+const allGone = [
+  { id: 'g1', text: 'words since changed', nodeId: 'p1' },
+  { id: 'g2', text: 'other vanished phrase', nodeId: 'p1' },
+];
+assert(commentsCoveredByChange(rewrite, allGone).length === 2, 'when nothing on the paragraph can be placed, the fix resolves them all');
 
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

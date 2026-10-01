@@ -11,8 +11,9 @@
  * text. Either way, the comment is covered when its words overlap the part
  * of the paragraph the change replaces, or, for an insertion, touches it or
  * is separated from it only by whitespace. A comment elsewhere in the same
- * paragraph stays open. One whose words can't be found stays open too,
- * unless it is the paragraph's only open comment.
+ * paragraph stays open. A reworded comment is placed by its surviving words;
+ * one with none left stays open unless nothing on the paragraph can be
+ * placed.
  */
 
 export interface CoverageComment {
@@ -43,12 +44,34 @@ function piecesOf(c: CoverageComment): string[] {
   return (c.nodeIds && c.nodeIds.length > 1 ? c.text.split('\n') : [c.text]).filter(Boolean);
 }
 
+/** Where a piece of the comment sits in this text, as [start, end). Exact
+ *  words first. With `estimate`, a reworded comment ("Wording changed": its
+ *  exact words are gone) is placed by its longest run of two or more
+ *  surviving words, stretched to the comment's full length around that run.
+ *  null when it can't be placed. */
+function spanOf(piece: string, text: string, estimate: boolean): [number, number] | null {
+  const exact = text.indexOf(piece);
+  if (exact !== -1) return [exact, exact + piece.length];
+  if (!estimate) return null;
+  const words = piece.split(/\s+/).filter(Boolean);
+  for (let len = words.length - 1; len >= 2; len--) {
+    for (let i = 0; i + len <= words.length; i++) {
+      const run = words.slice(i, i + len).join(' ');
+      const at = text.indexOf(run);
+      if (at === -1) continue;
+      const start = Math.max(0, at - piece.indexOf(run));
+      return [start, Math.min(text.length, start + piece.length)];
+    }
+  }
+  return null;
+}
+
 /** Does any of the comment's words sit inside [from, to) of this text? A
  *  zero-width range (a pure insertion) covers words that straddle it. */
-function overlaps(c: CoverageComment, text: string, from: number, to: number): boolean {
+function overlaps(c: CoverageComment, text: string, from: number, to: number, estimate = false): boolean {
   return piecesOf(c).some((piece) => {
-    const start = text.indexOf(piece);
-    return start !== -1 && start < to && start + piece.length > from;
+    const span = spanOf(piece, text, estimate);
+    return span !== null && span[0] < to && span[1] > from;
   });
 }
 
@@ -59,8 +82,8 @@ function touches(c: CoverageComment, text: string, from: number, to: number): bo
   while (from > 0 && /\s/.test(text[from - 1])) from--;
   while (to < text.length && /\s/.test(text[to])) to++;
   return piecesOf(c).some((piece) => {
-    const start = text.indexOf(piece);
-    return start !== -1 && start <= to && start + piece.length >= from;
+    const span = spanOf(piece, text, true);
+    return span !== null && span[0] <= to && span[1] >= from;
   });
 }
 
@@ -104,12 +127,13 @@ export function commentsCoveredByChange(node: JsonNode, comments: CoverageCommen
   while (suf < max - pre
     && originalText[originalText.length - 1 - suf] === proposedText[proposedText.length - 1 - suf]) suf++;
 
-  // Words in neither version were reworded by an earlier change ("Wording
-  // changed"). When that is the paragraph's only open comment, this rewrite
-  // is taken as the fix for it.
-  if (attached.length === 1 && !piecesOf(attached[0]).some((p) => originalText.includes(p) || proposedText.includes(p))) {
-    return [attached[0].id];
-  }
+  // A reworded comment is placed by its surviving words (spanOf) and covered
+  // like any other. One with no words left can't be placed. When no open
+  // comment on the paragraph can be placed, this rewrite is taken as the fix
+  // for all of them; otherwise the unplaceable ones stay open.
+  const placeable = (c: CoverageComment) => piecesOf(c).some((p) =>
+    spanOf(p, originalText, true) !== null || proposedText.includes(p));
+  if (attached.length > 0 && !attached.some(placeable)) return attached.map((c) => c.id);
 
   // A pure insertion: nothing of the original is replaced. It covers the
   // comments it lands next to. The common start can run into the inserted
@@ -129,7 +153,7 @@ export function commentsCoveredByChange(node: JsonNode, comments: CoverageCommen
   }
 
   return attached
-    .filter((c) => overlaps(c, originalText, pre, originalText.length - suf)
+    .filter((c) => overlaps(c, originalText, pre, originalText.length - suf, true)
       || overlaps(c, proposedText, pre, proposedText.length - suf))
     .map((c) => c.id);
 }

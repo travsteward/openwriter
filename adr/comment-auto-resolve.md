@@ -29,10 +29,12 @@ Resolved comments also had no way back from the app.
   the paragraph, an insert covers none, a group covers every comment on
   its original paragraphs, and a rewrite with no original kept covers the
   whole paragraph.
-- **Can't place it, leave it open, unless it's alone.** A comment whose
-  words are in neither version (reworded earlier, "Wording changed") stays
-  open, except when it is the paragraph's only open comment: then the
-  rewrite of that paragraph is taken as its fix.
+- **Reworded comments are placed by their surviving words.** A comment
+  whose exact words are gone ("Wording changed") is placed by its longest
+  run of two or more words still in the original, stretched to its full
+  length, and covered when that span overlaps the change. One with no
+  words left can't be placed: it stays open, unless no open comment on the
+  paragraph can be placed, in which case the rewrite resolves them all.
 - **Coverage is read before the accept.** Accepting strips the pending
   attrs the rule needs.
 - **Resolved comments are restorable.** The Review tab's Comments section
@@ -85,3 +87,15 @@ second tab held another doc. The three now share one walk that returns the
 docs it changed, and callers announce exactly those. Verified with two
 tabs: accepting a fix next to a comment cleared its underline while the
 server's live doc was the other tab's.
+
+### 2026-10-01 — Several reworded comments on one paragraph
+
+The lone-comment rule resolved a reworded comment only when it was the
+paragraph's only open comment, so with two or more none resolved. Comments
+store their words, not a position, so a reworded comment is now placed by
+its longest surviving run of words (two or more), stretched to its own
+length, and resolves when that estimate overlaps the accepted change.
+Comments with no surviving words resolve only when nothing on the
+paragraph can be placed (the old lone rule, generalized). A one-word
+survivor is ignored: single words like "the" match anywhere. An estimate
+can be wrong at the edges; resolve is reversible from the Resolved list.
