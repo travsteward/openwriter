@@ -60,5 +60,24 @@ assert(commentsCoveredByChange(leader, comments).length === 6, 'a group covers c
 const multi = [{ id: 'm', text: 'unrelated\nvery very', nodeIds: ['p0', 'p1'], nodeId: 'p0' }];
 assert(commentsCoveredByChange(rewrite, multi).length === 1, 'a comment spanning paragraphs is covered by its touched part');
 
+console.log('\nInsertion next to a comment');
+const BEFORE = 'Pigeons pecking keys for grain. Next comes the maze.';
+const AFTER = 'Pigeons pecking keys for grain. New sentence here. Next comes the maze.';
+const insertion = para('p3', AFTER, { pendingStatus: 'rewrite', pendingOriginalContent: para('p3', BEFORE) });
+const near = [
+  { id: 'before', text: 'Pigeons pecking keys for grain.', nodeId: 'p3' }, // inserted right after it
+  { id: 'after', text: 'Next comes the maze.', nodeId: 'p3' },             // inserted right before it
+  { id: 'far', text: 'keys for', nodeId: 'p3' },                           // same sentence, not touching
+];
+const nearGot = commentsCoveredByChange(insertion, near).sort();
+assert(JSON.stringify(nearGot) === JSON.stringify(['after', 'before']), `covers the words it lands next to (got ${nearGot})`);
+const atEnd = para('p3', 'Pigeons pecking keys for grain. More.', { pendingStatus: 'rewrite', pendingOriginalContent: para('p3', 'Pigeons pecking keys for grain.') });
+assert(JSON.stringify(commentsCoveredByChange(atEnd, near)) === '["before"]', 'an insertion at the paragraph end covers the sentence it follows');
+
+console.log('\nReworded comment');
+const lone = [{ id: 'reworded', text: 'words since changed', nodeId: 'p1' }];
+assert(commentsCoveredByChange(rewrite, lone)[0] === 'reworded', "the paragraph's only open comment, reworded, is covered");
+assert(!commentsCoveredByChange(rewrite, comments).includes('gone'), 'a reworded comment beside other open comments stays open');
+
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

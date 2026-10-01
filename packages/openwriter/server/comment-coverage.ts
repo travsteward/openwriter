@@ -9,9 +9,10 @@
  * nodeIds). While a rewrite is pending those words may sit in the original
  * text (the usual case: the fix addresses the comment) or in the proposed
  * text. Either way, the comment is covered when its words overlap the part
- * of the paragraph the change replaces. A comment elsewhere in the same
- * paragraph stays open, and so does one whose words can't be found (we can't
- * tell, and leaving it open loses nothing).
+ * of the paragraph the change replaces, or, for an insertion, touches it or
+ * is separated from it only by whitespace. A comment elsewhere in the same
+ * paragraph stays open. One whose words can't be found stays open too,
+ * unless it is the paragraph's only open comment.
  */
 
 export interface CoverageComment {
@@ -38,14 +39,28 @@ function anchoredTo(c: CoverageComment, id: string): boolean {
   return c.nodeId === id || (c.nodeIds?.includes(id) ?? false);
 }
 
+function piecesOf(c: CoverageComment): string[] {
+  return (c.nodeIds && c.nodeIds.length > 1 ? c.text.split('\n') : [c.text]).filter(Boolean);
+}
+
 /** Does any of the comment's words sit inside [from, to) of this text? A
  *  zero-width range (a pure insertion) covers words that straddle it. */
 function overlaps(c: CoverageComment, text: string, from: number, to: number): boolean {
-  const pieces = c.nodeIds && c.nodeIds.length > 1 ? c.text.split('\n') : [c.text];
-  return pieces.some((piece) => {
-    if (!piece) return false;
+  return piecesOf(c).some((piece) => {
     const start = text.indexOf(piece);
     return start !== -1 && start < to && start + piece.length > from;
+  });
+}
+
+/** Does any of the comment's words end or start at [from, to], allowing only
+ *  whitespace between? Used for insertions, which touch words without
+ *  replacing them. */
+function touches(c: CoverageComment, text: string, from: number, to: number): boolean {
+  while (from > 0 && /\s/.test(text[from - 1])) from--;
+  while (to < text.length && /\s/.test(text[to])) to++;
+  return piecesOf(c).some((piece) => {
+    const start = text.indexOf(piece);
+    return start !== -1 && start <= to && start + piece.length >= from;
   });
 }
 
@@ -88,6 +103,30 @@ export function commentsCoveredByChange(node: JsonNode, comments: CoverageCommen
   let suf = 0;
   while (suf < max - pre
     && originalText[originalText.length - 1 - suf] === proposedText[proposedText.length - 1 - suf]) suf++;
+
+  // Words in neither version were reworded by an earlier change ("Wording
+  // changed"). When that is the paragraph's only open comment, this rewrite
+  // is taken as the fix for it.
+  if (attached.length === 1 && !piecesOf(attached[0]).some((p) => originalText.includes(p) || proposedText.includes(p))) {
+    return [attached[0].id];
+  }
+
+  // A pure insertion: nothing of the original is replaced. It covers the
+  // comments it lands next to. The common start can run into the inserted
+  // text when they begin alike, so slide the insertion point left as far as
+  // it can equally sit and count words touching anywhere in that range.
+  if (pre + suf === originalText.length) {
+    let inserted = proposedText.slice(pre, proposedText.length - suf);
+    let left = pre;
+    while (left > 0 && inserted && originalText[left - 1] === inserted[inserted.length - 1]) {
+      inserted = originalText[left - 1] + inserted.slice(0, -1);
+      left--;
+    }
+    return attached
+      .filter((c) => touches(c, originalText, left, pre)
+        || overlaps(c, proposedText, left, left + inserted.length))
+      .map((c) => c.id);
+  }
 
   return attached
     .filter((c) => overlaps(c, originalText, pre, originalText.length - suf)

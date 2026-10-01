@@ -21,12 +21,18 @@ Resolved comments also had no way back from the app.
   changed span is the text left after the common start and end of the
   original and proposed text; the comment is covered when its words overlap
   that span in either version (the words may be in the original, where the
-  fix replaced them, or in the proposal). A delete covers every comment on
+  fix replaced them, or in the proposal). A pure insertion inside a
+  paragraph replaces nothing, so it covers the comments it touches or sits
+  next to with only whitespace between; the insertion point is slid left as
+  far as it can equally sit, since the common start can run into inserted
+  text that begins like what follows. A delete covers every comment on
   the paragraph, an insert covers none, a group covers every comment on
   its original paragraphs, and a rewrite with no original kept covers the
   whole paragraph.
-- **Can't place it, leave it open.** A comment whose words are in neither
-  version stays open; resolving is the user's call there.
+- **Can't place it, leave it open, unless it's alone.** A comment whose
+  words are in neither version (reworded earlier, "Wording changed") stays
+  open, except when it is the paragraph's only open comment: then the
+  rewrite of that paragraph is taken as its fix.
 - **Coverage is read before the accept.** Accepting strips the pending
   attrs the rule needs.
 - **Resolved comments are restorable.** The Review tab's Comments section
@@ -53,3 +59,17 @@ Tested on an isolated server: accepting a fix to "very very tired"
 resolved only that comment, leaving one later in the same paragraph and
 one in another paragraph open; Restore reopened it; Reject left a comment
 open; Accept all resolved the covered one.
+
+### 2026-10-01 — insertions and reworded comments
+
+Two misses seen in use. A fix that inserted a sentence right after the
+commented "Pigeons pecking keys for grain." left it open: an insertion has
+an empty span in the original, so nothing overlapped. Insertions now count
+touching words (whitespace between allowed). This is limited to insertions;
+a rewrite still leaves the next sentence open, or every fix would resolve
+its neighbours.
+
+A comment already showing "Wording changed" stayed open after a later fix
+on its paragraph. When it's the paragraph's only open comment, the fix now
+resolves it; with other open comments there we still can't tell which the
+fix addresses, so it stays open.
