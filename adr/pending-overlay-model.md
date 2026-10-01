@@ -88,6 +88,15 @@ through their own pathway.
 - **Workspace + container renames stay hot.** They live in workspace
   manifest JSON, not per-doc sidecars; no natural fit. Out of scope for
   the document-title gating decision.
+- **The user's typing in a pending rewrite lands in both versions.**
+  Outside the agent's changed span (common start/end of original and
+  proposal), `src/decorations/pending-typing.ts` repeats each user edit in
+  `pendingOriginalContent`, so Reject keeps it and disk (which saves the
+  original) has it. Inside the span only the proposal changes. Highlight
+  offsets move with the text. Agent edits are applied in place
+  (`replaceNodeInPlace`, marked `owAgentEdit`) so a cursor in untouched
+  text stays put; whole-node replacements and undo/redo are never taken
+  for typing.
 
 ## Decision log (append-only)
 
@@ -1299,3 +1308,23 @@ current change when it is out of view, and only step when it is visible.
 They return whether they stepped, so ReviewTab only flips its title/body
 cursor on a real step; from the title slot, the body reveal is skipped
 since the title is the current slot.
+
+### 2026-10-01 — Typing in a paragraph with a pending change
+
+Three bugs with one cause: the browser treated a pending paragraph as two
+unrelated blobs. An agent edit replaced the whole paragraph, so the user's
+cursor mapped past it and their typing went into the next paragraph. Typing
+edited only the proposal, so the highlight offsets pointed at the wrong
+words, and Reject restored an original without the user's words.
+
+Agent edits now change only the text that differs. User edits outside the
+agent's span are repeated in the original and shift the highlight; edits
+inside it change the proposal only. The span comes from comparing the two
+versions, not the stored highlight offsets, which run to the paragraph end.
+No server change: the server already rebuilds canonical from the browser's
+pendingOriginalContent.
+
+Verified live on a scratch doc: cursor held at its offset through an
+edit_text; typing before, after and inside the change kept the highlight on
+the agent's words; disk had the typed words; Reject kept them; Undo took
+back both versions together.
