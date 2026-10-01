@@ -47,7 +47,12 @@ export default function HeadingTickRail({ editor }: { editor: Editor | null }) {
     if (!editor || editor.isDestroyed || !scroller) return;
 
     const onScroll = () => {
-      const top = scroller.getBoundingClientRect().top + ACTIVE_LINE;
+      const box = scroller.getBoundingClientRect();
+      // At the bottom of the doc, later headings can never reach the top, so
+      // the last one on screen is current (otherwise jumping to the final
+      // heading lit the one before it).
+      const atBottom = scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 2;
+      const top = atBottom ? box.bottom : box.top + ACTIVE_LINE;
       let idx = 0;
       headingsRef.current.forEach((h, i) => {
         const t = headingTop(h);
