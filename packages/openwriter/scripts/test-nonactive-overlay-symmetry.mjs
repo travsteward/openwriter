@@ -292,6 +292,23 @@ try {
     assert(entries[0].nodeId === 'dd000001', `entry nodeId matches (got ${entries[0].nodeId})`);
   }
 
+  console.log('\nT6: edit_text on one sentence marks only that sentence');
+  {
+    const target = join(TEST_PROFILE_DIR, 'tedit-range.md');
+    const text = 'The dog ran fast. It was very very hungry. Then it ate.';
+    fsWriteFileSync(target,
+      `---\ntitle: TEdit Range\ndocId: te000002\nnodes:\n  - id: dd000002\n    fp:\n      type: paragraph\n      position: 0\n      bytes: ${text.length}\n---\n\n${text}\n`,
+      'utf-8',
+    );
+    applyTextEditsToFile(target, 'dd000002', [{ find: 'very very hungry', replace: 'starving' }]);
+    const e = sidecarEntries('te000002')[0] || {};
+    const proposed = 'The dog ran fast. It was starving. Then it ate.';
+    const marked = proposed.slice(e.pendingSelectionFrom, e.pendingSelectionTo);
+    const original = text.slice(e.pendingOriginalFrom, e.pendingOriginalTo);
+    assert(marked === 'It was starving.', `proposal marks the changed sentence only (got ${JSON.stringify(marked)})`);
+    assert(original === 'It was very very hungry.', `original marks the changed sentence only (got ${JSON.stringify(original)})`);
+  }
+
 } catch (err) {
   console.error('TEST CRASH:', err);
   process.exitCode = 1;

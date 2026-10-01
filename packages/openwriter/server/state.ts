@@ -907,9 +907,12 @@ function computePartialRange(origContent: any[], newContent: any[]): {
     return 0; // No period found → start of text
   };
 
-  // Snap end forward to next sentence boundary (". " or ".\n" or end of text)
+  // Snap end forward to next sentence boundary (". " or ".\n" or end of text).
+  // pos is exclusive, so start at its last character: a changed word that
+  // ends its sentence ("hungry.") must stop there, not run on to the next
+  // sentence (which made a one-sentence edit mark the rest of the paragraph).
   const snapForward = (text: string, pos: number): number => {
-    let i = pos;
+    let i = Math.max(0, pos - 1);
     while (i < text.length) {
       if (text[i] === '.' && (i + 1 >= text.length || text[i + 1] === ' ' || text[i + 1] === '\n')) return i + 1;
       i++;

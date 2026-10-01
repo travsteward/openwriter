@@ -1337,3 +1337,15 @@ run. The arrows now disable only at 0. With one slot there is nowhere to
 step, so a press scrolls the change into view and flashes it, through the
 same jumpToBlock the bookmark and comment lists use. A lone title change
 is already in view, so the press does nothing.
+
+### 2026-10-01 — Pending highlight overshot by a sentence
+
+computePartialRange snapped the range end forward starting at the
+exclusive end of the last changed word. When that word ended its sentence
+("hungry.", "basket."), the scan began past the period and ran to the next
+sentence's end, often the paragraph end, so a one-sentence edit_text marked
+the rest of the paragraph (and with two sentences, everything). It now
+starts at the last changed character. This was reported as an active vs
+non-active doc difference, but both paths share applyChangesToDoc and
+stored the same, wrong, range. Pinned in test-nonactive-overlay-symmetry
+(T6).
