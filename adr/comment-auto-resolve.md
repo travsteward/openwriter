@@ -73,3 +73,15 @@ A comment already showing "Wording changed" stayed open after a later fix
 on its paragraph. When it's the paragraph's only open comment, the fix now
 resolves it; with other open comments there we still can't tell which the
 fix addresses, so it stays open.
+
+### 2026-10-01 — Resolved underline stayed until reload
+
+Resolve, unresolve and delete work by comment id, and their routes (and
+the resolve_comments tool) announced comments-changed for the server's
+live doc. A tab refetches comments only for the doc it shows, and with
+per-tab views the live doc can be another tab's, so the user's editor kept
+the underline of a comment it had just auto-resolved. Seen live while a
+second tab held another doc. The three now share one walk that returns the
+docs it changed, and callers announce exactly those. Verified with two
+tabs: accepting a fix next to a comment cleared its underline while the
+server's live doc was the other tab's.
