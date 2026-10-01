@@ -5,6 +5,7 @@
 import type { Editor } from '@tiptap/core';
 import { Fragment } from '@tiptap/pm/model';
 import type { NodeChange } from '../ws/client';
+import { refreshPreviewAfterAgentChange } from './plugin';
 import { applyInsert, applyRewrite, applyDelete, applyRangeRewrite, markDeleteInTr, replaceNodeInPlace, type InsertAnchor } from './apply';
 
 export function applyNodeChangeToEditor(
@@ -54,6 +55,11 @@ export function applyNodeChangesToEditor(
   changes: NodeChange[]
 ): void {
   if (changes.length === 0) return;
+  applyNodeChanges(editor, changes);
+  refreshPreviewAfterAgentChange(editor);
+}
+
+function applyNodeChanges(editor: Editor, changes: NodeChange[]): void {
   if (changes.length === 1) {
     applyNodeChangeToEditor(editor, changes[0]);
     return;

@@ -4,7 +4,7 @@
 
 import { Plugin, PluginKey } from '@tiptap/pm/state';
 import { Decoration, DecorationSet } from '@tiptap/pm/view';
-import { followUserTyping } from './pending-typing';
+import { followUserTyping, AGENT_EDIT_META } from './pending-typing';
 
 export type PendingStatus = 'insert' | 'rewrite' | 'delete';
 
@@ -31,6 +31,39 @@ export function isPreviewActive(): boolean { return previewActive; }
 export function getPreviewNodeId(): string | null { return previewNodeId; }
 export function getPreviewGroupId(): string | null { return previewGroupId; }
 export function getSavedModifiedContent() { return savedModifiedContent; }
+
+/**
+ * Keep an "Original" preview true across an agent edit. While previewing, the
+ * paragraph shows the original and the proposal waits in savedModifiedContent
+ * for the switch back to Modified. An agent edit to that paragraph lands in
+ * the visible text, so without this the switch back restored the previous
+ * proposal under the new highlight range, and accepting saved it. Call after
+ * applying agent changes: if the previewed paragraph now shows a proposal,
+ * that proposal becomes the saved copy and the original is shown again. If
+ * the paragraph is gone or no longer a rewrite, the preview ends.
+ * Group previews are left alone.
+ */
+export function refreshPreviewAfterAgentChange(editor: any): void {
+  if (!previewActive || previewGroupId || !previewNodeId || editor.isDestroyed) return;
+  let found: { node: any; pos: number } | null = null;
+  editor.state.doc.descendants((node: any, pos: number) => {
+    if (found) return false;
+    if (node.attrs?.id === previewNodeId) { found = { node, pos }; return false; }
+    return true;
+  });
+  const { node, pos } = (found ?? {}) as { node?: any; pos?: number };
+  const original = node?.attrs?.pendingOriginalContent;
+  if (!node || node.attrs.pendingStatus !== 'rewrite' || !original) {
+    setPreviewState(false);
+    return;
+  }
+  const schema = editor.state.schema;
+  const originalContent = schema.nodeFromJSON({ type: node.type.name, content: original.content }).content;
+  if (node.content.eq(originalContent)) return; // the edit was elsewhere
+  savedModifiedContent = node.toJSON();
+  const tr = editor.state.tr.replaceWith(pos! + 1, pos! + node.nodeSize - 1, originalContent);
+  editor.view.dispatch(tr.setMeta('addToHistory', false).setMeta(AGENT_EDIT_META, true));
+}
 
 export function setPreviewState(active: boolean, nodeId?: string | null, modified?: any, groupId?: string | null) {
   previewActive = active;
