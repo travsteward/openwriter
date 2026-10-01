@@ -1349,3 +1349,20 @@ starts at the last changed character. This was reported as an active vs
 non-active doc difference, but both paths share applyChangesToDoc and
 stored the same, wrong, range. Pinned in test-nonactive-overlay-symmetry
 (T6).
+
+### 2026-10-01 — Agent edit during the Original preview
+
+The Original preview swaps the original into the editor and parks the
+proposal in savedModifiedContent. An agent edit to that paragraph landed in
+the visible text and set the new highlight range, but the parked copy kept
+the previous proposal; switching to Modified restored it under the new
+range, and Accept (which ends the preview first) would have saved it.
+After applying agent changes, the bridge now calls
+refreshPreviewAfterAgentChange: if the previewed paragraph shows a
+proposal, that becomes the parked copy and the original is shown again;
+if the paragraph is gone or no longer a rewrite, the preview ends. Group
+previews are not handled.
+
+Verified live: Original, edit_text, Modified showed the new proposal with a
+matching highlight; Original, edit_text, Accept saved the newest text to
+disk and cleared the sidecar.
