@@ -88,6 +88,8 @@ export interface NodeChange {
   nodeId?: string;
   afterNodeId?: string;
   content?: any;
+  /** Optional user-facing note attached only while this change is pending. */
+  feedback?: string;
   /** When true, the change committed directly without pending decoration —
    *  client should apply it as a normal edit, not as a pending review item. */
   autoAccept?: boolean;
@@ -1150,6 +1152,7 @@ function transferPendingAttrs(source: PadDocument, target: PadDocument): void {
         if (node.attrs.pendingOriginalContent != null) entry.pendingOriginalContent = node.attrs.pendingOriginalContent;
         if (node.attrs.pendingTextEdits != null) entry.pendingTextEdits = node.attrs.pendingTextEdits;
         if (node.attrs.pendingGroupId != null) entry.pendingGroupId = node.attrs.pendingGroupId;
+        if (node.attrs.pendingFeedback != null) entry.pendingFeedback = node.attrs.pendingFeedback;
         if (node.attrs.pendingSelectionFrom != null) entry.pendingSelectionFrom = node.attrs.pendingSelectionFrom;
         if (node.attrs.pendingSelectionTo != null) entry.pendingSelectionTo = node.attrs.pendingSelectionTo;
         if (node.attrs.pendingOriginalFrom != null) entry.pendingOriginalFrom = node.attrs.pendingOriginalFrom;
@@ -1543,6 +1546,7 @@ function applyChangesToDoc(doc: PadDocument, changes: NodeChange[], autoAccept: 
             ...innerLeaf.attrs,
             id: innerLeaf.attrs?.id || generateNodeId(),
             pendingStatus: isEmptyNode ? 'insert' : 'rewrite',
+            ...(change.feedback?.trim() ? { pendingFeedback: change.feedback.trim() } : {}),
             ...(isEmptyNode ? {} : { pendingOriginalContent: baseline }),
             ...(partialRange ? {
               pendingSelectionFrom: partialRange.selectionFrom,
@@ -1567,6 +1571,7 @@ function applyChangesToDoc(doc: PadDocument, changes: NodeChange[], autoAccept: 
             ...contentArray[0].attrs,
             id: change.nodeId,
             pendingStatus: isEmptyNode ? 'insert' : 'rewrite',
+            ...(change.feedback?.trim() ? { pendingFeedback: change.feedback.trim() } : {}),
             ...(isEmptyNode ? {} : { pendingOriginalContent: baseline }),
             ...(partialRange ? {
               pendingSelectionFrom: partialRange.selectionFrom,
@@ -1587,7 +1592,7 @@ function applyChangesToDoc(doc: PadDocument, changes: NodeChange[], autoAccept: 
           id: node.attrs?.id || generateNodeId(),
         },
       }));
-      if (!autoAccept) markLeafBlocksAsPending(extraNodes, 'insert');
+      if (!autoAccept) markLeafBlocksAsPending(extraNodes, 'insert', change.feedback);
 
       found.parent.splice(found.index, 1, firstNode, ...extraNodes);
 
@@ -1611,7 +1616,7 @@ function applyChangesToDoc(doc: PadDocument, changes: NodeChange[], autoAccept: 
       }));
       // Mark leaf blocks as pending (not containers) — skipped in autoAccept mode
       // so inserts commit as plain content without decoration.
-      if (!autoAccept) markLeafBlocksAsPending(contentWithIds, 'insert');
+      if (!autoAccept) markLeafBlocksAsPending(contentWithIds, 'insert', change.feedback);
 
       let resolvedAfterId: string | undefined;
 
@@ -1696,7 +1701,7 @@ function applyChangesToDoc(doc: PadDocument, changes: NodeChange[], autoAccept: 
         if (canonicalNode) {
           found.parent[found.index] = {
             ...canonicalNode,
-            attrs: { ...canonicalNode.attrs, pendingStatus: 'delete' },
+            attrs: { ...canonicalNode.attrs, pendingStatus: 'delete', ...(change.feedback?.trim() ? { pendingFeedback: change.feedback.trim() } : {}) },
           };
         } else {
           found.parent.splice(found.index, 1);
@@ -2255,7 +2260,7 @@ function applyIdTranslationToDoc(doc: PadDocument, translation: Map<string, stri
 }
 
 export function cloneWithPendingReverted(doc: PadDocument): PadDocument {
-  const PENDING_KEYS = ['pendingStatus', 'pendingOriginalContent', 'pendingGroupId', 'pendingTextEdits', 'pendingSelectionFrom', 'pendingSelectionTo', 'pendingOriginalFrom', 'pendingOriginalTo', 'pendingOrphan', 'pendingStaleBaseline'];
+  const PENDING_KEYS = ['pendingStatus', 'pendingOriginalContent', 'pendingGroupId', 'pendingFeedback', 'pendingTextEdits', 'pendingSelectionFrom', 'pendingSelectionTo', 'pendingOriginalFrom', 'pendingOriginalTo', 'pendingOrphan', 'pendingStaleBaseline'];
   function clean(node: any): any {
     const clone = JSON.parse(JSON.stringify(node));
     if (clone.attrs) {
@@ -2333,16 +2338,16 @@ export function hasAcceptedContent(doc: PadDocument): boolean {
  * Used by `applyChangesToDoc` for write_to_pad inserts where containers
  * are handled by the explicit firstNode top-level mark.
  */
-function markLeafBlocksAsPending(nodes: any[], status: string): void {
+function markLeafBlocksAsPending(nodes: any[], status: string, feedback?: string): void {
   if (!nodes) return;
   for (const node of nodes) {
     if (node.type && LEAF_BLOCK_TYPES.has(node.type)) {
-      node.attrs = { ...node.attrs, pendingStatus: status };
+      node.attrs = { ...node.attrs, pendingStatus: status, ...(feedback?.trim() ? { pendingFeedback: feedback.trim() } : {}) };
       if (!node.attrs.id) {
         node.attrs.id = generateNodeId();
       }
     } else if (node.content) {
-      markLeafBlocksAsPending(node.content, status);
+      markLeafBlocksAsPending(node.content, status, feedback);
     }
   }
 }
@@ -3281,6 +3286,7 @@ export function stripPendingAttrsFromFile(filename: string, _legacyClearAgentCre
         if (node.attrs?.pendingStatus) {
           delete node.attrs.pendingStatus;
           delete node.attrs.pendingOriginalContent;
+          delete node.attrs.pendingFeedback;
           delete node.attrs.pendingTextEdits;
         }
         if (node.content) strip(node.content);

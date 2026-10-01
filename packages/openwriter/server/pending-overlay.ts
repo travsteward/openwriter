@@ -70,6 +70,9 @@ export interface PendingEntry {
    *  someone else edited the very thing the agent was trying to rewrite. */
   originalBaseline?: any;
 
+  /** Optional user-facing explanation; exists only while the proposal is pending. */
+  feedback?: string;
+
   // ---- Sub-paragraph enhance fields ----
   pendingGroupId?: string;
   pendingTextEdits?: any;
@@ -429,6 +432,9 @@ export function extractOverlay(doc: any): PendingEntry[] {
           nodeId,
           status,
         };
+        if (typeof node.attrs?.pendingFeedback === 'string' && node.attrs.pendingFeedback) {
+          entry.feedback = node.attrs.pendingFeedback;
+        }
 
         if (status === 'insert') {
           entry.afterNodeId = prevSiblingId;
@@ -471,7 +477,7 @@ export function extractOverlay(doc: any): PendingEntry[] {
 }
 
 const PENDING_ATTR_KEYS = [
-  'pendingStatus', 'pendingOriginalContent', 'pendingGroupId',
+  'pendingStatus', 'pendingOriginalContent', 'pendingGroupId', 'pendingFeedback',
   'pendingTextEdits', 'pendingSelectionFrom', 'pendingSelectionTo',
   'pendingOriginalFrom', 'pendingOriginalTo', 'pendingOrphan', 'pendingStaleBaseline',
 ];
@@ -563,6 +569,7 @@ export function applyOverlay(canonical: any, entries: PendingEntry[]): ApplyResu
 
     target.attrs = target.attrs || {};
     target.attrs.pendingStatus = entry.status;
+    target.attrs.pendingFeedback = entry.feedback ?? null;
 
     if (entry.status === 'rewrite') {
       // Stale-baseline check: compare canonical content to baseline.
@@ -603,6 +610,7 @@ export function applyOverlay(canonical: any, entries: PendingEntry[]): ApplyResu
     newNode.attrs = newNode.attrs || {};
     newNode.attrs.id = entry.nodeId;
     newNode.attrs.pendingStatus = 'insert';
+    if (entry.feedback) newNode.attrs.pendingFeedback = entry.feedback;
     if (entry.pendingGroupId) newNode.attrs.pendingGroupId = entry.pendingGroupId;
 
     // Try anchor: afterNodeId first, then parentNodeId.
@@ -648,6 +656,7 @@ export function applyOverlay(canonical: any, entries: PendingEntry[]): ApplyResu
       newNode.attrs = newNode.attrs || {};
       newNode.attrs.id = entry.nodeId;
       newNode.attrs.pendingStatus = 'insert';
+      if (entry.feedback) newNode.attrs.pendingFeedback = entry.feedback;
       newNode.attrs.pendingOrphan = true;
       if (entry.pendingGroupId) newNode.attrs.pendingGroupId = entry.pendingGroupId;
       canonical.content = canonical.content || [];
@@ -730,6 +739,7 @@ export function applyOverlayPure(canonical: any, entries: PendingEntry[]): any {
     if (!target) continue; // Orphan — skipped in pure version. Caller handles classification separately.
     target.attrs = target.attrs || {};
     target.attrs.pendingStatus = entry.status;
+    target.attrs.pendingFeedback = entry.feedback ?? null;
     if (entry.status === 'rewrite') {
       if (entry.originalBaseline && !sameContent(target, entry.originalBaseline)) {
         target.attrs.pendingStaleBaseline = true;
@@ -776,6 +786,7 @@ export function applyOverlayPure(canonical: any, entries: PendingEntry[]): any {
     if (existing) {
       existing.attrs = existing.attrs || {};
       existing.attrs.pendingStatus = 'insert';
+      existing.attrs.pendingFeedback = entry.feedback ?? null;
       if (entry.pendingGroupId) existing.attrs.pendingGroupId = entry.pendingGroupId;
       continue;
     }
@@ -784,6 +795,7 @@ export function applyOverlayPure(canonical: any, entries: PendingEntry[]): any {
     newNode.attrs = newNode.attrs || {};
     newNode.attrs.id = entry.nodeId;
     newNode.attrs.pendingStatus = 'insert';
+    if (entry.feedback) newNode.attrs.pendingFeedback = entry.feedback;
     if (entry.pendingGroupId) newNode.attrs.pendingGroupId = entry.pendingGroupId;
 
     let placed = false;
@@ -995,6 +1007,7 @@ export function migrateLegacyPending(doc: any, legacyPending: Record<string, any
             entry.originalBaseline = legacyEntry.o;
           }
           if (legacyEntry.g) entry.pendingGroupId = legacyEntry.g;
+          if (legacyEntry.f) entry.feedback = legacyEntry.f;
           if (legacyEntry.sf != null) entry.pendingSelectionFrom = legacyEntry.sf;
           if (legacyEntry.st != null) entry.pendingSelectionTo = legacyEntry.st;
           if (legacyEntry.of != null) entry.pendingOriginalFrom = legacyEntry.of;

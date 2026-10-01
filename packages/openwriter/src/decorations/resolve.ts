@@ -51,6 +51,7 @@ function acceptInsert(editor: Editor, nodeId: string): boolean {
     tr.setNodeMarkup(pos, undefined, {
       ...node.attrs,
       pendingStatus: null,
+      pendingFeedback: null,
     });
     return true;
   }).run();
@@ -68,6 +69,7 @@ function acceptRewrite(editor: Editor, nodeId: string): boolean {
       ...node.attrs,
       pendingStatus: null,
       pendingOriginalContent: null,
+      pendingFeedback: null,
       pendingSelectionFrom: null,
       pendingSelectionTo: null,
       pendingOriginalFrom: null,
@@ -143,6 +145,7 @@ function rejectDelete(editor: Editor, nodeId: string): boolean {
     tr.setNodeMarkup(pos, undefined, {
       ...node.attrs,
       pendingStatus: null,
+      pendingFeedback: null,
     });
     return true;
   }).run();
@@ -167,6 +170,7 @@ function acceptGroup(editor: Editor, groupId: string): boolean {
         ...result.node.attrs,
         pendingStatus: null,
         pendingOriginalContent: null,
+        pendingFeedback: null,
         pendingGroupId: null,
         pendingSelectionFrom: null,
       pendingSelectionTo: null,

@@ -81,6 +81,7 @@ function replaceNodeContent(editor: Editor, nodeId: string, newContent: any): bo
       id: node.attrs.id,
       pendingStatus: node.attrs.pendingStatus,
       pendingOriginalContent: node.attrs.pendingOriginalContent,
+      pendingFeedback: node.attrs.pendingFeedback,
       pendingSelectionFrom: node.attrs.pendingSelectionFrom,
       pendingSelectionTo: node.attrs.pendingSelectionTo,
       pendingOriginalFrom: node.attrs.pendingOriginalFrom,
@@ -300,6 +301,7 @@ export default function ReviewTab({
             ...(orig.attrs || {}),
             pendingStatus: 'rewrite',
             pendingGroupId: currentNode.groupId,
+            pendingFeedback: currentNode.feedback || null,
             ...(i === 0 ? { pendingOriginalContent: originalContent } : {}),
           },
         }));
@@ -580,10 +582,12 @@ export default function ReviewTab({
   // rail's inert DOM, so Focus controls remain accessible and interactive.
   if (focusReviewTarget !== undefined) {
     if (!focusReviewTarget || totalSlots === 0) return null;
+    const feedback = cursor === 'body' ? currentNode?.feedback : undefined;
     return createPortal(
       <div className="focus-review" role="group" aria-label="Review changes">
         <button type="button" onClick={handleGoToPrevious} disabled={totalSlots <= 1} aria-label="Previous change" title="Previous change"><ChevronLeft /></button>
         <span className="focus-review__count" aria-live="polite" aria-atomic="true" title={cursor === 'title' && pendingTitle ? `${pendingTitle.from} → ${pendingTitle.to}` : 'Current change'}>{cursor === 'title' ? 'Title ' : ''}{slotIndex + 1}/{totalSlots}</span>
+        {feedback && <span className="focus-review__feedback" title={feedback}>{feedback}</span>}
         <button type="button" onClick={handleGoToNext} disabled={totalSlots <= 1} aria-label="Next change" title="Next change"><ChevronRight /></button>
         <button type="button" className="focus-review__accept" onClick={handleAcceptCurrent} aria-label="Accept current change" title="Accept current change"><Check /></button>
         <button type="button" className="focus-review__reject" onClick={handleRejectCurrent} aria-label="Reject current change" title="Reject current change"><XIcon /></button>
@@ -665,6 +669,13 @@ export default function ReviewTab({
           <span className="review-panel__counter">{slotIndex + 1} / {totalSlots}</span>
         </div>
       </div>
+
+      {cursor === 'body' && currentNode?.feedback && (
+        <div className="review-tab__section">
+          <div className="review-tab__section-label">Agent note</div>
+          <p className="review-tab__feedback">{currentNode.feedback}</p>
+        </div>
+      )}
 
       <div className="review-tab__section">
         <div className="review-tab__row">

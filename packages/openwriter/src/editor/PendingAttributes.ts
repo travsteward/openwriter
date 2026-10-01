@@ -41,6 +41,10 @@ export const PendingAttributes = Extension.create({
             default: null,
             rendered: false, // Internal only — never serialized to HTML
           },
+          pendingFeedback: {
+            default: null,
+            rendered: false, // Pending review note, never document HTML
+          },
           pendingSelectionFrom: {
             default: null,
             rendered: false,

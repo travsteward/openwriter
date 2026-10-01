@@ -1294,6 +1294,15 @@
   color: var(--ink-light);
 }
 
+.review-tab__feedback {
+  margin: 0;
+  color: var(--ink-body);
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 .review-tab__row {
   display: flex;
   align-items: center;

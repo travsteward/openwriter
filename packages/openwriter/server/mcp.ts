@@ -338,6 +338,7 @@ export const TOOL_REGISTRY: ToolDef[] = [
         nodeId: z.string().optional(),
         afterNodeId: z.string().optional(),
         content: z.any().optional(),
+        feedback: z.string().max(500).optional().describe('Optional user-facing note for this pending block change.'),
       })).describe('Array of node changes. Content accepts markdown strings or TipTap JSON.'),
       docId: z.string().describe('Target document by docId (8-char hex from list_documents or read_pad).'),
     },

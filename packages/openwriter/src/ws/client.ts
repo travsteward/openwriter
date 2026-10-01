@@ -18,6 +18,7 @@ export interface NodeChange {
   nodeId?: string;
   afterNodeId?: string;
   content?: any;
+  feedback?: string;
   /** Server signal: this change committed directly (no pending decoration).
    *  Bridge applies it as a normal edit, not a review item. */
   autoAccept?: boolean;

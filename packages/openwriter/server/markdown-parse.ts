@@ -349,6 +349,7 @@ function rehydratePendingState(doc: { content: any[] }, pending: Record<string, 
       if (entry.g) {
         target.attrs.pendingGroupId = entry.g;
       }
+      if (entry.f) target.attrs.pendingFeedback = entry.f;
       // Selection range attrs (sub-paragraph enhance)
       if (entry.sf != null) target.attrs.pendingSelectionFrom = entry.sf;
       if (entry.st != null) target.attrs.pendingSelectionTo = entry.st;
