@@ -1105,9 +1105,8 @@ export async function startHttpServer(options: { server: HttpServer; port?: numb
         res.status(400).json({ error: 'ids must be an array' });
         return;
       }
-      const deleted = deleteComments(ids);
-      const activeFilename = getActiveFilename();
-      broadcastCommentsChanged(activeFilename);
+      const { ids: deleted, filenames } = deleteComments(ids);
+      for (const f of filenames) broadcastCommentsChanged(f);
       res.json({ success: true, deleted });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
@@ -1123,9 +1122,8 @@ export async function startHttpServer(options: { server: HttpServer; port?: numb
         res.status(400).json({ error: 'ids must be an array' });
         return;
       }
-      const resolved = resolveComments(ids);
-      const activeFilename = getActiveFilename();
-      broadcastCommentsChanged(activeFilename);
+      const { ids: resolved, filenames } = resolveComments(ids);
+      for (const f of filenames) broadcastCommentsChanged(f);
       res.json({ success: true, resolved });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
@@ -1140,9 +1138,8 @@ export async function startHttpServer(options: { server: HttpServer; port?: numb
         res.status(400).json({ error: 'ids must be an array' });
         return;
       }
-      const cleared = unresolveComments(ids);
-      const activeFilename = getActiveFilename();
-      broadcastCommentsChanged(activeFilename);
+      const { ids: cleared, filenames } = unresolveComments(ids);
+      for (const f of filenames) broadcastCommentsChanged(f);
       res.json({ success: true, cleared });
     } catch (err: any) {
       res.status(500).json({ error: err.message });

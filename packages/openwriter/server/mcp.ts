@@ -1845,9 +1845,8 @@ export const TOOL_REGISTRY: ToolDef[] = [
       comment_ids: z.array(z.string()).describe('Array of comment IDs to resolve'),
     },
     handler: async ({ comment_ids }: { comment_ids: string[] }) => {
-      const resolved = resolveComments(comment_ids);
-      const activeFile = getActiveFilename();
-      broadcastCommentsChanged(activeFile);
+      const { ids: resolved, filenames } = resolveComments(comment_ids);
+      for (const f of filenames) broadcastCommentsChanged(f);
       return {
         content: [{
           type: 'text',
@@ -1877,9 +1876,8 @@ export const TOOL_REGISTRY: ToolDef[] = [
       mark_ids: z.array(z.string()).describe('Array of comment IDs to resolve'),
     },
     handler: async ({ mark_ids }: { mark_ids: string[] }) => {
-      const resolved = resolveComments(mark_ids);
-      const activeFile = getActiveFilename();
-      broadcastCommentsChanged(activeFile);
+      const { ids: resolved, filenames } = resolveComments(mark_ids);
+      for (const f of filenames) broadcastCommentsChanged(f);
       return {
         content: [{
           type: 'text',

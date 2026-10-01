@@ -166,96 +166,69 @@ export function editComment(filename: string, id: string, note: string): Comment
   return comment;
 }
 
+/** What an id-based change did: the comment ids it changed, and the docs
+ *  they belong to. Callers announce comments-changed for those docs. The
+ *  server's live doc is the wrong one to announce: a tab refetches only
+ *  for the doc it shows, and the live doc can be another tab's, so its
+ *  underlines went stale until reload. */
+export interface CommentChange { ids: string[]; filenames: string[] }
+
+/** Apply `change` to every comment in `ids`, across all sidecars. `change`
+ *  returns the new mark, null to remove it, or the same mark for no change. */
+function changeCommentsById(ids: string[], change: (c: Comment) => Comment | null): CommentChange {
+  const idSet = new Set(ids);
+  const changed: string[] = [];
+  const filenames = new Set<string>();
+
+  ensureCommentsDir();
+  try {
+    const files: string[] = readdirSync(getCommentsDir());
+    for (const file of files) {
+      if (!file.endsWith('.json')) continue;
+      const filePath = join(getCommentsDir(), file);
+      try {
+        const data: CommentFile = JSON.parse(readFileSync(filePath, 'utf-8'));
+        let touched = false;
+        const marks: Comment[] = [];
+        for (const c of data.marks) {
+          const next = idSet.has(c.id) ? change(c) : c;
+          if (next !== c) { changed.push(c.id); touched = true; }
+          if (next) marks.push(next);
+        }
+        if (touched) {
+          data.marks = marks;
+          writeCommentPath(filePath, data);
+          filenames.add(sidecarDocFilename(file, data));
+        }
+      } catch { /* skip */ }
+    }
+  } catch { /* dir doesn't exist */ }
+
+  return { ids: changed, filenames: [...filenames] };
+}
+
 /** Mark comments as resolved (state change, NOT deletion). The records stay
  *  on disk but get filtered out of normal `getComments` listings — so the
  *  decoration disappears in the browser without losing the history. */
-export function resolveComments(ids: string[]): string[] {
-  const idSet = new Set(ids);
-  const resolved: string[] = [];
+export function resolveComments(ids: string[]): CommentChange {
   const now = new Date().toISOString();
-
-  ensureCommentsDir();
-  try {
-    const files: string[] = readdirSync(getCommentsDir());
-    for (const file of files) {
-      if (!file.endsWith('.json')) continue;
-      const filePath = join(getCommentsDir(), file);
-      try {
-        const data: CommentFile = JSON.parse(readFileSync(filePath, 'utf-8'));
-        let changed = false;
-        for (const c of data.marks) {
-          if (idSet.has(c.id) && !isResolved(c)) {
-            c.resolvedAt = now;
-            resolved.push(c.id);
-            changed = true;
-          }
-        }
-        if (changed) writeCommentPath(filePath, data);
-      } catch { /* skip */ }
-    }
-  } catch { /* dir doesn't exist */ }
-
-  return resolved;
+  return changeCommentsById(ids, (c) => isResolved(c) ? c : { ...c, resolvedAt: now });
 }
 
 /** Clear the resolved state on comments. Inverse of resolveComments. */
-export function unresolveComments(ids: string[]): string[] {
-  const idSet = new Set(ids);
-  const cleared: string[] = [];
-
-  ensureCommentsDir();
-  try {
-    const files: string[] = readdirSync(getCommentsDir());
-    for (const file of files) {
-      if (!file.endsWith('.json')) continue;
-      const filePath = join(getCommentsDir(), file);
-      try {
-        const data: CommentFile = JSON.parse(readFileSync(filePath, 'utf-8'));
-        let changed = false;
-        for (const c of data.marks) {
-          if (idSet.has(c.id) && isResolved(c)) {
-            delete c.resolvedAt;
-            cleared.push(c.id);
-            changed = true;
-          }
-        }
-        if (changed) writeCommentPath(filePath, data);
-      } catch { /* skip */ }
-    }
-  } catch { /* dir doesn't exist */ }
-
-  return cleared;
+export function unresolveComments(ids: string[]): CommentChange {
+  return changeCommentsById(ids, (c) => {
+    if (!isResolved(c)) return c;
+    const { resolvedAt: _, ...rest } = c;
+    return rest as Comment;
+  });
 }
 
 /** Permanently remove comments from the sidecar. Distinct from resolveComments —
  *  resolve is a state change ("addressed, archive it"), delete is the destructive
  *  "this record never should have existed" path. */
-export function deleteComments(ids: string[]): string[] {
-  const idSet = new Set(ids);
-  const deleted: string[] = [];
-
-  ensureCommentsDir();
-  try {
-    const files: string[] = readdirSync(getCommentsDir());
-    for (const file of files) {
-      if (!file.endsWith('.json')) continue;
-      const filePath = join(getCommentsDir(), file);
-      try {
-        const data: CommentFile = JSON.parse(readFileSync(filePath, 'utf-8'));
-        const before = data.marks.length;
-        data.marks = data.marks.filter((m) => {
-          if (idSet.has(m.id)) {
-            deleted.push(m.id);
-            return false;
-          }
-          return true;
-        });
-        if (data.marks.length !== before) writeCommentPath(filePath, data);
-      } catch { /* skip */ }
-    }
-  } catch { /* dir doesn't exist */ }
-
-  return deleted;
+export function deleteComments(ids: string[]): CommentChange {
+  return changeCommentsById(ids, () => null);
 }
 
 export function pruneStaleComments(filename: string, validNodeIds: string[]): number {

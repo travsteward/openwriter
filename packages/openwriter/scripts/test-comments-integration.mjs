@@ -244,7 +244,10 @@ try {
     const marks = getComments(filename)[filename] ?? [];
     const single = marks.find((m) => m.text.includes('single-node mark'));
     assert(!!single, 'setup: single mark present');
-    resolveComments([single.id]);
+    const change = resolveComments([single.id]);
+    // Tabs refetch only for the doc they show, so the change must name the
+    // comment's own doc, not whichever doc the server has live.
+    assert(JSON.stringify(change.filenames) === JSON.stringify([filename]), `reports the comment's doc (got ${JSON.stringify(change.filenames)})`);
     const after = getComments(filename)[filename] ?? [];
     assert(after.length === 1, `1 mark remains after resolving 1 (got ${after.length})`);
     assert(!after.find((m) => m.id === single.id), 'resolved mark id no longer in sidecar');
