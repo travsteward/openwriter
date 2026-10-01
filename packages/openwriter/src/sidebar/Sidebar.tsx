@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import type { PendingDocsPayload } from '../ws/client';
 import { useSidebarData } from './sidebar-data';
 import { useSidebarActions } from './sidebar-actions';
@@ -55,7 +55,18 @@ export const SIDEBAR_DEFAULT_WIDTH = 260;
 export default function Sidebar({ open, onSwitchDocument, onCreateDocument, refreshKey, docTagsRefreshKey, workspacesRefreshKey, pendingDocs, writingTitle, writingTarget, pendingWriteFilenames, activeFilename, onClose, width, onWidthChange, floating }: SidebarProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   usePanelVisibility(panelRef, open, '[title="Open sidebar"]');
-  const { docs, setDocs, workspaces, assignedFiles, fetchDocs, fetchWorkspaces, scrollRef } = useSidebarData(refreshKey, workspacesRefreshKey);
+  const { docs: fetchedDocs, workspaces, assignedFiles, fetchDocs, fetchWorkspaces, scrollRef } = useSidebarData(refreshKey, workspacesRefreshKey);
+
+  // The highlighted doc is the one THIS tab shows. The server's isActive
+  // marks its single live doc, which another tab (or an agent) can move, so
+  // it is replaced here on every fetch. A click highlights at once, before
+  // the switch round-trip lands. adr: adr/per-tab-view.md
+  const [clickedFilename, setClickedFilename] = useState<string | null>(null);
+  useEffect(() => { setClickedFilename(null); }, [activeFilename]);
+  const shownFilename = clickedFilename ?? activeFilename;
+  const docs = useMemo(() => shownFilename
+    ? fetchedDocs.map(d => d.isActive === (d.filename === shownFilename) ? d : { ...d, isActive: d.filename === shownFilename })
+    : fetchedDocs, [fetchedDocs, shownFilename]);
   const actions = useSidebarActions(fetchDocs, fetchWorkspaces, docs);
   const mode = getSidebarMode();
 
@@ -88,25 +99,10 @@ export default function Sidebar({ open, onSwitchDocument, onCreateDocument, refr
     window.addEventListener('pointerup', onUp);
   }, [width, onWidthChange]);
 
-  // Optimistic active-doc highlight: update isActive locally before the server round-trip
   const optimisticSwitchDocument = useCallback((filename: string) => {
-    setDocs(prev => prev.map(d => ({ ...d, isActive: d.filename === filename })));
+    setClickedFilename(filename);
     onSwitchDocument(filename);
-  }, [setDocs, onSwitchDocument]);
-
-  // Reconcile isActive with App's authoritative activeFilename. Covers agent
-  // (switch_document) switches and back/forward nav, which don't run the
-  // optimistic click path above. No-ops (returns prev) when already correct,
-  // so it won't churn after a click already set the flag.
-  useEffect(() => {
-    if (!activeFilename) return;
-    setDocs(prev => {
-      if (prev.some(d => d.filename === activeFilename ? !d.isActive : d.isActive)) {
-        return prev.map(d => ({ ...d, isActive: d.filename === activeFilename }));
-      }
-      return prev;
-    });
-  }, [activeFilename, setDocs, refreshKey]);
+  }, [onSwitchDocument]);
   const [scheduleView, setScheduleView] = useState(false);
   const [tasksView, setTasksView] = useState(false);
 
