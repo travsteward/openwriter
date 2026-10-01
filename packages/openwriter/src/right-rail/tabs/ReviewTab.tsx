@@ -20,6 +20,7 @@ import type { RightRailTabProps } from '../types';
 import type { WorkspaceFull, WorkspaceNode, WorkspaceWithData } from '../../sidebar/sidebar-types';
 import ManuscriptRailSections from './ManuscriptRailSections';
 import BookmarksSection, { BookmarkReturn } from './BookmarksSection';
+import { jumpToBlock } from '../../bookmarks/bookmark-plugin';
 import CommentsSection from './CommentsSection';
 
 /** Scope filter — which subset of pending docs the navigator cycles through.
@@ -442,8 +443,16 @@ export default function ReviewTab({
   // (which wraps body internal to 0 via modulo), then flip cursor. When
   // transitioning body[0] → title backward, body is already at 0, so we just
   // flip cursor without moving it.
+  // With a single change there is nowhere to step, so an arrow press shows
+  // it: scroll it into view and flash it. A lone title change is already in
+  // view at the top, so there is nothing to do.
+  const showOnlyChange = useCallback(() => {
+    if (cursor === 'body' && currentNode) jumpToBlock(editors, currentNode.nodeId);
+  }, [cursor, currentNode, editors]);
+
   const handleGoToNext = useCallback(() => {
-    if (totalSlots <= 1) return;
+    if (totalSlots === 0) return;
+    if (totalSlots === 1) { showOnlyChange(); return; }
     if (cursor === 'title') {
       // Title → body[0]. Body's internal cursor is already 0 by invariant.
       setCursor('body');
@@ -458,10 +467,11 @@ export default function ReviewTab({
       return;
     }
     goToNext();
-  }, [totalSlots, cursor, hasTitleSlot, currentIndex, counts.total, goToNext]);
+  }, [totalSlots, cursor, hasTitleSlot, currentIndex, counts.total, goToNext, showOnlyChange]);
 
   const handleGoToPrevious = useCallback(() => {
-    if (totalSlots <= 1) return;
+    if (totalSlots === 0) return;
+    if (totalSlots === 1) { showOnlyChange(); return; }
     if (cursor === 'title') {
       // Title → body[last]. Body's internal cursor is 0 by invariant, so
       // goToPrevious wraps 0 → last via modulo. Then flip cursor. The title
@@ -477,7 +487,7 @@ export default function ReviewTab({
       return;
     }
     goToPrevious();
-  }, [totalSlots, cursor, hasTitleSlot, currentIndex, goToPrevious]);
+  }, [totalSlots, cursor, hasTitleSlot, currentIndex, goToPrevious, showOnlyChange]);
 
   const goToPreviousDoc = useCallback(() => {
     if (totalPendingDocs === 0) return;
@@ -582,9 +592,9 @@ export default function ReviewTab({
     if (!focusReviewTarget || totalSlots === 0) return null;
     return createPortal(
       <div className="focus-review" role="group" aria-label="Review changes">
-        <button type="button" onClick={handleGoToPrevious} disabled={totalSlots <= 1} aria-label="Previous change" title="Previous change"><ChevronLeft /></button>
+        <button type="button" onClick={handleGoToPrevious} disabled={totalSlots === 0} aria-label="Previous change" title="Previous change"><ChevronLeft /></button>
         <span className="focus-review__count" aria-live="polite" aria-atomic="true" title={cursor === 'title' && pendingTitle ? `${pendingTitle.from} → ${pendingTitle.to}` : 'Current change'}>{cursor === 'title' ? 'Title ' : ''}{slotIndex + 1}/{totalSlots}</span>
-        <button type="button" onClick={handleGoToNext} disabled={totalSlots <= 1} aria-label="Next change" title="Next change"><ChevronRight /></button>
+        <button type="button" onClick={handleGoToNext} disabled={totalSlots === 0} aria-label="Next change" title="Next change"><ChevronRight /></button>
         <button type="button" className="focus-review__accept" onClick={handleAcceptCurrent} aria-label="Accept current change" title="Accept current change"><Check /></button>
         <button type="button" className="focus-review__reject" onClick={handleRejectCurrent} aria-label="Reject current change" title="Reject current change"><XIcon /></button>
       </div>,
@@ -660,8 +670,8 @@ export default function ReviewTab({
       <div className="review-tab__section">
         <div className="review-tab__section-label">{cursor === 'title' ? 'Title' : 'Change'}</div>
         <div className="review-tab__row">
-          <button className="review-panel__btn" onClick={handleGoToPrevious} disabled={totalSlots <= 1} title="Previous (k)"><ChevronUp /></button>
-          <button className="review-panel__btn" onClick={handleGoToNext} disabled={totalSlots <= 1} title="Next (j)"><ChevronDown /></button>
+          <button className="review-panel__btn" onClick={handleGoToPrevious} disabled={totalSlots === 0} title="Previous (k)"><ChevronUp /></button>
+          <button className="review-panel__btn" onClick={handleGoToNext} disabled={totalSlots === 0} title="Next (j)"><ChevronDown /></button>
           <span className="review-panel__counter">{slotIndex + 1} / {totalSlots}</span>
         </div>
       </div>

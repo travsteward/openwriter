@@ -1328,3 +1328,12 @@ Verified live on a scratch doc: cursor held at its offset through an
 edit_text; typing before, after and inside the change kept the highlight on
 the agent's words; disk had the typed words; Reject kept them; Undo took
 back both versions together.
+
+### 2026-10-01 — Arrows work with a single change
+
+With one change (1/1) both arrow pairs were disabled, so the earlier fix
+(first press shows the current change when it's off screen) could never
+run. The arrows now disable only at 0. With one slot there is nowhere to
+step, so a press scrolls the change into view and flashes it, through the
+same jumpToBlock the bookmark and comment lists use. A lone title change
+is already in view, so the press does nothing.
