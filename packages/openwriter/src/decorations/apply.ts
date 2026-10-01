@@ -4,6 +4,7 @@
  */
 
 import type { Editor, JSONContent } from '@tiptap/core';
+import { AGENT_EDIT_META } from './pending-typing';
 
 // ============================================================================
 // UTILITIES
@@ -62,6 +63,30 @@ function markLeafBlocksPending(nodes: JSONContent[], status: string): void {
       markLeafBlocksPending(node.content, status);
     }
   }
+}
+
+/**
+ * Replace a block with an agent's version of it, changing only the text that
+ * differs. Replacing the whole block maps a cursor inside it to the block's
+ * end, so the user's typing jumped to the next paragraph; an in-place edit
+ * leaves a cursor in the untouched text where it was. Falls back to a whole
+ * replacement when the block type changes. Marks the transaction as an agent
+ * edit so it isn't taken for the user's typing (pending-typing.ts).
+ */
+export function replaceNodeInPlace(tr: any, pos: number, oldNode: any, newNode: any): void {
+  tr.setMeta(AGENT_EDIT_META, true);
+  if (oldNode.type !== newNode.type || !oldNode.isTextblock) {
+    tr.replaceWith(pos, pos + oldNode.nodeSize, newNode);
+    return;
+  }
+  const start = oldNode.content.findDiffStart(newNode.content);
+  if (start != null) {
+    let { a: endA, b: endB } = oldNode.content.findDiffEnd(newNode.content)!;
+    const overlap = start - Math.min(endA, endB);
+    if (overlap > 0) { endA += overlap; endB += overlap; }
+    tr.replace(pos + 1 + start, pos + 1 + endA, newNode.slice(start, endB));
+  }
+  tr.setNodeMarkup(pos, undefined, newNode.attrs, newNode.marks);
 }
 
 // ============================================================================
@@ -267,11 +292,12 @@ export function applyRewrite(
   const allNodes = [firstNode, ...extraNodes];
 
   try {
-    // Single replaceWith step — avoids position mapping bugs from chained
-    // deleteRange + insertContentAt (atom nodes have nodeSize=1 which breaks the chain)
+    // One transaction, no chained deleteRange + insertContentAt (atom nodes
+    // have nodeSize=1 which breaks the chain). Extra nodes go in after.
     editor.chain().command(({ tr }) => {
       const pmNodes = allNodes.map((n) => editor.state.schema.nodeFromJSON(n));
-      tr.replaceWith(pos, pos + node.nodeSize, pmNodes);
+      replaceNodeInPlace(tr, pos, node, pmNodes[0]);
+      if (pmNodes.length > 1) tr.insert(pos + tr.doc.nodeAt(pos)!.nodeSize, pmNodes.slice(1));
       return true;
     }).run();
 

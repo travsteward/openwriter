@@ -5,7 +5,7 @@
 import type { Editor } from '@tiptap/core';
 import { Fragment } from '@tiptap/pm/model';
 import type { NodeChange } from '../ws/client';
-import { applyInsert, applyRewrite, applyDelete, applyRangeRewrite, markDeleteInTr, type InsertAnchor } from './apply';
+import { applyInsert, applyRewrite, applyDelete, applyRangeRewrite, markDeleteInTr, replaceNodeInPlace, type InsertAnchor } from './apply';
 
 export function applyNodeChangeToEditor(
   editor: Editor,
@@ -80,7 +80,8 @@ export function applyNodeChangesToEditor(
 
           const contentArray = Array.isArray(change.content) ? change.content : [change.content];
           const pmNodes = contentArray.map((n: any) => schema.nodeFromJSON(n));
-          tr.replaceWith(found.pos, found.pos + found.node.nodeSize, pmNodes);
+          replaceNodeInPlace(tr, found.pos, found.node, pmNodes[0]);
+          if (pmNodes.length > 1) tr.insert(found.pos + tr.doc.nodeAt(found.pos)!.nodeSize, pmNodes.slice(1));
         }
 
         else if (change.operation === 'insert' && change.content) {

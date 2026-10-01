@@ -4,6 +4,7 @@
 
 import { Plugin, PluginKey } from '@tiptap/pm/state';
 import { Decoration, DecorationSet } from '@tiptap/pm/view';
+import { followUserTyping } from './pending-typing';
 
 export type PendingStatus = 'insert' | 'rewrite' | 'delete';
 
@@ -177,6 +178,12 @@ export function createPendingDecorationPlugin(): Plugin {
         }
         return oldSet.map(tr.mapping, tr.doc);
       },
+    },
+
+    // While previewing the original, the paragraph shows the original, so
+    // typing there isn't an edit to the proposal.
+    appendTransaction(transactions, oldState, newState) {
+      return previewActive ? null : followUserTyping(transactions, oldState, newState);
     },
 
     props: {
