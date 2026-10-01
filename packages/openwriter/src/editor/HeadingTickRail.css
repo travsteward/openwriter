@@ -1,0 +1,28 @@
+/* Editor heading rail. The tick and label look come from ChapterTickRail.css;
+ * this file only places the rail in the doc scroll area and sizes ticks by
+ * heading level. */
+
+/* Zero-height sticky anchor, like BackToTop, so the rail stays put while the
+ * doc scrolls under it. */
+.heading-tickrail-anchor {
+  position: sticky;
+  top: 0;
+  height: 0;
+  z-index: 5;
+}
+
+/* The chapter rail sits at 30% of its preview's height; the anchor has no
+ * height, so place it against the viewport instead. */
+.heading-tickrail.ch-tickrail {
+  left: -0.25rem;
+  top: 30vh;
+  max-height: 60vh;
+}
+
+/* Smaller headings: shorter ticks, indented. */
+.heading-tick--h2 .ch-tick__line { width: 11px; margin-left: 5px; }
+.heading-tick--h2:hover .ch-tick__line { width: 15px; }
+.heading-tick--h2.ch-tick--active .ch-tick__line { width: 18px; }
+.heading-tick--h3 .ch-tick__line { width: 7px; margin-left: 9px; }
+.heading-tick--h3:hover .ch-tick__line { width: 10px; }
+.heading-tick--h3.ch-tick--active .ch-tick__line { width: 12px; }
