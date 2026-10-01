@@ -37,7 +37,11 @@ function makeDecoAttrs(comment: CommentData): Record<string, string> {
   // No `title` attribute — the OS tooltip is noisy and can't host edit
   // affordances. Hover behavior is owned by <CommentPopover>, which reads
   // the data-comment-id and renders an in-editor popover instead.
+  // nodeName gives every comment its own span. Without it ProseMirror merges
+  // overlapping decorations into one span and the later data-comment-id
+  // overwrites the earlier, hiding a comment nested inside another.
   return {
+    nodeName: 'span',
     class: 'ow-comment',
     'data-comment-id': comment.id,
   };

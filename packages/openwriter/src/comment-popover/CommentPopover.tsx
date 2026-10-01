@@ -4,8 +4,9 @@
  * Behavior:
  *  - Mouse enters a `[data-comment-id]` span → popover appears anchored above
  *    (or below, if no room above) the span, showing the comment's note.
- *  - Only the hovered comment shows. Comments on the exact same words stack
- *    as cards, since their underlines overlap and only one can be hovered.
+ *  - Every comment under the mouse stacks as a card: the same words, or a
+ *    sentence comment nested inside a longer one. Comments elsewhere in the
+ *    paragraph don't show.
  *  - Each card has four icon actions: Edit, Add (new sibling on same range),
  *    Resolve (state change), Delete (destructive).
  *  - Mouse leaves the span OR the popover → close after a short grace period.
@@ -20,7 +21,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { getCommentsData, type CommentData } from '../decorations/comments-plugin';
 
 interface PopoverTarget {
-  commentId: string;
+  commentIds: string[];
   rect: DOMRect;
 }
 
@@ -38,22 +39,21 @@ const POPOVER_GAP_PX = 8;
 const VIEWPORT_PAD_PX = 8;
 const MAX_HEIGHT_PX = 400;
 
-function rangeKey(c: CommentData): string {
-  const ids = c.nodeIds && c.nodeIds.length > 0 ? c.nodeIds : [c.nodeId];
-  return `${ids.join(',')}|${c.text}`;
+/** Ids of every comment covering the hovered text. Each comment renders its
+ *  own span, so overlapping comments nest; walk out from the innermost. */
+function commentIdsAt(span: Element): string[] {
+  const ids: string[] = [];
+  for (let el: Element | null = span; el; el = el.parentElement?.closest('[data-comment-id]') ?? null) {
+    const id = el.getAttribute('data-comment-id');
+    if (id && !ids.includes(id)) ids.push(id);
+  }
+  return ids;
 }
 
-/** The hovered comment, plus any comment on the exact same words (the "+"
- *  sibling action). Identical ranges draw overlapping underlines, so only one
- *  of them can ever be hovered; they must share a card to stay reachable.
- *  Other comments in the same paragraph, including nested sub-ranges, are
- *  separate underlines and get their own card. Sorted oldest-first. */
-function stackForAnchor(anchorId: string, all: CommentData[]): CommentData[] {
-  const anchor = all.find((c) => c.id === anchorId);
-  if (!anchor) return [];
-  const key = rangeKey(anchor);
+/** The comments under the mouse, sorted oldest-first. */
+function stackFor(ids: string[], all: CommentData[]): CommentData[] {
   return all
-    .filter((c) => c.id === anchor.id || rangeKey(c) === key)
+    .filter((c) => ids.includes(c.id))
     .sort((a, b) => (a.createdAt || '').localeCompare(b.createdAt || ''));
 }
 
@@ -108,7 +108,7 @@ export default function CommentPopover({ documentId }: CommentPopoverProps) {
   // anchor comment vanished (e.g. user deleted it from another surface).
   const stack = useMemo<CommentData[]>(() => {
     if (!target) return [];
-    return stackForAnchor(target.commentId, getCommentsData());
+    return stackFor(target.commentIds, getCommentsData());
     // commentsVersion in deps so we recompute when comments change
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [target, commentsVersion]);
@@ -150,16 +150,16 @@ export default function CommentPopover({ documentId }: CommentPopoverProps) {
       const t = e.target as Element | null;
       const span = t?.closest?.('[data-comment-id]') as HTMLElement | null;
       if (span) {
-        const id = span.getAttribute('data-comment-id');
-        if (!id) return;
-        if (targetRef.current?.commentId === id) {
+        const ids = commentIdsAt(span);
+        if (ids.length === 0) return;
+        if (targetRef.current?.commentIds.join(',') === ids.join(',')) {
           cancelHide();
           return;
         }
         cancelHide();
         setMode({ kind: 'view' });
         setNoteDraft('');
-        setTarget({ commentId: id, rect: span.getBoundingClientRect() });
+        setTarget({ commentIds: ids, rect: span.getBoundingClientRect() });
         return;
       }
       if (popoverRef.current?.contains(t)) {
