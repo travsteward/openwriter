@@ -149,6 +149,7 @@ export function usePendingState(editors: Editor[]) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout>>();
   const prevNodeIdsRef = useRef<Set<string>>(new Set());
+  const currentIdRef = useRef<string | null>(null);
 
   const refresh = useCallback(() => {
     const valid = editors.filter(e => e && !e.isDestroyed);
@@ -160,30 +161,20 @@ export function usePendingState(editors: Editor[]) {
     const nodes = derivePendingStateAll(valid);
     setPendingNodes(nodes);
 
-    // Detect newly added pending nodes → auto-focus the first new one
+    // Incoming agent changes arrive silently: the view never moves and the
+    // current change stays the one the user was on. Only the user's own
+    // navigation (arrows, clicking a change) scrolls the doc.
     const prevIds = prevNodeIdsRef.current;
-    const newIds = new Set(nodes.map((n) => n.nodeId));
-    let focusedNewIndex = -1;
-
-    if (prevIds.size > 0) {
-      for (let i = 0; i < nodes.length; i++) {
-        if (!prevIds.has(nodes[i].nodeId)) {
-          focusedNewIndex = i;
-          break;
-        }
-      }
-    }
-
-    prevNodeIdsRef.current = newIds;
-
-    if (focusedNewIndex >= 0) {
-      setCurrentIndex(focusedNewIndex);
-      scrollToNode(nodes[focusedNewIndex].editor, nodes[focusedNewIndex].nodeId);
-    } else if (nodes.length === 0) {
-      setCurrentIndex(0);
-    } else {
-      setCurrentIndex((prev) => Math.min(prev, nodes.length - 1));
-    }
+    prevNodeIdsRef.current = new Set(nodes.map((n) => n.nodeId));
+    const currentId = currentIdRef.current;
+    setCurrentIndex((prev) => {
+      const kept = currentId ? nodes.findIndex((n) => n.nodeId === currentId) : -1;
+      if (kept >= 0) return kept;
+      // Nothing carried over (another doc, or the first changes): start at 1.
+      if (!nodes.some((n) => prevIds.has(n.nodeId))) return 0;
+      // The current change was resolved: the next one takes its place.
+      return Math.min(prev, nodes.length - 1);
+    });
   }, [editors]);
 
   // Refresh on editor transactions (subscribe to ALL editors)
@@ -223,6 +214,7 @@ export function usePendingState(editors: Editor[]) {
   // Sync focused node ID + group ID to decoration plugin for gutter line
   useEffect(() => {
     const node = pendingNodes[currentIndex] ?? null;
+    currentIdRef.current = node?.nodeId ?? null;
     setFocusedPendingNode(node?.nodeId ?? null, node?.groupId ?? null);
     if (node?.editor && !node.editor.isDestroyed && node.editor.view) {
       forceDecorationRefresh(node.editor.view);
