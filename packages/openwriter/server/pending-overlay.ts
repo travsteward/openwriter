@@ -944,7 +944,11 @@ export function reconcileCanonicalToBaselines(canonical: any, entries: PendingEn
 
 function sanitizeNodeForBaseline(node: any): any {
   // Strip volatile fields (ids, pending attrs) for content comparison.
+  // Adjacent text runs with the same marks are joined: the editor can split a
+  // sentence into runs with no styling difference, and markdown loads it back
+  // as one run, so comparing the split form flagged unchanged text as stale.
   const cloned = JSON.parse(JSON.stringify(node));
+  const marksKey = (t: any) => JSON.stringify(t.marks?.length ? t.marks : []);
   function strip(n: any): void {
     if (n?.attrs) {
       const a = { ...n.attrs };
@@ -952,7 +956,19 @@ function sanitizeNodeForBaseline(node: any): any {
       for (const k of PENDING_ATTR_KEYS) delete a[k];
       n.attrs = a;
     }
-    if (n?.content) n.content.forEach(strip);
+    if (Array.isArray(n?.content)) {
+      const runs: any[] = [];
+      for (const c of n.content) {
+        const prev = runs[runs.length - 1];
+        if (c?.type === 'text' && prev?.type === 'text' && marksKey(c) === marksKey(prev)) {
+          prev.text += c.text;
+        } else {
+          runs.push(c);
+        }
+      }
+      n.content = runs;
+      n.content.forEach(strip);
+    }
   }
   strip(cloned);
   return cloned;

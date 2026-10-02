@@ -1390,3 +1390,12 @@ chapter list kept saying a rejected chapter was waiting for review. The
 doc-update handler now compares the live doc's pending count before and after
 applying it and broadcasts when it changed. Typing inside a pending block does
 not change the count, so it does not broadcast.
+
+### 2026-10-01 — Split text runs no longer look like drift
+
+A rewrite's saved baseline can hold one sentence as several adjacent text runs
+with identical marks (the editor splits runs; markdown loads them back as one).
+The stale check compared the raw JSON, so an unchanged paragraph showed the
+amber dotted underline. The comparison form now joins adjacent text runs with
+the same marks, so only a change in words or styling counts as drift. Stored
+baselines are untouched.

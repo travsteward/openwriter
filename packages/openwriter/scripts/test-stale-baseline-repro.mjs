@@ -10,7 +10,7 @@
  * Run: node scripts/test-stale-baseline-repro.mjs
  */
 import { setActiveDocument, applyChanges, getDocument, cancelDebouncedSave, syncBrowserDocUpdate } from '../dist/server/state.js';
-import { reconcileCanonicalToBaselines } from '../dist/server/pending-overlay.js';
+import { reconcileCanonicalToBaselines, applyOverlayPure } from '../dist/server/pending-overlay.js';
 import { setActiveProfile, ensureDataDir } from '../dist/server/helpers.js';
 import { join } from 'path';
 import { homedir } from 'os';
@@ -103,6 +103,19 @@ assert(findNode(canA, 'CCCC').content[0].text === 'ORIGINAL.', '5a: canonical==n
 const canB = { type: 'doc', content: [{ type: 'paragraph', attrs: { id: 'CCCC' }, content: [{ type: 'text', text: 'SOMEONE ELSE EDITED.' }] }] };
 reconcileCanonicalToBaselines(canB, [entry]);
 assert(findNode(canB, 'CCCC').content[0].text === 'SOMEONE ELSE EDITED.', '5b: genuine drift left intact → real stale still surfaces');
+
+// CASE 6 — a baseline captured as split text runs (no styling difference)
+// matches the same text loaded from disk as one run: NOT stale.
+const splitEntry = {
+  nodeId: 'DDDD', status: 'rewrite',
+  originalBaseline: { type: 'paragraph', attrs: { id: 'DDDD' }, content: [{ type: 'text', text: 'Same words, ' }, { type: 'text', text: 'split in two.' }] },
+  newContent: { type: 'paragraph', attrs: { id: 'DDDD' }, content: [{ type: 'text', text: 'New words.' }] },
+};
+const canSplit = { type: 'doc', content: [{ type: 'paragraph', attrs: { id: 'DDDD' }, content: [{ type: 'text', text: 'Same words, split in two.' }] }] };
+const merged6 = applyOverlayPure(canSplit, [splitEntry]);
+assert(!findNode(merged6, 'DDDD').attrs?.pendingStaleBaseline, '6a: split-run baseline == one-run canonical → NOT stale');
+const canBold = { type: 'doc', content: [{ type: 'paragraph', attrs: { id: 'DDDD' }, content: [{ type: 'text', text: 'Same words, ' }, { type: 'text', text: 'split in two.', marks: [{ type: 'bold' }] }] }] };
+assert(findNode(applyOverlayPure(canBold, [splitEntry]), 'DDDD').attrs?.pendingStaleBaseline === true, '6b: a real styling change still flags stale');
 
 cancelDebouncedSave();
 try { rmSync(PROFILE_DIR, { recursive: true, force: true }); } catch {}
