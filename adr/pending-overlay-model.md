@@ -1380,3 +1380,13 @@ container path re-places it and re-marks its leaves. Rejecting a group with no
 original content now removes the top-level blocks its members span, so no empty
 list survives in the browser either. Ordinary agent list inserts still mark
 leaves only and keep the orphan behavior; not addressed here.
+
+### 2026-10-01 — Accepting or rejecting one change tells every tab
+
+A browser accept or reject reaches the server as an ordinary doc-update, and
+only the last change of a doc sent `pending-resolved`. So `pending-docs-changed`
+never fired for the others: per-doc counts went stale, and a manuscript's
+chapter list kept saying a rejected chapter was waiting for review. The
+doc-update handler now compares the live doc's pending count before and after
+applying it and broadcasts when it changed. Typing inside a pending block does
+not change the count, so it does not broadcast.

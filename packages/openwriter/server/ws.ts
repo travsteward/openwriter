@@ -23,6 +23,7 @@ import {
   getDocVersion,
   isVersionCurrent,
   getPendingDocInfo,
+  getPendingChangeCount,
   updatePendingCacheForActiveDoc,
   stripPendingAttrs,
   saveDocToFile,
@@ -487,9 +488,11 @@ export function setupWebSocket(server: Server): void {
             if (msg.document.content) {
               msg.document.content = msg.document.content.filter((n: any) => n.type !== 'imageLoading');
             }
+            const pendingBefore = getPendingChangeCount();
             const result = syncBrowserDocUpdate(msg.document, browserVersion);
             diagLog(`[WS] doc-update SYNC-MERGED stale v${browserVersion}→v${serverVersion} preservedServerEntries=${result.preservedServerEntries}`);
             updatePendingCacheForActiveDoc();
+            if (getPendingChangeCount() !== pendingBefore) broadcastPendingDocsChanged();
             debouncedSave('human');
             afterTabWrite(ws);
           } else if (browserFilename && browserFilename !== getActiveFilename()) {
@@ -514,8 +517,13 @@ export function setupWebSocket(server: Server): void {
               diagLog(`  AFTER (browser): ${browserAfter}`);
             }
             diagLog(`[WS] doc-update ACCEPTED (browser: ${nodeCount} nodes, cleaned: ${cleanedCount}, server: ${currentNodeCount} nodes)`);
+            const pendingBefore = getPendingChangeCount();
             updateDocument(msg.document);
             updatePendingCacheForActiveDoc(); // Keep cache in sync after browser edits/reject-all
+            // An accept or reject in the browser changed what is pending: tell
+            // every tab, so counts and the manuscript's chapter list catch up.
+            // adr: adr/pending-overlay-model.md
+            if (getPendingChangeCount() !== pendingBefore) broadcastPendingDocsChanged();
             debouncedSave('human');
             afterTabWrite(ws);
           }
