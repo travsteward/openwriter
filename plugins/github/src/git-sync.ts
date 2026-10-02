@@ -17,6 +17,10 @@ import { getServerModules } from './helpers.js';
 
 const GITIGNORE_CONTENT = `config.json\n.versions/\n`;
 const NETWORK_TIMEOUT = 30000;
+// Staging and committing a large backlog (hundreds of files, big logs and
+// images) can take well over the 10s default; killing git mid-commit left the
+// commit made but the push never run. Sync pushes use it too.
+const LOCAL_WRITE_TIMEOUT = 300000;
 
 export type SyncState = 'unconfigured' | 'synced' | 'pending' | 'syncing' | 'error';
 
@@ -54,7 +58,8 @@ function exec(
       args,
       { cwd, timeout, env: env ? { ...process.env, ...env } : process.env },
       (err, stdout, stderr) => {
-        if (err) reject(new Error(stderr?.trim() || err.message));
+        if (err && (err as any).killed) reject(new Error(`${cmd} ${args[0]} timed out after ${timeout / 1000}s`));
+        else if (err) reject(new Error(stderr?.trim() || err.message));
         else resolve(stdout.trim());
       },
     );
@@ -328,23 +333,24 @@ export async function pushSync(onStatus: (status: SyncStatus) => void): Promise<
     srv.save();
 
     await ensureGitignore();
-    await exec('git', ['add', '-A'], dir);
+    await exec('git', ['add', '-A'], dir, LOCAL_WRITE_TIMEOUT);
 
-    const status = await exec('git', ['status', '--porcelain'], dir);
+    const status = await exec('git', ['status', '--porcelain'], dir, LOCAL_WRITE_TIMEOUT);
     if (status) {
       const timestamp = new Date().toLocaleString('en-US', {
         month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
       });
-      await exec('git', ['commit', '-m', `Sync: ${timestamp}`], dir);
+      await exec('git', ['commit', '-m', `Sync: ${timestamp}`], dir, LOCAL_WRITE_TIMEOUT);
     }
 
     // MCP-3: the remote is credential-free. When configured via PAT, supply
     // the token out-of-band per-push; gh-based / SSH remotes auth on their own.
     const pat: string | undefined = srv.readConfig()?.gitPat;
+    // A backlog push can carry many megabytes of images and history.
     if (pat) {
-      await execGitWithPat(['push'], dir, pat, NETWORK_TIMEOUT);
+      await execGitWithPat(['push'], dir, pat, LOCAL_WRITE_TIMEOUT);
     } else {
-      await exec('git', ['push'], dir, NETWORK_TIMEOUT);
+      await exec('git', ['push'], dir, LOCAL_WRITE_TIMEOUT);
     }
 
     const now = new Date().toISOString();
