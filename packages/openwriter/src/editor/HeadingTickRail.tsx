@@ -29,7 +29,25 @@ export default function HeadingTickRail({ editor }: { editor: Editor | null }) {
   const anchorRef = useRef<HTMLDivElement>(null);
   const [headings, setHeadings] = useState<Heading[]>([]);
   const [active, setActive] = useState(0);
+  const [selecting, setSelecting] = useState(false);
   const headingsRef = useRef<Heading[]>([]);
+
+  // A press that starts outside the rail (selecting text) passes over the
+  // ticks without lighting or catching them until it is released.
+  useEffect(() => {
+    const down = (e: PointerEvent) => {
+      if (!anchorRef.current?.contains(e.target as Node)) setSelecting(true);
+    };
+    const up = () => setSelecting(false);
+    document.addEventListener('pointerdown', down, true);
+    document.addEventListener('pointerup', up, true);
+    document.addEventListener('pointercancel', up, true);
+    return () => {
+      document.removeEventListener('pointerdown', down, true);
+      document.removeEventListener('pointerup', up, true);
+      document.removeEventListener('pointercancel', up, true);
+    };
+  }, []);
 
   const headingTop = (h: Heading): number | null => {
     if (!editor || editor.isDestroyed) return null;
@@ -90,7 +108,7 @@ export default function HeadingTickRail({ editor }: { editor: Editor | null }) {
   return (
     <div ref={anchorRef} className="heading-tickrail-anchor">
       {headings.length >= 2 && (
-        <nav className="ch-tickrail heading-tickrail" aria-label="Headings">
+        <nav className={`ch-tickrail heading-tickrail${selecting ? ' ch-tickrail--passive' : ''}`} aria-label="Headings">
           {headings.map((h, i) => (
             <button
               key={`${h.pos}-${i}`}

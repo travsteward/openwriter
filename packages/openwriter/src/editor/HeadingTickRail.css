@@ -28,6 +28,14 @@
 }
 .ch-tickrail::-webkit-scrollbar { display: none; }
 
+/* The rail box and its hidden labels reach over the start of the text, so
+ * only the tick marks take the mouse. While a text selection is being
+ * dragged, not even those. */
+.ch-tickrail,
+.ch-tick { pointer-events: none; }
+.ch-tick__line { pointer-events: auto; }
+.ch-tickrail--passive .ch-tick__line { pointer-events: none; }
+
 .ch-tick {
   display: flex;
   align-items: center;
@@ -39,6 +47,7 @@
 }
 
 .ch-tick__line {
+  position: relative;
   display: block;
   width: 16px;
   height: 2px;
@@ -46,6 +55,12 @@
   background: var(--ink-light, #999);
   opacity: 0.4;
   transition: width 0.15s ease, opacity 0.15s ease, background 0.15s ease;
+}
+/* Easier-to-hit target around the thin tick. */
+.ch-tick__line::before {
+  content: '';
+  position: absolute;
+  inset: -5px -4px;
 }
 .ch-tick:hover .ch-tick__line { opacity: 0.85; width: 22px; }
 .ch-tick--active .ch-tick__line {
