@@ -49,9 +49,9 @@ try {
   assert.equal(parsed.metadata.content_type, 'document');
   assert.equal(parsed.metadata.autoAccept, false, 'original auto-accept is not inherited');
   assert.equal(parsed.metadata.masterDocId, '33333333');
-  assert.equal(parsed.metadata.variantType, 'revision');
+  assert.equal(parsed.metadata.variantType, 'manuscript', 'an outline builds its manuscript');
   assert.equal(parsed.metadata.editingDraft, undefined, 'no separate editor/navigation mode');
-  assert.equal(parsed.metadata.manuscriptContext, undefined);
+  assert.deepEqual(parsed.metadata.manuscriptContext, {}, 'book settings travel without the outline type');
   assert.equal(isAgentStub(draft.filename), false);
   assert.equal(parsed.document.content.filter(n => n.attrs?.pendingStatus).length, 0, 'copied accepted prose is immediately readable');
   assert.equal(draft.chapters.length, 2);
@@ -64,7 +64,7 @@ try {
   assert.equal(location.root[0].items.length, 1, 'the revision has no standalone workspace row');
   const versions = listCommits(draft.docId);
   assert.equal(versions.length, 1, 'original copy appears in Versions');
-  assert.equal(versions[0].note, 'Original manuscript copy');
+  assert.match(versions[0].note, /^Built from outline, /);
   assert.ok(getVersionContent(draft.docId, versions[0].snapshotTs));
   const outline = (await call('outline_doc', { docId: draft.docId })).content[0].text;
   assert.ok(outline.includes('Chapter One') && outline.includes('Chapter Two'));
@@ -81,7 +81,8 @@ try {
   assert.ok(!JSON.stringify(loadDocFromDisk(draft.filename).document).includes('PROPOSED EDIT TO COPY'));
   writeDoc('two.md', '22222222', 'Source two', 'THE SOURCE CHANGED AFTER COPYING');
   assert.ok(!readFileSync(draftPath, 'utf8').includes('THE SOURCE CHANGED AFTER COPYING'), 'edition is independent');
-  const second = createEditingDraft('33333333');
+  assert.throws(() => createEditingDraft('33333333'), /already has a manuscript/);
+  const second = createEditingDraft('33333333', undefined, { confirm: true });
   assert.notEqual(second.docId, draft.docId);
   assert.notEqual(second.title, draft.title);
   const ordinary = createRevision('22222222');

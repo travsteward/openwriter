@@ -1366,3 +1366,17 @@ previews are not handled.
 Verified live: Original, edit_text, Modified showed the new proposal with a
 matching highlight; Original, edit_text, Accept saved the newest text to
 disk and cleared the sidecar.
+
+### 2026-10-01 — A chapter added to a manuscript is one insert
+
+Add chapter (adr/manuscript-engine.md) inserts a whole chapter as pending.
+Marking only leaf blocks, as agent inserts do, leaves a list's empty shell in
+canonical and anchors its items to a list item that a reload can't find: a
+probe showed the items and the paragraph after the list landing at the end of
+the doc as orphans. The chapter instead marks every leaf plus each top-level
+list or quote as `insert` with one `pendingGroupId`. Canonical drops the whole
+container, the overlay stores it as one entry, and `applyOverlayPure`'s existing
+container path re-places it and re-marks its leaves. Rejecting a group with no
+original content now removes the top-level blocks its members span, so no empty
+list survives in the browser either. Ordinary agent list inserts still mark
+leaves only and keep the orphan behavior; not addressed here.

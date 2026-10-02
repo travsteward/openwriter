@@ -19,7 +19,8 @@ large document lifecycle module; its older design notes are local-only.
   changes back to its parent.
 - Duplicate remains the verbatim-copy operation.
 - Revision is a variant role, not a content type. It preserves the source
-  writing format; a manuscript compiles into an ordinary document revision.
+  writing format. A book outline compiles into its Manuscript instead: an
+  ordinary document with the `manuscript` role (adr/manuscript-engine.md).
 - Revisions copy accepted text only, with fresh identity, source references,
   review enabled, and an original-copy version. They add no workspace row.
 - Migrating an existing draft changes its parent metadata, not its body,
@@ -66,3 +67,11 @@ retain their behavior. Leaf documents still open from the whole row.
 Visual review rejected the chevron-plus-document pair. Variant parents now show
 only the chevron in the same width and spacing as a document icon. Children keep
 their document icons and existing indentation. Expansion/title actions are unchanged.
+
+### 2026-10-01 — Outlines build manuscripts
+
+Revision on a book outline now creates its Manuscript (`variantType:
+manuscript`, "Built from outline" version, book settings copied) and refuses a
+second one unless confirmed. Ordinary revisions are unchanged. Adopting an
+older Revision as an outline's manuscript changes role and book metadata only,
+preserving the migration invariant above.

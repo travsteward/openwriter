@@ -198,8 +198,16 @@ function rejectGroup(editor: Editor, groupId: string): boolean {
         .insertContentAt(rangeFrom, originalContent)
         .run();
     } else {
-      // No original content — just delete the group
-      editor.chain().deleteRange({ from: rangeFrom, to: rangeTo }).run();
+      // No original content: the group is inserted content only (a chapter
+      // added to a manuscript). Its members can sit inside lists, so remove
+      // the whole top-level blocks they span, leaving no empty wrappers.
+      const doc = editor.state.doc;
+      const $from = doc.resolve(rangeFrom);
+      const $to = doc.resolve(rangeTo);
+      editor.chain().deleteRange({
+        from: $from.depth > 0 ? $from.before(1) : rangeFrom,
+        to: $to.depth > 0 ? $to.after(1) : rangeTo,
+      }).run();
     }
     return true;
   } catch {

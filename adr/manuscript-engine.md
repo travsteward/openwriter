@@ -40,9 +40,8 @@ containers and calls them chapters), the engine doesn't know what a "book" is.
 4. **The compiler core is pure and renderer-agnostic.** `parse` (manifest →
    model) and `assemble` (model + body map → one master markdown) do no I/O and
    are unit-tested without a server. `resolve` is the only disk-touching step.
-   Every render target (EPUB/DOCX/PDF/HTML-preview) consumes the same master
-   markdown — so **preview and export are one pipeline**, differing only in the
-   final step (this guarantees preview never lies about the export).
+   Every render target (EPUB/DOCX/HTML/MD) consumes one markdown: the
+   manuscript's accepted text, or the outline compiled before one is built.
 5. **Footnotes are namespaced at assembly, not renumbered.** Each doc's `[^n]`
    labels (numeric or mnemonic) are made globally unique (`[^fn<ordinal>-<label>]`)
    so ref↔def matching survives concatenation; *display* numbering is left to the
@@ -58,6 +57,18 @@ containers and calls them chapters), the engine doesn't know what a "book" is.
    (transition prose) is just an ordinary doc linked at a seam — no weld type, no
    weld container, no weld syntax. Position in the manifest is the only thing that
    makes a doc a transition.
+9. **A book is an Outline plus its Manuscript.** The Outline is the manifest doc.
+   The Manuscript is the full text built from it once: an ordinary document with
+   `variantType: manuscript` under the outline. From then on the manuscript is the
+   book: edits, review and downloads use its accepted text, and beat edits no
+   longer reach it. A second manuscript needs explicit confirmation.
+10. **New chapters arrive as one pending change.** A chapter the outline has and
+   the manuscript lacks is compiled from its beats and inserted in outline order
+   as one grouped insert the author accepts or rejects. Which chapters a
+   manuscript holds is recorded by heading node id plus beats
+   (`manuscriptChapters`), with heading text as the fallback.
+11. **The manuscript's original never ages out.** Building commits "Built from
+   outline, <date>" and named versions are exempt from pruning.
 
 ### Surfaces (engine)
 
@@ -118,3 +129,20 @@ containers and calls them chapters), the engine doesn't know what a "book" is.
   references, and original-copy version remain. The normal document editor and
   Focus mode replace draft-specific Chapters/Files navigation. The old MCP and
   HTTP creation names call the common revision service for compatibility.
+
+- **2026-10-01** — One book, two docs. The full-text copy turned out to be the
+  real book (all review happens there) while Preview went unused, and the
+  original text of the first copy was lost to version pruning. Decisions:
+  building from an outline makes its Manuscript (`variantType: manuscript`,
+  title "<Book> — Manuscript", the outline's settings copied, chapters
+  recorded) and asks before a second one; downloads export the manuscript's
+  accepted text with its own settings; `add_chapter_to_manuscript` and
+  "Add chapter" compile one missing outline chapter and insert it as one
+  grouped pending change before the next chapter the manuscript holds (top-level
+  lists are marked as a whole so the insert reloads intact); chapters with
+  footnotes, or that would precede the manuscript's first block, are refused
+  for now. An older Revision under an outline can be adopted as its manuscript
+  (metadata only), and its pruned original is restored when the outline still
+  compiles to the recorded source hash. Named versions are exempt from pruning.
+  The Preview route is removed. `scripts/test-book.mjs` covers build, guard,
+  records, placement, reject/accept, reload, adoption and pruning.

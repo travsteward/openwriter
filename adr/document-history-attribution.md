@@ -131,3 +131,14 @@ Manuscript copies capture their initial text as unknown origin and create an Ori
 ### 2026-09-07 — UX audit closure
 
 Save version now distinguishes Cancel from saving without a note, reports failures, and preserves the existing commit/attribution boundary.
+
+### 2026-10-01 — Named versions never age out
+
+A book's original text ("Built from outline") is a restore point the author
+must always have; the first manuscript copy lost its snapshot to the standard
+retention. `pruneVersions` now skips the snapshot of any commit with a note
+(the build commit and notes the author typed into Save version), so a named
+version stays restorable. Unnamed commits and auto-snapshots age out as before.
+`writeSnapshotAt` can put a lost snapshot back at its commit's timestamp,
+never overwriting; adopting an old manuscript copy uses it only when the
+outline still compiles to exactly the text the copy was made from.

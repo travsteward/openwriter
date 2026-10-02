@@ -10,6 +10,7 @@ import { createHash } from 'crypto';
 import matter from 'gray-matter';
 import { getVersionsDir } from './helpers.js';
 import { markdownToTiptap } from './markdown.js';
+import { listCommits } from './commits.js';
 
 export interface VersionInfo {
   timestamp: number;
@@ -174,6 +175,20 @@ export function writeSnapshotMarkdown(docId: string, markdown: string): number {
   return now;
 }
 
+/**
+ * Put a missing snapshot back at its original timestamp, so the commit that
+ * points at it can be restored again. Never overwrites an existing file.
+ * Returns true when it wrote one. adr: adr/manuscript-engine.md
+ */
+export function writeSnapshotAt(docId: string, ts: number, markdown: string): boolean {
+  if (!docId || !Number.isInteger(ts) || ts <= 0) return false;
+  ensureDocDir(docId);
+  const file = join(docDir(docId), `${ts}.md`);
+  if (existsSync(file)) return false;
+  writeFileSync(file, markdown, 'utf-8');
+  return true;
+}
+
 // ============================================================================
 // LIST / GET
 // ============================================================================
@@ -242,7 +257,9 @@ const MAX_VERSIONS = 50;
 const KEEP_ALL_WITHIN_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 /**
- * Enforce retention: keep max(MAX_VERSIONS, all from last 7 days).
+ * Enforce retention: keep max(MAX_VERSIONS, all from last 7 days). A named
+ * version (a commit with a note, such as a manuscript's original) is a
+ * deliberate restore point and never ages out. adr: adr/manuscript-engine.md
  */
 export function pruneVersions(docId: string): void {
   if (!docId) return;
@@ -261,9 +278,10 @@ export function pruneVersions(docId: string): void {
   if (files.length <= MAX_VERSIONS) return;
 
   const cutoff = Date.now() - KEEP_ALL_WITHIN_MS;
+  const named = new Set(listCommits(docId).filter((c) => c.note).map((c) => c.snapshotTs));
 
   // Keep all within 7 days + at most MAX_VERSIONS total
-  const toDelete = files.slice(MAX_VERSIONS).filter((f) => f.ts < cutoff);
+  const toDelete = files.slice(MAX_VERSIONS).filter((f) => f.ts < cutoff && !named.has(f.ts));
   for (const f of toDelete) {
     try {
       unlinkSync(join(dir, f.name));
