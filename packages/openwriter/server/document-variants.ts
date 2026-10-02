@@ -5,6 +5,7 @@ import { save, cancelDebouncedSave, setActiveDocument, getDocument, getTitle, ty
 import { resolveDocPath, filePathForTitle, generateNodeId, ensureDataDir, atomicWriteFileSync } from './helpers.js';
 import { filenameByDocId, switchDocument } from './documents.js';
 import { createRevision } from './document-revisions.js';
+import { manuscriptsOf } from './manuscript/book.js';
 
 // Formats whose editable headline is stored as the document title.
 const TITLE_BEARING_TYPES = new Set(['blog', 'article', 'newsletter']);
@@ -30,6 +31,10 @@ export function createVariant(
 
   if (opts.variantType === 'revision') {
     if (filenameByDocId(opts.masterDocId) !== masterFilename) throw new Error('The revision source does not match its parent.');
+    // A book outline's manuscript already exists: open it. Building a second
+    // one is an explicit choice in the outline's Book panel.
+    const manuscript = manuscriptsOf(opts.masterDocId)[0];
+    if (manuscript) return switchDocument(manuscript.filename);
     const revision = createRevision(opts.masterDocId);
     return switchDocument(revision.filename);
   }

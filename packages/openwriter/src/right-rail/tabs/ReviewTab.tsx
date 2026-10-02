@@ -136,8 +136,6 @@ export default function ReviewTab({
   pendingDocs,
   currentFilename,
   docId,
-  contentType,
-  manuscriptStyle,
   pendingTitle,
   onSwitchDocument,
   sendMessage,
@@ -613,7 +611,7 @@ export default function ReviewTab({
         <div className="review-tab">
           <CommentsSection editors={editors} filename={currentFilename} />
           <BookmarksSection editors={editors} filename={currentFilename} />
-          <ManuscriptRailSections contentType={contentType} docId={docId} manuscriptStyle={manuscriptStyle} onSwitchDocument={onSwitchDocument} />
+          <ManuscriptRailSections docId={docId} refreshKey={pendingDocs} onSwitchDocument={onSwitchDocument} />
         </div>
       </>
     );
@@ -693,7 +691,7 @@ export default function ReviewTab({
       <CommentsSection editors={editors} filename={currentFilename} />
       <BookmarksSection editors={editors} filename={currentFilename} />
 
-      <ManuscriptRailSections contentType={contentType} docId={docId} manuscriptStyle={manuscriptStyle} onSwitchDocument={onSwitchDocument} />
+      <ManuscriptRailSections docId={docId} refreshKey={pendingDocs} onSwitchDocument={onSwitchDocument} />
     </div>
   );
 }

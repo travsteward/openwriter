@@ -184,6 +184,34 @@ body {
   50% { opacity: 1; }
 }
 
+/* Beat banner: this beat's chapter is already in a book's manuscript, so
+ * edits here no longer reach the book. adr: adr/manuscript-engine.md */
+.editor-beat-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 6px 4px 14px;
+  background: color-mix(in srgb, var(--ink-body) 5%, transparent);
+  border-bottom: 1px solid var(--border);
+  color: var(--ink-body);
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 500;
+}
+.editor-beat-banner__open {
+  margin-left: auto;
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+  background: var(--bg-surface);
+  color: var(--ink-body);
+  font-family: var(--font-body);
+  font-size: 12px;
+  padding: 2px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+.editor-beat-banner__open:hover { border-color: var(--ink-light); }
+
 /* Reload banner — appears when the active doc was reloaded from disk
  * after an external write. Persists until the user dismisses via the
  * × button — auto-dismiss would be the system guessing whether the

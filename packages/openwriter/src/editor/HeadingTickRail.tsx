@@ -1,18 +1,13 @@
 /**
- * Heading tick-rail — the editor's version of the manuscript preview's
- * chapter tick-rail (manuscript-compose/ChapterTickRail). One tick per H1-H3,
- * smaller headings shorter and indented, the current section highlighted as
- * you scroll, hover shows the heading, click jumps to it.
- *
- * Same look (it reuses ChapterTickRail.css), different source: the preview
- * rail reaches into an embedded book page, this one reads headings straight
- * from the editor and re-reads them on every edit. Pinned like BackToTop: a
- * zero-height sticky anchor at the top of the doc scroll area.
+ * Heading tick-rail. One tick per H1-H3, smaller headings shorter and
+ * indented, the current section highlighted as you scroll, hover shows the
+ * heading, click jumps to it. Reads headings straight from the editor and
+ * re-reads them on every edit. Pinned like BackToTop: a zero-height sticky
+ * anchor at the top of the doc scroll area.
  */
 
 import { useEffect, useRef, useState } from 'react';
 import type { Editor } from '@tiptap/core';
-import '../manuscript-compose/ChapterTickRail.css';
 import './HeadingTickRail.css';
 
 interface Heading { level: number; text: string; pos: number }
@@ -66,7 +61,7 @@ export default function HeadingTickRail({ editor }: { editor: Editor | null }) {
     const onUpdate = () => {
       if (editor.state.doc === lastDoc) return;
       lastDoc = editor.state.doc;
-      // Hidden editor (e.g. the manuscript preview is showing): no rail.
+      // Hidden editor: no rail.
       const list = editor.view.dom.getClientRects().length > 0 ? readHeadings(editor) : [];
       headingsRef.current = list;
       setHeadings(list);

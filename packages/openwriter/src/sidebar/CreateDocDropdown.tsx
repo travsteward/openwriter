@@ -18,7 +18,7 @@ const DOC_TYPES: DocTypeOption[] = [
   { key: 'linkedin', label: 'LinkedIn', metadata: { content_type: 'linkedin', linkedinContext: { active: true } } },
   { key: 'newsletter', label: 'Newsletter', metadata: { content_type: 'newsletter', newsletterContext: { active: true } } },
   { key: 'blog', label: 'Blog', metadata: { content_type: 'blog', blogContext: { active: true } } },
-  { key: 'manuscript', label: 'Manuscript', metadata: { content_type: 'manuscript', manuscriptContext: { active: true } } },
+  { key: 'manuscript', label: 'Book outline', metadata: { content_type: 'manuscript', manuscriptContext: { active: true } } },
 ];
 
 interface CreateDocDropdownProps {

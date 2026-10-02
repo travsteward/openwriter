@@ -618,6 +618,23 @@
   margin-top: 1px;
 }
 
+/* A manuscript downloads as the book, with its paragraph style. */
+.exports-tab__book-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--ink-light);
+  margin: 10px 14px 6px;
+}
+.exports-tab > .review-tab__toggle {
+  margin: 0 14px;
+}
+.exports-tab__book-note {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--ink-light);
+  margin: 8px 14px;
+}
+
 /* ─── Plugins tab ──────────────────────────────────────────────────── */
 
 .plugins-tab {

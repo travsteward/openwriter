@@ -6,6 +6,7 @@ import PadEditor from './editor/PadEditor';
 import FormatToolbar from './editor/FormatToolbar';
 import Titlebar from './titlebar/Titlebar';
 import UpdateBanner from './UpdateBanner';
+import BeatBanner from './BeatBanner';
 import ContextMenu from './context-menu/ContextMenu';
 import BackToTop from './editor/BackToTop';
 import HeadingTickRail from './editor/HeadingTickRail';
@@ -26,7 +27,6 @@ import TweetComposeView from './tweet-compose/TweetComposeView';
 import ArticleComposeView from './article-compose/ArticleComposeView';
 import BlogComposeView from './blog-compose/BlogComposeView';
 import { TextNewsletterView } from './newsletter-compose/NewsletterComposeView';
-import ManuscriptComposeView from './manuscript-compose/ManuscriptComposeView';
 import { articleExtensions } from './editor/extensions';
 import type { ParsedLinkHref } from './editor/link-href';
 import './decorations/styles.css';
@@ -293,7 +293,6 @@ export default function App() {
   const isBlog = contentType === 'blog';
   const isNewsletter = contentType === 'newsletter';
   const isTweet = contentType === 'tweet' || contentType === 'reply' || contentType === 'quote';
-  const isManuscript = contentType === 'manuscript';
   useEffect(() => {
     if (isArticle) {
       document.documentElement.setAttribute('data-view', 'article');
@@ -303,13 +302,11 @@ export default function App() {
       document.documentElement.setAttribute('data-view', 'newsletter');
     } else if (isTweet) {
       document.documentElement.setAttribute('data-view', 'tweet');
-    } else if (isManuscript) {
-      document.documentElement.setAttribute('data-view', 'manuscript');
     } else {
       document.documentElement.removeAttribute('data-view');
     }
     return () => document.documentElement.removeAttribute('data-view');
-  }, [isTweet, isArticle, isBlog, isNewsletter, isManuscript]);
+  }, [isTweet, isArticle, isBlog, isNewsletter]);
 
   // Re-render when sidebar mode changes (board mode needs different layout)
   useEffect(() => {
@@ -1200,6 +1197,7 @@ export default function App() {
             Auto-accept on — agent edits skip review
           </div>
         )}
+        <BeatBanner docId={(metadata?.docId as string) || null} onOpen={handleSwitchDocument} />
         {reloadNotice && (
           <div
             className="editor-reload-banner"
@@ -1292,20 +1290,6 @@ export default function App() {
                 onLinkClick={handleLinkClick}
               />
             </TextNewsletterView>
-          ) : isManuscript ? (
-            <ManuscriptComposeView
-              docId={(metadata?.docId as string) || undefined}
-              filename={activeFilename}
-              title={title}
-            >
-              <PadEditor
-                documentId={(metadata?.docId as string) || activeFilename}
-                initialContent={initialContent}
-                onUpdate={handleDocUpdate}
-                onReady={handleEditorReady}
-                onLinkClick={handleLinkClick}
-              />
-            </ManuscriptComposeView>
           ) : (isTweet && metadata?.tweetContext) ? (
             <TweetComposeView
               key={activeDocKey}
@@ -1342,7 +1326,6 @@ export default function App() {
         pendingDocs={pendingDocs}
         currentFilename={activeFilename}
         docId={(metadata?.docId as string) || null}
-        contentType={contentType}
         manuscriptStyle={metadata?.manuscriptContext?.paragraphStyle as string | undefined}
         pendingTitle={pendingTitle}
         onSwitchDocument={handleSwitchDocument}

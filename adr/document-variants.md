@@ -72,6 +72,7 @@ their document icons and existing indentation. Expansion/title actions are uncha
 
 Revision on a book outline now creates its Manuscript (`variantType:
 manuscript`, "Built from outline" version, book settings copied) and refuses a
-second one unless confirmed. Ordinary revisions are unchanged. Adopting an
+second one unless confirmed. From the sidebar menu, an outline that already has
+a manuscript opens it instead. Ordinary revisions are unchanged. Adopting an
 older Revision as an outline's manuscript changes role and book metadata only,
 preserving the migration invariant above.

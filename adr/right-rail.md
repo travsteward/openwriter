@@ -240,3 +240,14 @@ longer offers a second creation action. Review and Versions remain unchanged.
 The Review tab shows the user's bookmarks for the active doc, below the
 approval controls or under "All caught up", above Manuscripts. See
 [bookmarks.md](bookmarks.md).
+
+### 2026-10-01 — Book downloads move to Exports
+
+A book's manuscript is the book (adr/manuscript-engine.md), so the Exports tab
+shows its downloads (EPUB, Word, HTML, Markdown of the accepted text) and its
+paragraph style instead of the per-document formats. An outline shows a pointer
+to its manuscript and no downloads. The Review tab's book section replaces the
+Manifest/Preview toggle: an outline offers its manuscript (or Build
+manuscript), a manuscript lists outline chapters it lacks with Add, and the
+Books launcher opens each book's manuscript. Both read one book status
+(GET /api/book) for the doc the tab shows.

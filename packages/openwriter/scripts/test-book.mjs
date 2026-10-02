@@ -15,8 +15,9 @@ assert.equal(helpers.ROOT_DIR, join(temporaryRoot, '.openwriter'));
 const { parseMarkdownContent } = await import('../dist/server/compact.js');
 const { tiptapToMarkdown, markdownToTiptap } = await import('../dist/server/markdown.js');
 const { createRevision } = await import('../dist/server/document-revisions.js');
+const { createVariant } = await import('../dist/server/document-variants.js');
 const { getDocument, save, applyChangesToFile, invalidateDocCache } = await import('../dist/server/state.js');
-const { switchDocument, batchResolve } = await import('../dist/server/documents.js');
+const { batchResolve } = await import('../dist/server/documents.js');
 const { readFrontmatter, writeFrontmatter } = await import('../dist/server/backlinks.js');
 const { loadDocFromDisk, deleteOverlay } = await import('../dist/server/pending-overlay.js');
 const { listCommits } = await import('../dist/server/commits.js');
@@ -114,7 +115,8 @@ try {
   const afterAccept = body(built.filename);
 
   // Add chapter on the open doc, by agent tool, at the end; list included.
-  switchDocument(built.filename);
+  // (The sidebar's Revision on an outline opens its manuscript.)
+  assert.equal(createVariant('outline.md', { masterDocId: 'aaaaaaaa', variantType: 'revision' }).filename, built.filename);
   const report = await call('add_chapter_to_manuscript', { docId: 'aaaaaaaa', chapter: 'Chapter Three' });
   assert.match(report, /Inserted "Chapter Three" .* at the end, as one change waiting/);
   assert.ok(getDocument().content.some(n => n.attrs?.pendingGroupId), 'live doc shows the pending chapter');

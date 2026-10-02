@@ -76,10 +76,12 @@ containers and calls them chapters), the engine doesn't know what a "book" is.
 - Render adapters (later phase): reuse `export-routes.ts` markdown-it config +
   `@turbodocx/html-to-docx`; EPUB needs a pure-JS generator (no external binary
   like pandoc — OpenWriter ships via `npx` and cannot assume system binaries).
-- Content type `manuscript` (later phase): right-rail Review-slot takeover on
-  manuscript docs (carries pending review, then Manuscript / Compile / Preview /
-  Settings), main-canvas Manifest⇄Preview toggle. No new rail icon.
-- MCP: `compile_manuscript` / `export_manuscript` (later phase).
+- Books: `server/manuscript/book.ts` (build guard, chapter states, Add chapter,
+  adoption, downloads) behind `/api/book*`. UI: the Review tab's Book section,
+  the Exports tab for downloads, a banner on beats a manuscript already holds.
+  No new rail icon.
+- MCP: `create_editing_draft` (builds the manuscript), `compile_manuscript`,
+  `add_chapter_to_manuscript`, `export_manuscript`.
 
 ## Decision log
 
@@ -146,3 +148,12 @@ containers and calls them chapters), the engine doesn't know what a "book" is.
   compiles to the recorded source hash. Named versions are exempt from pruning.
   The Preview route is removed. `scripts/test-book.mjs` covers build, guard,
   records, placement, reject/accept, reload, adoption and pruning.
+
+- **2026-10-01** — Book UI. The Preview view and its chapter rail are removed;
+  outlines open in the normal editor (the heading rail now owns the tick
+  styles). The Review tab's Book section builds or opens the manuscript, adopts
+  an older copy, and adds missing chapters; the Books launcher opens a book's
+  manuscript; Exports downloads the manuscript and sets its paragraph style. A
+  beat whose chapter a manuscript already holds shows a banner with Open
+  manuscript. The create menu calls the type "Book outline". The sidebar's
+  Revision on an outline that has a manuscript opens it.

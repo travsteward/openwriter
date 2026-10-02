@@ -1,6 +1,5 @@
-/* Editor heading rail. The tick and label look come from ChapterTickRail.css;
- * this file only places the rail in the doc scroll area and sizes ticks by
- * heading level. */
+/* Editor heading rail: a tick per H1-H3 on the editor's left edge, the current
+ * section highlighted, the heading shown on hover. */
 
 /* Zero-height sticky anchor, like BackToTop, so the rail stays put while the
  * doc scrolls under it. */
@@ -11,12 +10,73 @@
   z-index: 5;
 }
 
-/* The chapter rail sits at 30% of its preview's height; the anchor has no
- * height, so place it against the viewport instead. */
-.heading-tickrail.ch-tickrail {
+/* The anchor has no height, so the rail is placed against the viewport, in
+ * the upper third. */
+.ch-tickrail {
+  position: absolute;
   left: -0.25rem;
   top: 30vh;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  z-index: 5;
+  padding: 6px 4px;
   max-height: 60vh;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+.ch-tickrail::-webkit-scrollbar { display: none; }
+
+.ch-tick {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  padding: 1px 0;
+  cursor: pointer;
+}
+
+.ch-tick__line {
+  display: block;
+  width: 16px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--ink-light, #999);
+  opacity: 0.4;
+  transition: width 0.15s ease, opacity 0.15s ease, background 0.15s ease;
+}
+.ch-tick:hover .ch-tick__line { opacity: 0.85; width: 22px; }
+.ch-tick--active .ch-tick__line {
+  width: 26px;
+  opacity: 1;
+  background: var(--ink-body, #555);
+}
+
+.ch-tick__label {
+  font-family: var(--font-body);
+  font-size: 12px;
+  line-height: 1.2;
+  color: var(--ink-body);
+  white-space: nowrap;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0;
+  transform: translateX(-4px);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  pointer-events: none;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  padding: 2px 7px;
+  border-radius: 5px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+}
+.ch-tick:hover .ch-tick__label,
+.ch-tick:focus-visible .ch-tick__label {
+  opacity: 1;
+  transform: translateX(0);
 }
 
 /* Smaller headings: shorter ticks, indented. */
