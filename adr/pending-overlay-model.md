@@ -1399,3 +1399,13 @@ The stale check compared the raw JSON, so an unchanged paragraph showed the
 amber dotted underline. The comparison form now joins adjacent text runs with
 the same marks, so only a change in words or styling counts as drift. Stored
 baselines are untouched.
+
+### 2026-10-03 — Stale means the saved text differs
+
+Joining split runs was not enough: the stale check still compared raw JSON, so
+an italic run whose keys came back in another order from the markdown parser,
+or text carrying an empty style mark the file never keeps, flagged an unchanged
+paragraph. The check now compares each block as it would be saved to disk
+(the serializer's output after stripping ids and pending attrs). Drift is
+drift in what the file holds, nothing else. The reconcile step that detects
+a rewrite stuck in canonical uses the same comparison.

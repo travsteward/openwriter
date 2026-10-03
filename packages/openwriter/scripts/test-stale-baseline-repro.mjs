@@ -116,6 +116,15 @@ const merged6 = applyOverlayPure(canSplit, [splitEntry]);
 assert(!findNode(merged6, 'DDDD').attrs?.pendingStaleBaseline, '6a: split-run baseline == one-run canonical → NOT stale');
 const canBold = { type: 'doc', content: [{ type: 'paragraph', attrs: { id: 'DDDD' }, content: [{ type: 'text', text: 'Same words, ' }, { type: 'text', text: 'split in two.', marks: [{ type: 'bold' }] }] }] };
 assert(findNode(applyOverlayPure(canBold, [splitEntry]), 'DDDD').attrs?.pendingStaleBaseline === true, '6b: a real styling change still flags stale');
+// 6c/6d — the same saved text written differently: key order inside an italic
+// run, and an empty style mark the file never keeps. NOT stale.
+const italicEntry = {
+  nodeId: 'EEEE', status: 'rewrite',
+  originalBaseline: { type: 'paragraph', attrs: { id: 'EEEE' }, content: [{ type: 'text', text: 'A moth, ' }, { type: 'text', marks: [{ type: 'italic' }], text: 'carbonaria' }, { type: 'text', marks: [{ type: 'textStyle' }], text: ', rare.' }] },
+  newContent: { type: 'paragraph', attrs: { id: 'EEEE' }, content: [{ type: 'text', text: 'New.' }] },
+};
+const canItalic = { type: 'doc', content: [{ type: 'paragraph', attrs: { id: 'EEEE' }, content: [{ type: 'text', text: 'A moth, ' }, { type: 'text', text: 'carbonaria', marks: [{ type: 'italic' }] }, { type: 'text', text: ', rare.' }] }] };
+assert(!findNode(applyOverlayPure(canItalic, [italicEntry]), 'EEEE').attrs?.pendingStaleBaseline, '6c/6d: same saved text (italic key order, empty style mark) → NOT stale');
 
 cancelDebouncedSave();
 try { rmSync(PROFILE_DIR, { recursive: true, force: true }); } catch {}

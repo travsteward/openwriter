@@ -36,6 +36,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync, unlinkSync, readdir
 import { join } from 'path';
 import { getDataDir, atomicWriteFileSync, resolveDocPath } from './helpers.js';
 import { markdownToTiptap } from './markdown-parse.js';
+import { tiptapToBody } from './markdown-serialize.js';
 
 // ============================================================================
 // TYPES
@@ -890,12 +891,16 @@ export function stripPendingFromDoc(doc: any): any {
   return cloned;
 }
 
+/** A block as it would be saved to disk. Two blocks are the same content
+ *  when they save the same: raw JSON also differed on key order inside a
+ *  text run and on empty style marks the file never keeps, which flagged
+ *  unchanged paragraphs as stale. */
+function savedForm(node: any): string {
+  return tiptapToBody({ type: 'doc', content: [sanitizeNodeForBaseline(node)] });
+}
+
 function sameContent(a: any, b: any): boolean {
-  // Cheap structural equality on the relevant subtree. Stringify is
-  // fine for sub-paragraph TipTap nodes; they're typically small.
-  const aClean = sanitizeNodeForBaseline(a);
-  const bClean = sanitizeNodeForBaseline(b);
-  return JSON.stringify(aClean) === JSON.stringify(bClean);
+  return savedForm(a) === savedForm(b);
 }
 
 /**
@@ -925,12 +930,11 @@ export function reconcileCanonicalToBaselines(canonical: any, entries: PendingEn
     }
   }
   if (byId.size === 0) return;
-  const key = (content: any) => JSON.stringify(sanitizeNodeForBaseline({ content }));
   function walk(nodes: any[]): void {
     if (!Array.isArray(nodes)) return;
     for (const n of nodes) {
       const e = n?.attrs?.id ? byId.get(n.attrs.id) : undefined;
-      if (e && key(n.content) === key(e.newContent.content)) {
+      if (e && sameContent(n, e.newContent)) {
         // Canonical is holding the rewrite text — the split couldn't revert it.
         // Restore the authoritative baseline.
         n.content = JSON.parse(JSON.stringify(e.originalBaseline.content));
