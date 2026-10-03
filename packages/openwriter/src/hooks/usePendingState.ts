@@ -8,6 +8,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Editor } from '@tiptap/core';
 import { acceptChange, rejectChange, acceptAllChanges, rejectAllChanges } from '../decorations/resolve';
 import { setFocusedPendingNode, forceDecorationRefresh } from '../decorations/plugin';
+import { isSpotRestored } from '../editor/useReadingSpot';
 
 // ============================================================================
 // TYPES
@@ -194,10 +195,11 @@ export function usePendingState(editors: Editor[]) {
     // Initial refresh
     refresh();
 
-    // Auto-scroll to first pending change on editor mount (e.g. after doc switch)
+    // Auto-scroll to first pending change on editor mount (e.g. after doc
+    // switch), unless a page refresh just put the user back at their spot.
     const scrollTimer = setTimeout(() => {
       const nodes = derivePendingStateAll(valid.filter(e => !e.isDestroyed));
-      if (nodes.length > 0) {
+      if (nodes.length > 0 && !isSpotRestored()) {
         scrollToNode(nodes[0].editor, nodes[0].nodeId);
       }
     }, 150);

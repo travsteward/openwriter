@@ -29,6 +29,7 @@ import BlogComposeView from './blog-compose/BlogComposeView';
 import { TextNewsletterView } from './newsletter-compose/NewsletterComposeView';
 import { articleExtensions } from './editor/extensions';
 import type { ParsedLinkHref } from './editor/link-href';
+import { useReadingSpot, isSpotRestored } from './editor/useReadingSpot';
 import './decorations/styles.css';
 
 /** Responsive overlay layout: below this editor-area width (container width
@@ -853,6 +854,9 @@ export default function App() {
     handleLinkClick({ docId, filename: null, nodeId, quote: null }, true);
   }, [handleLinkClick]);
 
+  // A page refresh returns to the same spot, cursor and focus.
+  useReadingSpot(editorInstance, metadata?.docId);
+
   // Consume pendingScroll after a doc loads. Tries nodeId first, then quote
   // fallback, then scroll-to-top (the default for doc-level links).
   useEffect(() => {
@@ -865,6 +869,8 @@ export default function App() {
       // the top of this doc." Without this branch the editor container keeps
       // the prior doc's scrollTop and the user lands mid-doc / at the bottom.
       if (scroll.toTop) {
+        // A refresh reopens the doc by its URL; the user's spot wins.
+        if (isSpotRestored()) return;
         const container = document.querySelector('.editor-container') as HTMLElement | null;
         if (container) container.scrollTop = 0;
         return;
