@@ -79,14 +79,23 @@ export function replaceNodeInPlace(tr: any, pos: number, oldNode: any, newNode: 
     tr.replaceWith(pos, pos + oldNode.nodeSize, newNode);
     return;
   }
-  const start = oldNode.content.findDiffStart(newNode.content);
-  if (start != null) {
-    let { a: endA, b: endB } = oldNode.content.findDiffEnd(newNode.content)!;
-    const overlap = start - Math.min(endA, endB);
-    if (overlap > 0) { endA += overlap; endB += overlap; }
-    tr.replace(pos + 1 + start, pos + 1 + endA, newNode.slice(start, endB));
-  }
+  replaceChangedContent(tr, pos + 1, oldNode, newNode);
   tr.setNodeMarkup(pos, undefined, newNode.attrs, newNode.marks);
+}
+
+/**
+ * Turn oldParent's content (starting at contentStart in tr.doc) into
+ * newParent's by replacing only the stretch that differs, so a cursor
+ * outside that stretch keeps its place. Returns the replaced stretch.
+ */
+export function replaceChangedContent(tr: any, contentStart: number, oldParent: any, newParent: any): { from: number; to: number } | null {
+  const start = oldParent.content.findDiffStart(newParent.content);
+  if (start == null) return null;
+  let { a: endA, b: endB } = oldParent.content.findDiffEnd(newParent.content)!;
+  const overlap = start - Math.min(endA, endB);
+  if (overlap > 0) { endA += overlap; endB += overlap; }
+  tr.replace(contentStart + start, contentStart + endA, newParent.slice(start, endB));
+  return { from: contentStart + start, to: contentStart + endA };
 }
 
 // ============================================================================

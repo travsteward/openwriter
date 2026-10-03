@@ -1,11 +1,13 @@
 import { useEffect, useRef } from 'react';
 import { EditorContent, useEditor, type Editor } from '@tiptap/react';
-import { EditorState } from '@tiptap/pm/state';
+import { EditorState, TextSelection } from '@tiptap/pm/state';
+import { createDocument } from '@tiptap/core';
 
 import { padExtensions } from './extensions';
 import type { Extensions } from '@tiptap/react';
 import FloatingToolbar from './FloatingToolbar';
 import { createPendingDecorationPlugin, isPreviewActive } from '../decorations/plugin';
+import { replaceChangedContent } from '../decorations/apply';
 import { createCommentDecorationPlugin } from '../decorations/comments-plugin';
 import { createBacklinkDecorationPlugin } from '../decorations/backlinks-plugin';
 import { createAttributionDecorationPlugin } from '../decorations/attribution-plugin';
@@ -69,8 +71,27 @@ export default function PadEditor({ documentId, initialContent, extensions, onUp
     lastDocumentRef.current = documentId;
     lastContentRef.current = initialContent;
     const tStart = performance.now();
-    editor.commands.setContent(initialContent, { emitUpdate: false });
-    if (documentChanged) {
+    if (!documentChanged) {
+      // A newer copy of the open doc (another tab's edit, a reload from
+      // disk) changes only what differs. Replacing the whole doc parked the
+      // cursor at its end, so the next keystroke jumped to the bottom.
+      // adr: adr/document-editor-session.md
+      // A cursor inside the replaced stretch goes back to the same spot in
+      // its paragraph, found by the paragraph's id.
+      const tr = editor.state.tr.setMeta('preventUpdate', true);
+      const { $head, empty } = editor.state.selection;
+      const replaced = replaceChangedContent(tr, 0, editor.state.doc, createDocument(initialContent, editor.schema));
+      const blockId = $head.parent.attrs?.id;
+      if (replaced && empty && blockId && $head.pos > replaced.from && $head.pos < replaced.to) {
+        tr.doc.descendants((node, pos) => {
+          if (node.attrs?.id !== blockId || !node.isTextblock) return true;
+          tr.setSelection(TextSelection.create(tr.doc, pos + 1 + Math.min($head.parentOffset, node.content.size)));
+          return false;
+        });
+      }
+      if (tr.docChanged) editor.view.dispatch(tr);
+    } else {
+      editor.commands.setContent(initialContent, { emitUpdate: false });
       // The view is reusable; document history and plugin state are not.
       // A content replacement alone leaves the prior document in Undo.
       // adr: adr/document-editor-session.md

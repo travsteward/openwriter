@@ -31,3 +31,11 @@ manuscript editing drafts.
   rename retained the old initialContent prop, resetting the view to its initial
   empty body. All five PadEditor surfaces now use stable docId. New-document
   typing, promotion, Undo to empty, and Redo to the typed text passed together.
+
+- **2026-10-03 — Same-document refresh keeps the cursor.** A newer copy of the
+  open doc (another tab's save, a reload from disk) went through a whole-doc
+  content replacement, which maps the cursor to the doc's end; the next
+  keystroke landed there and the view jumped to the bottom. Same-document
+  updates now replace only the stretch that differs (the same diff an agent's
+  paragraph rewrite uses), so the cursor and scroll position stay put. Switches
+  to another document still replace everything and reset the session.
