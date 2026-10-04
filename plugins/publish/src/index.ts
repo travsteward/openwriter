@@ -1025,7 +1025,7 @@ const plugin: OpenWriterPlugin = {
 
       {
         name: 'upgrade_plan',
-        description: 'Get a Stripe Checkout URL to subscribe or upgrade. Opens in browser for payment. Plans (wire value = label): "creator" = Publish ($19/mo, $190/yr) — the scheduler + publishing to every channel except email (X, LinkedIn, WordPress, Ghost, Beehiiv, blog); "growth" = Publish+Email ($49/mo, $490/yr) — everything in Publish plus newsletter/email. Period: monthly or annual (2 months free).',
+        description: 'Get a Stripe Checkout URL to subscribe or upgrade. Opens in browser for payment. Plans (wire value = label): "creator" = Publish ($19/mo, $190/yr) — the scheduler + publishing to X and LinkedIn, plus autoplugs on X (blog publishing via the GitHub plugin is free on every plan); "growth" = Publish+Email ($49/mo, $490/yr) — everything in Publish plus newsletter/email. Period: monthly or annual (2 months free).',
         inputSchema: {
           type: 'object',
           properties: {
