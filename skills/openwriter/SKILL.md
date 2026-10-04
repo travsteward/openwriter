@@ -16,12 +16,25 @@ description: |
   Requires: OpenWriter MCP server configured. Browser UI at localhost:5050.
 metadata:
   author: travsteward
-  version: "0.23.0"
+  version: "0.24.0"
   repository: https://github.com/travsteward/openwriter
 license: MIT
 ---
 
 # OpenWriter Skill
+
+## Active harness
+
+This skill is shared by every agent harness. Harness-specific execution (how to
+run a background worker, which browser tool to use) lives in one short document
+per harness; read only the one for the harness you are running in:
+- Claude Code: [docs/harness-claude.md](docs/harness-claude.md)
+- Codex: [docs/harness-codex.md](docs/harness-codex.md)
+- Setup for Claude Code, Codex and OpenCode: [docs/setup.md](docs/setup.md)
+
+Tool names below are logical names: discover the current MCP namespace and input
+schema. Never copy a Claude `Agent(...)` call from a server footer into another
+harness.
 
 ## Revision variants
 
@@ -53,16 +66,7 @@ You are a writing collaborator. You read documents and make edits **exclusively 
 3. **Name every document.** When you encounter a generically named doc ("Quote Tweet", "Article", "Untitled", etc.), rename it based on its content before proceeding. Titles are the human scanning layer — a sidebar full of "Quote Tweet" is useless. Use `rename_item` with the docId. Short, descriptive titles: "Venezuela Proxy States QT", "Feature Blindness Article".
 4. **Metadata first.** When the user asks you to work on a document, call `get_metadata` immediately after `read_pad`. Tweet docs store the parent URL in `tweetContext.url`, article docs store context in `articleContext`. **Never search externally for a tweet URL that's already in the document metadata.** This prevents wasting paid API calls on information you already have.
 5. **Refresh stale loglines through server-owned claims.** During authorized document work, enrichment notices signal a bounded maintenance batch. Read `docs/enrichment.md`. Use `claim_enrichment` to acquire at most 12 full canonical snapshots, summarize those exact snapshots, then call `mark_enriched` once with `{ docId, claimToken, logline }` per document. Use a helper supported by the active harness, or work inline when helpers cannot access MCP. Empty claims mean stop, even if the dirty count is nonzero. Do not poll or repeatedly spawn workers from that count. Claims expire after five minutes; edited documents settle for five seconds. Respect workspace `enrichmentDisabled` opt-outs. Report only actual completions and failures, without fixed time or cost promises.
-6. **Dispatch the sort minion when openwriter says so.** The user marks docs in the sidebar with "Request sort" when they don't know where a doc belongs and want you to file it — the mark *is* them delegating the placement decision. OpenWriter surfaces pending sorts two ways: (a) `SORT_STATUS: N docs awaiting sort` in the MCP server's session-start instructions; (b) a `⚠ N docs awaiting sort. Dispatch:` footer on `list_documents` / `list_workspaces` / `get_workspace_structure`. Both signals include the **complete dispatch call inline** — copy it verbatim and fire the Agent tool with those exact field values. When you see either signal, dispatch the minion immediately, before responding to the user's request. The minion self-discovers via `list_pending_sorts`, reads each doc, picks the best workspace + container from purpose hints, files it (`move_item`), retires the request (`mark_sorted`), and returns a one-line "what moved" summary.
-
-   ```
-   Agent(
-     subagent_type: "openwriter-sort-minion",
-     description: "File pending sorts",
-     prompt: "File pending sorts.",
-     run_in_background: true
-   )
-   ```
+6. **File pending sorts when openwriter says so.** The user marks docs in the sidebar with "Request sort" when they don't know where a doc belongs and want you to file it — the mark *is* them delegating the placement decision. OpenWriter surfaces pending sorts two ways: (a) `SORT_STATUS: N docs awaiting sort` in the MCP server's session-start instructions; (b) a `⚠ N docs awaiting sort. Dispatch:` footer on `list_documents` / `list_workspaces` / `get_workspace_structure`. When you see either signal, start a sort worker immediately, before responding to the user's request, the way your harness document says (Claude Code dispatches the `openwriter-sort-minion` subagent with the call the signal carries). The worker discovers work via `list_pending_sorts`, reads each doc, picks the best workspace + container from purpose hints, files it (`move_item`), retires the request (`mark_sorted`), and returns a one-line "what moved" summary. At most 12 docs per run.
 
    **Why a minion, not inline.** Handled inline, marks rot because raising them derails the user's actual task. The judgment is real but it does **not** need a synchronous human turn — a sort-marked doc has no user-expected location to violate (that's why it was marked), a misfile is one `move_item` to undo, and the minion reports every move. Reversible + visible replaces the gate. This is the same autonomous-drain rail enrichment rides (firm rule 5).
 
@@ -70,7 +74,7 @@ You are a writing collaborator. You read documents and make edits **exclusively 
 
    **Manual path still exists.** Users who want to approve each move can use the sidebar: `propose_sort({ proposals: [...] })` writes a proposal per doc, the badge flips to "proposal ready," and accept/reject in the popover triggers the move. The minion doesn't use this — it's for when the user explicitly wants a gate. To turn auto-sort off for a workspace, call `update_workspace_context({ workspaceFile, context: { autoSortDisabled: true } })` — its docs drop from `list_pending_sorts` and fall back to manual handling.
 
-   **If the subagent isn't installed** (older openwriter, or the user skipped setup): the Agent call returns `Agent type 'openwriter-sort-minion' not found`. Tell the user once: "OpenWriter has docs awaiting sort but the sort minion isn't installed yet — run `npx openwriter setup` and restart Claude Code." Then proceed with their original request; don't loop on the failure.
+   **If no worker can run** (the subagent isn't installed, or the harness has no helper with MCP access): file one bounded batch inline, or tell the user once and proceed with their original request; don't loop on the failure. Your harness document has the exact fallback.
 7. **Emit deep links whenever you cite a docId.** Any time you reference a specific document in chat — naming it, summarizing it, pointing the user at a beat or paragraph inside it — call `get_doc_link` and render the result using this exact presentation pattern:
 
    **Doc level** (one link, header bold):

@@ -30,6 +30,23 @@ If `claude mcp add` can't run (e.g. nested session error), edit `~/.claude.json`
 }
 ```
 
+## Codex
+
+`npx openwriter setup` configures Claude Code only. Register the same stdio
+server with the Codex CLI after checking `codex mcp add --help` for the
+installed version:
+
+```bash
+npm install -g openwriter
+codex mcp add openwriter -- openwriter --no-open
+```
+
+On Windows, if the `openwriter` shim does not start, point Codex at Node and the
+package entry directly: `node <npm-global>/node_modules/openwriter/dist/bin/pad.js --no-open`.
+Start a fresh Codex task so the tool registry refreshes, then confirm a
+read-only call such as `list_documents` works before editing. Codex does not
+load the Claude subagents; see [harness-codex.md](harness-codex.md).
+
 ## OpenCode
 
 Same binary, different config format. Add to `opencode.json` at the project root:
@@ -58,5 +75,5 @@ Source file lives at `~/.claude/skills/openwriter/agents/openwriter-enrichment-m
 
 ## After setup
 
-1. Restart your Claude Code or OpenCode session (MCP servers load on startup)
+1. Restart your Claude Code, Codex or OpenCode session (MCP servers load on startup)
 2. Open http://localhost:5050 in your browser
