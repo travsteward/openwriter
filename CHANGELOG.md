@@ -6,6 +6,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ## [Unreleased]
 
+## [0.43.0] - 2026-10-04
+
+### Added
+- Refreshing the page returns you to the same spot, with your cursor and focus where they were.
+- A heading navigator on the editor's left edge (H1 to H3) jumps between sections and marks where you are.
+- Books are an outline plus its manuscript. The Review panel's Book section builds or opens the manuscript and adds missing outline chapters as one pending change. Exports downloads the manuscript's accepted text.
+- The bundled agent skill now works with Codex as well as Claude Code, with Codex setup steps.
+
+### Changed
+- The book Preview view has been removed; the editor and its heading navigator replace it.
+
+### Fixed
+- Typing in a paragraph with a pending change keeps your cursor, and your typing survives Reject.
+- An agent edit no longer moves your cursor or scrolls the document; new changes arrive quietly.
+- Editing one sentence highlights only that sentence, not the rest of the paragraph.
+- The stale-text underline only shows when the saved text really changed.
+- With one pending change, the Review arrows scroll to it and flash it.
+- Accepting or rejecting a change updates the pending counts in every open tab.
+- The sidebar highlights the document this tab shows, not one another tab opened.
+- Accepting a fix resolves the reworded comments it touches, and a resolved comment's underline clears right away.
+- Hovering a comment nested inside a longer one shows both.
+- An agent edit while you view the Original no longer brings back the previous proposal.
+- Chapter marks no longer catch text selections.
+- GitHub sync no longer times out on a large backlog.
+- The publish upgrade plan lists only channels that exist.
+
 ## [0.42.0] - 2026-09-30
 
 ### Added
