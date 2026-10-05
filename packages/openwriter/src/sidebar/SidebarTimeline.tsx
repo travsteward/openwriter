@@ -3,11 +3,20 @@ import type { SidebarModeProps, DocumentInfo } from './sidebar-types';
 import { formatDate, dateGroup, isExternal } from './sidebar-utils';
 import { useRevealActiveDoc } from './use-reveal-active-doc';
 import SearchResults from './SearchResults';
+import DocContextMenu, { docMenuTarget, useSidebarPlugins, type DocMenuTarget } from './DocContextMenu';
 import './SidebarTimeline.css';
 import { sidebarRowProps } from './sidebar-keyboard';
 
 export default function SidebarTimeline({ docs, workspaces, assignedFiles, pendingDocs, onSwitchDocument, onCreateDocument, actions, scrollRef, searchQuery, searchResults, searchLoading, searchError }: SidebarModeProps) {
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  // Right-click offers the same doc menu as the file tree.
+  const [menu, setMenu] = useState<DocMenuTarget | null>(null);
+  const [renaming, setRenaming] = useState<{ filename: string; value: string } | null>(null);
+  const { pluginItems, hasPublishPlugin } = useSidebarPlugins();
+  const commitRename = () => {
+    if (renaming) actions.handleRename(renaming.filename, '', renaming.value);
+    setRenaming(null);
+  };
   // Flat mode — no folders to expand; just center + pulse the active row.
   useRevealActiveDoc(scrollRef, docs, workspaces.length);
 
@@ -67,11 +76,22 @@ export default function SidebarTimeline({ docs, workspaces, assignedFiles, pendi
                 aria-current={doc.isActive ? 'page' : undefined}
                 className={`tl-item ${doc.isActive ? 'active' : ''}`}
                 onClick={() => !doc.isActive && onSwitchDocument(doc.filename)}
+                onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setMenu(docMenuTarget(e, doc)); }}
               >
                 <div className="tl-dot" />
                 <div className="tl-content" title={wsLabel || undefined}>
                   <div className="tl-item-title">
-                    <span>{doc.title}</span>
+                    {renaming?.filename === doc.filename ? (
+                      <input
+                        className="sidebar-rename-input"
+                        value={renaming.value}
+                        autoFocus
+                        onClick={(e) => e.stopPropagation()}
+                        onChange={(e) => setRenaming({ filename: doc.filename, value: e.target.value })}
+                        onBlur={commitRename}
+                        onKeyDown={(e) => { if (e.key === 'Enter') commitRename(); if (e.key === 'Escape') setRenaming(null); }}
+                      />
+                    ) : <span>{doc.title}</span>}
                     {pendingDocs.filenames.includes(doc.filename) && <span className="sidebar-pending-dot" />}
                   </div>
                   <div className="tl-item-meta">{formatDate(activity(doc))}</div>
@@ -92,6 +112,18 @@ export default function SidebarTimeline({ docs, workspaces, assignedFiles, pendi
       ))}
 
       {docs.length === 0 && <div className="sidebar-empty">No documents yet</div>}
+
+      <DocContextMenu
+        menu={menu}
+        onClose={() => setMenu(null)}
+        docs={docs}
+        workspaces={workspaces}
+        actions={actions}
+        onSwitchDocument={onSwitchDocument}
+        pluginItems={pluginItems}
+        hasPublishPlugin={hasPublishPlugin}
+        onRename={(filename, title) => setRenaming({ filename, value: title })}
+      />
     </div>
   );
 }

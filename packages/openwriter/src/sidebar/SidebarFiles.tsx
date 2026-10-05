@@ -5,13 +5,9 @@ import { useSidebarDrag } from './sidebar-drag';
 import { useRevealActiveDoc } from './use-reveal-active-doc';
 import SidebarContextMenu from './SidebarContextMenu';
 import type { SidebarMenuItem } from './SidebarContextMenu';
-import { transformExceedsSizeCap } from './transform-guard';
-import FocusInstructionsModal from './FocusInstructionsModal';
-import SchedulePostModal from './SchedulePostModal';
-import PostToBlogModal from './PostToBlogModal';
+import DocContextMenu, { docMenuTarget, requestSort, useSidebarPlugins, type DocMenuTarget } from './DocContextMenu';
 import CreateDocDropdown from './CreateDocDropdown';
 import { TAB_HEADER } from '../ws/client';
-import NewsletterAnalyticsModal from '../newsletter/NewsletterAnalyticsModal';
 import SearchResults from './SearchResults';
 import './SidebarFiles.css';
 import { sidebarRowProps } from './sidebar-keyboard';
@@ -208,7 +204,7 @@ export default function SidebarFiles({
   const [renaming, setRenaming] = useState<{ type: 'doc' | 'workspace' | 'container'; key: string; value: string; wsFilename?: string } | null>(null);
 
   // Doc context menu state
-  const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; filename: string; title: string; docId?: string; lastSent?: string; postedUrl?: string; isNewsletter?: boolean; contentType?: string; bulkCount?: number; sortRequest?: DocumentInfo['sortRequest'] } | null>(null);
+  const [ctxMenu, setCtxMenu] = useState<DocMenuTarget | null>(null);
 
   // Multi-selection state (for bulk operations; orthogonal to active doc)
   const [selection, setSelection] = useState<Set<string>>(new Set());
@@ -216,15 +212,7 @@ export default function SidebarFiles({
   // Keep the drag hook's mirrors current (see refs declared above useSidebarDrag).
   selectionRef.current = selection;
   clearSelectionRef.current = () => { setSelection(new Set()); setAnchor(null); };
-  const [sidebarPluginItems, setSidebarPluginItems] = useState<SidebarMenuItem[]>([]);
-  // Schedule Post is wired to /api/scheduler/* (platform publish plugin). Hide
-  // the menu item entirely when @openwriter/plugin-publish is disabled — the
-  // endpoints will 4xx and the user has no way to know why otherwise.
-  const [hasPublishPlugin, setHasPublishPlugin] = useState(false);
-  const [focusModal, setFocusModal] = useState<{ action: string; label: string; filename: string; title: string } | null>(null);
-  const [scheduleModal, setScheduleModal] = useState<{ filename: string; title: string } | null>(null);
-  const [postBlogModal, setPostBlogModal] = useState<{ filename: string; title: string; isActive: boolean } | null>(null);
-  const [analyticsModal, setAnalyticsModal] = useState<{ docId: string; title: string } | null>(null);
+  const { pluginItems: sidebarPluginItems, hasPublishPlugin } = useSidebarPlugins();
   const [createDropdown, setCreateDropdown] = useState<{ anchor: DOMRect; wsFilename?: string; containerId?: string | null } | null>(null);
 
   // Folder context menu state
@@ -234,33 +222,6 @@ export default function SidebarFiles({
   const [clearedPending, setClearedPending] = useState<Set<string>>(new Set());
   // Reset optimistic state when real pendingDocs updates from server
   useEffect(() => { setClearedPending(new Set()); }, [pendingDocs]);
-
-  // Fetch plugin sidebar items
-  const fetchSidebarItems = useCallback(() => {
-    fetch('/api/plugins')
-      .then(r => r.json())
-      .then(data => {
-        const items: SidebarMenuItem[] = [];
-        let publishOn = false;
-        for (const plugin of data.plugins || []) {
-          const displayName = plugin.displayName || undefined;
-          for (const item of plugin.sidebarMenuItems || []) {
-            items.push({ ...item, pluginDisplayName: displayName });
-          }
-          if (plugin.name === '@openwriter/plugin-publish' && plugin.enabled) publishOn = true;
-        }
-        setSidebarPluginItems(items);
-        setHasPublishPlugin(publishOn);
-      })
-      .catch(() => {});
-  }, []);
-
-  useEffect(() => { fetchSidebarItems(); }, [fetchSidebarItems]);
-  useEffect(() => {
-    const handler = () => fetchSidebarItems();
-    window.addEventListener('ow-plugins-changed', handler);
-    return () => window.removeEventListener('ow-plugins-changed', handler);
-  }, [fetchSidebarItems]);
 
   const handleDocContextMenu = useCallback((e: React.MouseEvent, doc: DocumentInfo) => {
     e.preventDefault();
@@ -272,22 +233,8 @@ export default function SidebarFiles({
     }
     // Right-click on an unselected doc clears any existing selection before showing single-doc menu
     if (selection.size > 0 && !selection.has(doc.filename)) setSelection(new Set());
-    setCtxMenu({ x: e.clientX, y: e.clientY, filename: doc.filename, title: doc.title, docId: doc.docId, lastSent: doc.lastSent, postedUrl: doc.postedUrl, isNewsletter: doc.isNewsletter, contentType: doc.contentType, sortRequest: doc.sortRequest });
+    setCtxMenu(docMenuTarget(e, doc));
   }, [selection]);
-
-  const handleDuplicate = useCallback((filename: string) => {
-    fetch('/api/documents/duplicate', { method: 'POST', headers: { 'Content-Type': 'application/json', ...TAB_HEADER }, body: JSON.stringify({ filename }) }).catch(() => {});
-  }, []);
-
-  const handlePluginAction = useCallback((action: string, item: SidebarMenuItem, filename: string, title: string, instructions?: string) => {
-    // Block oversized docs before any model/publish call (mirrors the AV guard).
-    if (transformExceedsSizeCap(item, docs.find((d) => d.filename === filename))) return;
-    if (item.promptForFocus && instructions === undefined) {
-      setFocusModal({ action, label: item.label, filename, title });
-      return;
-    }
-    fetch('/api/plugins/sidebar-action', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action, filename, title, instructions: instructions || '', label: item.label }) }).catch(() => {});
-  }, [docs]);
 
   // Folder-capable plugin action (e.g. "Add to Author's Voice" on a workspace/container):
   // apply the same per-doc dispatch to every doc in the folder. Each call is independent and
@@ -462,30 +409,7 @@ export default function SidebarFiles({
     setAnchor(null);
   }, [selection, actions]);
 
-  const requestSortFor = useCallback((filenames: string[]) => {
-    if (filenames.length === 0) return;
-    fetch('/api/documents/sort-request', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ filenames }),
-    }).then(() => actions.fetchDocs()).catch(() => {});
-  }, [actions]);
-
-  const cancelSortFor = useCallback((filename: string) => {
-    fetch('/api/documents/sort-reject', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ filename }),
-    }).then(() => actions.fetchDocs()).catch(() => {});
-  }, [actions]);
-
-  const acceptSortProposalFor = useCallback((filename: string) => {
-    fetch('/api/documents/sort-accept', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ filename }),
-    }).then(() => actions.fetchDocs()).catch(() => {});
-  }, [actions]);
+  const requestSortFor = useCallback((filenames: string[]) => requestSort(filenames, actions), [actions]);
 
   if (searchResults !== null) {
     return <SearchResults results={searchResults} query={searchQuery} onSwitchDocument={onSwitchDocument} actions={actions} loading={searchLoading} error={searchError} />;
@@ -807,149 +731,19 @@ export default function SidebarFiles({
       )}
 
       {/* Doc context menu */}
-      {ctxMenu && (
-        <SidebarContextMenu
-          x={ctxMenu.x}
-          y={ctxMenu.y}
-          filename={ctxMenu.filename}
-          title={ctxMenu.title}
-          bulkCount={ctxMenu.bulkCount}
-          onBulkDelete={handleBulkDelete}
-          onBulkRequestSort={ctxMenu.bulkCount ? () => requestSortFor([...selection]) : undefined}
-          onClose={() => setCtxMenu(null)}
-          onDuplicate={() => handleDuplicate(ctxMenu.filename)}
-          onCreateVariant={ctxMenu.docId ? (vt) => {
-            // Retyped derivative nested under the master. Server field-projects
-            // the master onto the target type — NOT a content clone. adr: docs/variants.md
-            fetch('/api/documents/variant', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', ...TAB_HEADER },
-              body: JSON.stringify({ filename: ctxMenu.filename, masterDocId: ctxMenu.docId, variantType: vt }),
-            }).catch(() => {});
-          } : undefined}
-          onRename={() => {
-            startRename('doc', ctxMenu.filename, ctxMenu.title);
-            setCtxMenu(null);
-          }}
-          onArchive={() => actions.handleArchive(ctxMenu.filename)}
-          onDelete={() => actions.handleDelete(ctxMenu.filename)}
-          onPluginAction={(action, item) => handlePluginAction(action, item, ctxMenu.filename, ctxMenu.title)}
-          pluginItems={sidebarPluginItems}
-          onSchedulePost={hasPublishPlugin ? () => {
-            setScheduleModal({ filename: ctxMenu.filename, title: ctxMenu.title });
-            setCtxMenu(null);
-          } : undefined}
-          onPostNow={ctxMenu.contentType === 'blog' ? () => {
-            const isActive = activeDoc?.filename === ctxMenu.filename;
-            setPostBlogModal({ filename: ctxMenu.filename, title: ctxMenu.title, isActive });
-            setCtxMenu(null);
-          } : undefined}
-          isAlreadyPublished={ctxMenu.contentType === 'blog' && !!ctxMenu.postedUrl}
-          onViewAnalytics={ctxMenu.docId && ctxMenu.lastSent && (ctxMenu.postedUrl || ctxMenu.isNewsletter) ? () => {
-            if (ctxMenu.isNewsletter) setAnalyticsModal({ docId: ctxMenu.docId!, title: ctxMenu.title });
-            else if (ctxMenu.postedUrl) window.open(ctxMenu.postedUrl, '_blank');
-            setCtxMenu(null);
-          } : undefined}
-          viewAnalyticsLabel={ctxMenu.isNewsletter ? 'View Analytics' : ctxMenu.contentType === 'blog' && ctxMenu.postedUrl ? 'View Post' : ctxMenu.postedUrl ? 'View on X' : 'View Analytics'}
-          isApproved={actions.getDocTags(ctxMenu.filename).includes('✓')}
-          onToggleApprove={() => {
-            const tags = actions.getDocTags(ctxMenu.filename);
-            if (tags.includes('✓')) actions.handleRemoveTag(ctxMenu.filename, '✓');
-            else {
-              actions.handleAddTag(ctxMenu.filename, '✓');
-              setTimeout(() => window.dispatchEvent(new CustomEvent('ow-accept-all')), 50);
-            }
-          }}
-          isAutoAccept={(() => {
-            const own = docs.find(d => d.filename === ctxMenu.filename)?.autoAccept;
-            if (own === true) return true;
-            if (own === false) return false;
-            return isAutoAcceptInheritedForDoc(workspaces, ctxMenu.filename);
-          })()}
-          onToggleAutoAccept={() => {
-            const own = docs.find(d => d.filename === ctxMenu.filename)?.autoAccept;
-            const effective = own === true
-              ? true
-              : own === false
-                ? false
-                : isAutoAcceptInheritedForDoc(workspaces, ctxMenu.filename);
-            fetch('/api/auto-accept', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ filename: ctxMenu.filename, enabled: !effective }),
-            }).then(() => actions.fetchDocs()).catch(() => {});
-          }}
-          isAlreadySent={!!ctxMenu.lastSent}
-          onMarkSent={() => {
-            const fn = ctxMenu.filename;
-            if (actions.getDocTags(fn).includes('✓')) actions.handleRemoveTag(fn, '✓');
-            onSwitchDocument(fn);
-            setTimeout(() => {
-              fetch('/api/metadata', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ manualPost: { postedAt: new Date().toISOString() } }) })
-                .then(() => actions.fetchDocs()).catch(() => {});
-            }, 100);
-            setCtxMenu(null);
-          }}
-          sortState={
-            ctxMenu.bulkCount
-              ? undefined
-              : ctxMenu.sortRequest?.proposal
-                ? 'proposal'
-                : ctxMenu.sortRequest
-                  ? 'pending'
-                  : 'none'
-          }
-          sortProposalLabel={(() => {
-            const p = ctxMenu.sortRequest?.proposal;
-            if (!p) return undefined;
-            const ws = workspaces.find(w => w.filename === p.wsFilename);
-            const wsLabel = ws?.title || p.wsFilename;
-            if (!p.containerId) return wsLabel;
-            // Walk ws tree for container name. Cheap — sidebar already has tree in hand.
-            const findName = (nodes: any[]): string | null => {
-              for (const n of nodes) {
-                if (n.type === 'container' && n.id === p.containerId) return n.name;
-                if (n.type === 'container') { const sub = findName(n.items); if (sub) return sub; }
-              }
-              return null;
-            };
-            const cName = ws?.workspace ? findName(ws.workspace.root) : null;
-            return cName ? `${wsLabel} / ${cName}` : wsLabel;
-          })()}
-          sortProposalReasoning={ctxMenu.sortRequest?.proposal?.reasoning}
-          onRequestSort={ctxMenu.bulkCount ? undefined : () => requestSortFor([ctxMenu.filename])}
-          onCancelSort={() => cancelSortFor(ctxMenu.filename)}
-          onAcceptSortProposal={() => acceptSortProposalFor(ctxMenu.filename)}
-          onRejectSortProposal={() => cancelSortFor(ctxMenu.filename)}
-        />
-      )}
-      {focusModal && (
-        <FocusInstructionsModal
-          actionLabel={focusModal.label}
-          docTitle={focusModal.title}
-          onClose={() => setFocusModal(null)}
-          onConfirm={instructions => {
-            const item = sidebarPluginItems.find(i => i.action === focusModal.action);
-            if (item) handlePluginAction(focusModal.action, item, focusModal.filename, focusModal.title, instructions);
-            setFocusModal(null);
-          }}
-        />
-      )}
-      {analyticsModal && (
-        <NewsletterAnalyticsModal docId={analyticsModal.docId} title={analyticsModal.title} onClose={() => setAnalyticsModal(null)} />
-      )}
-      {scheduleModal && (
-        <SchedulePostModal filename={scheduleModal.filename} title={scheduleModal.title} onClose={() => setScheduleModal(null)} />
-      )}
-      {postBlogModal && (
-        <PostToBlogModal
-          filename={postBlogModal.filename}
-          title={postBlogModal.title}
-          isActive={postBlogModal.isActive}
-          onSwitchDocument={onSwitchDocument}
-          onClose={() => setPostBlogModal(null)}
-        />
-      )}
+      <DocContextMenu
+        menu={ctxMenu}
+        onClose={() => setCtxMenu(null)}
+        docs={docs}
+        workspaces={workspaces}
+        actions={actions}
+        onSwitchDocument={onSwitchDocument}
+        pluginItems={sidebarPluginItems}
+        hasPublishPlugin={hasPublishPlugin}
+        onRename={(filename, title) => startRename('doc', filename, title)}
+        onBulkDelete={handleBulkDelete}
+        onBulkRequestSort={() => requestSortFor([...selection])}
+      />
       {createDropdown && (
         <CreateDocDropdown
           anchorRect={createDropdown.anchor}
