@@ -1,0 +1,19 @@
+{
+  "name": "x-comics",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "generate.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@google/genai": "^1.44.0"
+  }
+}

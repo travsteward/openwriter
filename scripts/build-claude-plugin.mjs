@@ -12,6 +12,7 @@
 // Run:   node scripts/build-claude-plugin.mjs           (write)
 //        node scripts/build-claude-plugin.mjs --check   (exit 1 on drift)
 
+import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -20,6 +21,8 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'claude-plugin');
 const SKILL = join(ROOT, 'skills', 'openwriter');
 const HAND_WRITTEN = new Set(['README.md']);
+
+const WRITER_SKILLS = ['blog-writer', 'book-writer', 'newsletter-writer', 'x-writer', 'beat-writer', 'polish', 'anti-ai'];
 
 // Same public-safe allowlist the npm package ships (packages/openwriter/scripts/prepublish.cjs).
 const SKILL_DOCS = ['welcome.md', 'setup.md', 'enrichment.md', 'footnotes.md', 'harness-claude.md', 'harness-codex.md'];
@@ -39,7 +42,8 @@ files.set('.claude-plugin/plugin.json', json({
   version: pkg.version,
   description:
     'A local markdown editor your agent writes in. Claude drafts and edits documents through MCP tools, ' +
-    'and you accept or reject each change in your browser. Plain .md files on your disk.',
+    'and you accept or reject each change in your browser. Plain .md files on your disk. ' +
+    'Includes writing skills for blogs, books, newsletters and X.',
   // The publisher is the project: the privacy gate keeps personal names out of published files.
   author: { name: 'OpenWriter', url: pkg.homepage },
   homepage: pkg.homepage,
@@ -59,6 +63,17 @@ files.set('LICENSE', read(join(ROOT, 'LICENSE')));
 files.set('skills/openwriter/SKILL.md', read(join(SKILL, 'SKILL.md')));
 for (const doc of SKILL_DOCS) {
   files.set(`skills/openwriter/docs/${doc}`, read(join(SKILL, 'docs', doc)));
+}
+
+// The writer skills ship whole: every file git would publish from their folder,
+// so the repo's ignore rules (and the privacy gate behind them) decide what ships.
+// Their shared contract sits beside them, where their relative links point.
+files.set('skills/WRITER-CONVENTION.md', read(join(ROOT, 'skills', 'WRITER-CONVENTION.md')));
+for (const skill of WRITER_SKILLS) {
+  const listed = execFileSync('git', ['ls-files', '--cached', '--others', '--exclude-standard', '--', `skills/${skill}`], { cwd: ROOT, encoding: 'utf8' });
+  for (const path of listed.split('\n').filter((p) => p && existsSync(join(ROOT, p)))) {
+    files.set(path, readFileSync(join(ROOT, path)));
+  }
 }
 
 // A plugin's MCP tools are namespaced by plugin, so an agent's tool allowlist

@@ -2,7 +2,7 @@
   "name": "openwriter",
   "displayName": "OpenWriter",
   "version": "0.43.0",
-  "description": "A local markdown editor your agent writes in. Claude drafts and edits documents through MCP tools, and you accept or reject each change in your browser. Plain .md files on your disk.",
+  "description": "A local markdown editor your agent writes in. Claude drafts and edits documents through MCP tools, and you accept or reject each change in your browser. Plain .md files on your disk. Includes writing skills for blogs, books, newsletters and X.",
   "author": {
     "name": "OpenWriter",
     "url": "https://github.com/travsteward/openwriter"

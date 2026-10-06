@@ -25,9 +25,18 @@ because the editor is a program that runs on your machine.
   It runs on your computer and serves the editor at `localhost:5050`. If an
   OpenWriter server is already running there, the new one passes its tool calls
   to the running one instead of starting a second editor.
-- **One skill and two background workers.** The `openwriter` skill teaches
-  Claude how to edit through the tools. The workers refresh document summaries
-  and file documents you mark for sorting; they only call OpenWriter's own tools.
+- **The OpenWriter skill and two background workers.** The `openwriter` skill
+  teaches Claude how to edit through the tools. The workers refresh document
+  summaries and file documents you mark for sorting; they only call
+  OpenWriter's own tools.
+- **Writing skills.** `blog-writer`, `book-writer`, `newsletter-writer`,
+  `x-writer` and `beat-writer` each run a whole piece for one channel, from
+  outline to draft, inside OpenWriter. `polish` scores and rewrites copy, and
+  `anti-ai` strips the patterns that make text read as machine-written. They
+  hand voice matching to Author's Voice when you have it installed.
+  `x-writer` includes one script, `scripts/generate-image.js`, that generates
+  images through Google's image API with your own `GEMINI_API_KEY`; it runs
+  only when you ask for an image.
 
 ## Data
 
