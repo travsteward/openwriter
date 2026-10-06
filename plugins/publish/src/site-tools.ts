@@ -1,5 +1,5 @@
 import type { PluginMcpTool } from './helpers.js';
-import { documentToEmail, getServerModules, publishFetch } from './helpers.js';
+import { documentToEmail, extractLocalImages, getServerModules, publishFetch } from './helpers.js';
 import { placeWall } from './site-wall.js';
 
 const AUDIENCES = ['everyone', 'subscribers', 'paid', 'founding'];
@@ -18,6 +18,15 @@ function pick(params: Record<string, unknown>, keys: string[]): Record<string, u
   const out: Record<string, unknown> = {};
   for (const k of keys) if (params[k] !== undefined) out[k] = params[k];
   return out;
+}
+
+/**
+ * Pictures stored on this computer that the post uses, in the body and as the cover,
+ * sent with the request. The API uploads them and points the post at the copies.
+ */
+export function postImages(html: string, coverUrl: unknown, dataDir?: string) {
+  const cover = typeof coverUrl === 'string' && coverUrl.startsWith('/_images/') ? coverUrl : '';
+  return extractLocalImages(cover ? `${html} ${cover}` : html, dataDir);
 }
 
 function postUrl(siteSlug: string | null | undefined, postSlug: string): string | null {
@@ -125,7 +134,10 @@ export function siteTools(config: Record<string, string>): PluginMcpTool[] {
           title: { type: 'string', description: 'Post title. A new post defaults to the document title; an update keeps the current title.' },
           subtitle: { type: 'string', description: 'Subtitle under the title. An empty string clears it.' },
           slug: { type: 'string', description: 'URL slug (/p/<slug>). Defaults to one made from the title on first publish.' },
-          cover_url: { type: 'string', description: 'Cover and social image, an http(s) URL. An empty string clears it.' },
+          cover_url: {
+            type: 'string',
+            description: 'Cover and social image: an http(s) URL or a picture in this OpenWriter (/_images/...). An empty string clears it.',
+          },
           audience: {
             type: 'string',
             enum: AUDIENCES,
@@ -143,11 +155,9 @@ export function siteTools(config: Record<string, string>): PluginMcpTool[] {
         const meta = server.getMetadata() || {};
         const { html, subject } = await documentToEmail();
         if (!html.trim()) return { error: 'The document is empty.' };
-        if (html.includes('/_images/')) {
-          return { error: 'The document has images stored on this computer, and sites cannot take image uploads yet. Use https image URLs or remove them.' };
-        }
         const wall = placeWall(html);
         if (!wall.ok) return { error: wall.error };
+        const images = await postImages(wall.html, params.cover_url);
 
         // Update the post this doc was published as, unless it has since been deleted.
         let existingId: string | null = meta[POST_KEY]?.id ?? null;
@@ -164,6 +174,7 @@ export function siteTools(config: Record<string, string>): PluginMcpTool[] {
           wall_at: wall.wall_at,
           ...pick(params, ['subtitle', 'slug', 'cover_url', 'audience', 'web_only', 'email_only', 'comments_audience']),
           ...(params.publish_at ? { status: 'scheduled', publish_at: params.publish_at } : { status: 'published' }),
+          ...(images.length ? { images } : {}),
         };
         const res = existingId
           ? await publishFetch(config, `/sites/posts/${existingId}`, { method: 'PATCH', body: JSON.stringify(fields) })

@@ -119,10 +119,12 @@ export function stripFrontmatter(markdown: string): string {
   return result.trim();
 }
 
-/** Scan HTML for /_images/ references, read local files, return base64 array for R2 upload */
-export async function extractLocalImages(html: string): Promise<Array<{ path: string; data: string; content_type: string }>> {
-  const server = await getServerModules();
-  const dataDir = server.getDataDir();
+/** Scan HTML for /_images/ references, read local files, return base64 array for R2 upload. dataDir defaults to the server's. */
+export async function extractLocalImages(
+  html: string,
+  dataDir?: string,
+): Promise<Array<{ path: string; data: string; content_type: string }>> {
+  dataDir ??= (await getServerModules()).getDataDir();
   const images: Array<{ path: string; data: string; content_type: string }> = [];
 
   const regex = /\/_images\/[^\s"'<>]+/g;
