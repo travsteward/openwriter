@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ## [Unreleased]
 
+### Added
+- OpenWriter is packaged as a Claude plugin: the editor's tools, the agent skill, and its background workers install together in Claude Code and Cowork.
+
 ## [0.43.0] - 2026-10-04
 
 ### Added

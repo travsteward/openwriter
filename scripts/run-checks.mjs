@@ -34,6 +34,7 @@ const GATES = [
   'check-skill-privacy.mjs',
   'check-fixture-provenance.mjs',
   'check-lockfile-sync.mjs',
+  ['build-claude-plugin.mjs', '--check'],
 ];
 
 const SUITE = /^test-.+\.ps1$/;
@@ -82,8 +83,8 @@ const failed = [];
 const skipped = [];
 
 console.log('gates');
-for (const gate of GATES) {
-  if (run('gate ', gate, process.execPath, [join(SCRIPTS, gate)], process.env)) passed++;
+for (const [gate, ...args] of GATES.map((g) => [g].flat())) {
+  if (run('gate ', gate, process.execPath, [join(SCRIPTS, gate), ...args], process.env)) passed++;
   else failed.push(gate);
 }
 

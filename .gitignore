@@ -13,6 +13,7 @@ AGENTS.md
 docs/
 !skills/*/docs/
 !plugins/*/skill/docs/
+!claude-plugin/skills/*/docs/
 .playwright-mcp/
 TODO.md
 
@@ -39,6 +40,7 @@ sidebar-preview.html
 # Debug screenshots
 *.png
 !packages/openwriter/public/*.png
+!claude-plugin/logo.png
 
 # Operator book content — local one-off stitch scripts carry real beat docIds +
 # chapter/beat titles from the user's live book. Public repo: never commit.

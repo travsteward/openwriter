@@ -12,8 +12,11 @@ project notes.
 2. Confirm the public OpenWriter skill source is current and generic. The repo
    copy under skills/openwriter is the bundle source; never copy a private local
    adapter or personal worked examples over it.
-3. Update the app version and lock metadata, move Unreleased changelog entries
+3. Update the app version and lock metadata, run
+   node scripts/build-claude-plugin.mjs so the Claude plugin pins the new
+   version (npm test fails until it does), move Unreleased changelog entries
    into that version's section, commit, integrate, and tag the release commit.
+   The Claude directory picks up the plugin from main on its own.
 4. Run the release wrapper. It checks the tag, builds, runs the existing privacy
    and skill/plugin bundler, stamps the build, packs one tarball, pushes the
    branch/tag, records and publishes that exact tarball, proves the registry

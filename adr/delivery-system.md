@@ -167,3 +167,11 @@ copies of the pipe. The app is now launched through the shell, which inherits
 nothing, with a hidden cmd giving it its own log files and an empty input. The
 listener identity check is unchanged: the app's command line still names node
 and the entry script.
+
+### 2026-10-05
+
+Added the Claude plugin folder (claude-plugin/) as a generated artifact. Its
+skill, agents and pinned server version are copies, so scripts/build-claude-plugin.mjs
+writes them from their one source and its --check mode runs as a gate here.
+A gate entry may now carry arguments. A version bump that skips the rebuild
+fails npm test instead of shipping a plugin that runs the previous release.
