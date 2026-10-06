@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ## [Unreleased]
 
+## [0.44.0] - 2026-10-06
+
 ### Added
 - OpenWriter is packaged as a Claude plugin: the editor's tools, the agent skill, and its background workers install together in Claude Code and Cowork.
 - A paywall divider (lock button in the toolbar) marks where the free preview ends in a post. It is saved as an invisible `<!-- paywall -->` line, so the file reads cleanly anywhere else.
