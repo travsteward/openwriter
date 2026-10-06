@@ -682,7 +682,7 @@ Each profile gets a free site at `<name>.openwriter.io` with posts, subscribers 
 - **Paywall:** put the line `<!-- paywall -->` between blocks. Everything above it is the free preview. One per doc, not inside a list or quote. With no marker, a walled post shows readers without access nothing past the title. The editor shows it as a "Paywall" divider (lock button in the toolbar), and `read_pad` shows it as `[hr:<id>] <!-- paywall -->`.
 - The post id is saved in the doc's metadata (`sitePost`), so publishing the same doc again updates that post. Only accepted text is published, never pending changes.
 - `send_email` emails the post once; later updates change the web copy only. `send_free_preview` (with `send_email`, on a paid or founding post) also emails free subscribers the preview above the paywall.
-- Images must be https URLs; images stored on this computer are refused for now.
+- Pictures stored in this OpenWriter (`/_images/...`), in the body or as `cover_url`, are uploaded with the post; https images are used as they are.
 
 ### Paid plans
 
