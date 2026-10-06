@@ -9,6 +9,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 ### Added
 - OpenWriter is packaged as a Claude plugin: the editor's tools, the agent skill, and its background workers install together in Claude Code and Cowork.
 
+- A paywall divider (lock button in the toolbar) marks where the free preview ends in a post. It is saved as an invisible `<!-- paywall -->` line, so the file reads cleanly anywhere else.
+- Publish tools for your free site at `<name>.openwriter.io`: claim the name, edit site details and publication settings, publish a document as a post with an audience and paywall, schedule it, email it, unpublish it, and read site stats.
+
 ## [0.43.0] - 2026-10-04
 
 ### Added

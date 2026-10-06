@@ -20,6 +20,7 @@ import { BlurredLoadingNode } from './BlurredLoadingNode';
 import { ImageLoadingNode } from './ImageLoadingNode';
 import { InsertionLoadingNode } from './InsertionLoadingNode';
 import { PendingAttributes } from './PendingAttributes';
+import { PaywallAttribute } from './Paywall';
 import { FootnoteReference, FootnoteSection, FootnoteDefinition } from './Footnotes';
 import TweetImage from '../tweet-compose/TweetImage';
 import { Bookmarks } from '../bookmarks/bookmark-plugin';
@@ -82,6 +83,7 @@ export const padExtensions = [
   ImageLoadingNode,
   InsertionLoadingNode,
   PendingAttributes,
+  PaywallAttribute,
   FootnoteReference,
   FootnoteSection,
   FootnoteDefinition,

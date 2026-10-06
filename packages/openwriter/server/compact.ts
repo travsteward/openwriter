@@ -88,7 +88,8 @@ function nodeToCompactLines(node: any, indent: string): string[] {
   const tag = `[${compactType(node)}:${nodeId(node.attrs?.id)}]`;
 
   if (node.type === 'horizontalRule') {
-    lines.push(`${indent}${tag}`);
+    // Show agents the markdown that writes a paywall. adr: adr/paywall-marker.md
+    lines.push(node.attrs?.paywall ? `${indent}${tag} <!-- paywall -->` : `${indent}${tag}`);
     return lines;
   }
 

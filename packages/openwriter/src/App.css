@@ -543,6 +543,29 @@ body {
   margin: 2em 0;
 }
 
+/* Site paywall marker. adr: adr/paywall-marker.md */
+.tiptap hr[data-paywall] {
+  border-top: 2px dashed var(--accent);
+  margin: 2.5em 0;
+  overflow: visible;
+  position: relative;
+}
+
+.tiptap hr[data-paywall]::after {
+  content: 'Paywall · readers without access stop here';
+  position: absolute;
+  left: 50%;
+  top: -0.8em;
+  transform: translateX(-50%);
+  padding: 0 0.75em;
+  background: var(--bg-primary);
+  color: var(--accent);
+  font-family: var(--font-ui, system-ui, sans-serif);
+  font-size: 0.75rem;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
 /* Placeholder */
 .tiptap p.is-editor-empty:first-child::before {
   content: attr(data-placeholder);

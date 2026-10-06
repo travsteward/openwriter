@@ -367,6 +367,8 @@ export function markdownToNodes(markdown: string): any[] {
 
 // ---- Token tree walker ----
 
+const PAYWALL_MARKER = /^<!--\s*paywall\s*-->$/i;
+
 function tokensToTiptap(tokens: Token[]): any[] {
   const nodes: any[] = [];
   let i = 0;
@@ -434,9 +436,13 @@ function tokensToTiptap(tokens: Token[]): any[] {
     } else if (token.type === 'html_block') {
       // <!-- --> is our sentinel for empty paragraphs.
       // <!-- ^abc12345 --> is the same sentinel with a persisted nodeId.
+      // <!-- paywall --> is the site paywall: a horizontalRule marked paywall.
+      // adr: adr/paywall-marker.md
       const trimmed = token.content.trim();
       if (trimmed === '<!-- -->') {
         nodes.push({ type: 'paragraph', attrs: { id: generateNodeId() }, content: [] });
+      } else if (PAYWALL_MARKER.test(trimmed)) {
+        nodes.push({ type: 'horizontalRule', attrs: { id: generateNodeId(), paywall: true } });
       } else {
         const idMatch = trimmed.match(/^<!--\s*\^([a-f0-9]{8})\s*-->$/);
         if (idMatch) {

@@ -20,29 +20,33 @@ export interface ServerModules {
   getActiveProfile: () => string;
   getDataDir: () => string;
   getDocId: () => string;
+  setMetadata: (updates: Record<string, any>) => void;
+  save: () => void;
+  broadcastMetadataChanged: (metadata: Record<string, any>) => void;
   platformFetch: (path: string, options?: RequestInit) => Promise<Response>;
 }
 
 let _cached: ServerModules | null = null;
 
 async function tryImport(base: string) {
-  const [markdown, state, helpers, connections] = await Promise.all([
+  const [markdown, state, helpers, connections, ws] = await Promise.all([
     import(base + 'markdown.js'),
     import(base + 'state.js'),
     import(base + 'helpers.js'),
     import(base + 'connections.js'),
+    import(base + 'ws.js'),
   ]);
-  return { markdown, state, helpers, connections };
+  return { markdown, state, helpers, connections, ws };
 }
 
 export async function getServerModules(): Promise<ServerModules> {
   if (_cached) return _cached;
   // Try npm package layout first, fall back to monorepo layout
-  let markdown, state, helpers, connections;
+  let markdown, state, helpers, connections, ws;
   try {
-    ({ markdown, state, helpers, connections } = await tryImport(npmBase));
+    ({ markdown, state, helpers, connections, ws } = await tryImport(npmBase));
   } catch {
-    ({ markdown, state, helpers, connections } = await tryImport(monoBase));
+    ({ markdown, state, helpers, connections, ws } = await tryImport(monoBase));
   }
   _cached = {
     tiptapToMarkdown: markdown.tiptapToMarkdown,
@@ -52,6 +56,9 @@ export async function getServerModules(): Promise<ServerModules> {
     getActiveProfile: helpers.getActiveProfile,
     getDataDir: helpers.getDataDir,
     getDocId: state.getDocId,
+    setMetadata: state.setMetadata,
+    save: state.save,
+    broadcastMetadataChanged: ws.broadcastMetadataChanged,
     platformFetch: connections.platformFetch,
   };
   return _cached;

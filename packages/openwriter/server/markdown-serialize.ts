@@ -341,7 +341,8 @@ function nodeToMarkdown(node: any, indent: string): string {
       return `\`\`\`${lang}\n${text}\n\`\`\`\n\n`;
     }
     case 'horizontalRule':
-      return '---\n\n';
+      // adr: adr/paywall-marker.md
+      return node.attrs?.paywall ? '<!-- paywall -->\n\n' : '---\n\n';
     case 'image': {
       const src = node.attrs?.src || '';
       const alt = node.attrs?.alt || '';

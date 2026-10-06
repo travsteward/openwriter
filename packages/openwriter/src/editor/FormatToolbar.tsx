@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Editor } from '@tiptap/react';
 
+import { insertPaywall } from './Paywall';
 import './format-toolbar.css';
 
 function Btn({
@@ -248,6 +249,12 @@ export default function FormatToolbar({ editor }: { editor: Editor }) {
         <Btn onClick={() => editor.chain().focus().setHorizontalRule().run()} title="Horizontal Rule">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M5 12h14" />
+          </svg>
+        </Btn>
+        <Btn onClick={() => insertPaywall(editor)} title="Paywall: readers without access stop here (moves it if the doc has one)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect width="14" height="10" x="5" y="11" rx="2" />
+            <path d="M8 11V7a4 4 0 0 1 8 0v4" />
           </svg>
         </Btn>
       </div>

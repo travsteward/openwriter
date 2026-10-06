@@ -16,7 +16,7 @@ description: |
   Requires: OpenWriter MCP server configured. Browser UI at localhost:5050.
 metadata:
   author: travsteward
-  version: "0.24.0"
+  version: "0.25.0"
   repository: https://github.com/travsteward/openwriter
 license: MIT
 ---
@@ -663,6 +663,26 @@ Requires authentication via `request_login_code` + `verify_login`. All publish t
 2. get_newsletter_analytics({ issue_id })      → drill into a specific send
    → returns: stats (delivered, opens, clicks, bounces), per-subscriber events, recipient list
 ```
+
+### Publishing to your site
+
+Each profile gets a free site at `<name>.openwriter.io` with posts, subscribers and a paywall.
+
+| Tool | Key Params | Description |
+|------|-----------|-------------|
+| `claim_site_name` | `name` | Claim `<name>.openwriter.io`, or rename it |
+| `get_site` | *(none)* | Site details and publication settings |
+| `update_site` | `name?`, `tagline?`, `about?`, `logo_url?`, `cover_url?` | Change site details |
+| `update_site_settings` | `default_audience?`, `auto_wall_after_days?`, `double_opt_in?`, `welcome_page?`, `welcome_email?`, `comments_enabled?`, `mailing_address?` | Change publication settings. A mailing address is needed before the first email |
+| `publish_to_site` | `title?`, `subtitle?`, `slug?`, `cover_url?`, `audience?`, `web_only?`, `email_only?`, `comments_audience?`, `publish_at?`, `send_email?` | Publish the active doc as a post, or update the post it was published as before |
+| `unpublish_site_post` | `post_id?` | Take the active doc's post off the site |
+| `get_site_stats` | *(none)* | Subscriber counts, site totals, and the active doc's post stats |
+
+- **Audience:** `everyone`, `subscribers` (free or paid), `paid`, or `founding`.
+- **Paywall:** put the line `<!-- paywall -->` between blocks. Everything above it is the free preview. One per doc, not inside a list or quote. With no marker, a walled post shows readers without access nothing past the title. The editor shows it as a "Paywall" divider (lock button in the toolbar), and `read_pad` shows it as `[hr:<id>] <!-- paywall -->`.
+- The post id is saved in the doc's metadata (`sitePost`), so publishing the same doc again updates that post. Only accepted text is published, never pending changes.
+- `send_email` emails the post once; later updates change the web copy only.
+- Images must be https URLs; images stored on this computer are refused for now.
 
 ## Author's Voice Plugin
 

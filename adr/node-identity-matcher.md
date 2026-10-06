@@ -193,3 +193,7 @@ Editor sessions and canonical document URLs now use stable docId. Filename promo
 - **Decision.** The references write now merges `references` onto the frontmatter read back from disk, the same way `link_to` does for non-active docs. `writeFrontmatter` keeps replace semantics because the migration uses them to delete keys.
 - **Invariant.** A frontmatter-only write after a save must start from the frontmatter on disk, never from `state.metadata`.
 - **Stale test updated.** The same script asserted the v0.19 stored `backlinks:` field. It now reads the live `computeBacklinksFor` result, filtered to paragraph-anchored entries. The "Backlinks ride on matcher ID stability" invariant above still names the removed `updateBacklinksForSource` pipeline; the ID-stability claim holds for the live computation.
+
+### 2026-10-06 — The paywall rides on horizontalRule identity
+
+- The site paywall marker (`<!-- paywall -->` on disk) parses to a `horizontalRule` with `paywall: true` and serializes back from it (`adr/paywall-marker.md`). It is fingerprinted as an ordinary `hr`: identity tag, slim tuple and matcher rules are unchanged, and the paywall flag comes from the body on every parse.
