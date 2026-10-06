@@ -175,3 +175,14 @@ skill, agents and pinned server version are copies, so scripts/build-claude-plug
 writes them from their one source and its --check mode runs as a gate here.
 A gate entry may now carry arguments. A version bump that skips the rebuild
 fails npm test instead of shipping a plugin that runs the previous release.
+
+### 2026-10-06
+
+A push from a linked worktree failed the full checks while the same checks
+passed when run directly. Git exports GIT_DIR to hooks, and in a worktree that
+points at the worktree's private git directory; every git command the checks
+spawned inherited it, so the suites' scratch repositories and the Claude
+plugin build acted on the wrong repository. The pre-push hook now clears
+GIT_DIR, GIT_WORK_TREE, GIT_INDEX_FILE and GIT_PREFIX before running the full
+checks. The privacy gate before it keeps the hook's environment, since it
+reads the pushed range through that same repository.
