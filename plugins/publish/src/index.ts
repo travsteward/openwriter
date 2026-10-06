@@ -1,6 +1,7 @@
 import type { OpenWriterPlugin, PluginMcpTool, PluginRouteContext } from './helpers.js';
 import { getServerModules, publishFetch } from './helpers.js';
 import { newsletterTools } from './newsletter-tools.js';
+import { siteMoneyTools } from './site-money-tools.js';
 import { siteTools } from './site-tools.js';
 import { readFileSync, existsSync } from 'fs';
 import { join, extname } from 'path';
@@ -177,6 +178,9 @@ const plugin: OpenWriterPlugin = {
 
       // Site tools (<name>.openwriter.io: claim, settings, publish posts, stats)
       ...siteTools(config),
+
+      // Paid plan tools (Stripe connect, plans, comps, offers)
+      ...siteMoneyTools(config),
 
       // --- Domain tools ---
 

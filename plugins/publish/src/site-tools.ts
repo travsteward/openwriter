@@ -8,13 +8,13 @@ const COMMENTS = [...AUDIENCES, 'off'];
 /** Doc metadata key holding the post this doc was published as. */
 const POST_KEY = 'sitePost';
 
-async function apiError(res: Response, what: string): Promise<{ error: string }> {
+export async function apiError(res: Response, what: string): Promise<{ error: string }> {
   const err = (await res.json().catch(() => ({}))) as { error?: string; message?: string };
   return { error: `${what}: ${err.message || err.error || res.statusText}` };
 }
 
 /** Send only the fields the caller gave; the API refuses unknown keys and keeps what is left out. */
-function pick(params: Record<string, unknown>, keys: string[]): Record<string, unknown> {
+export function pick(params: Record<string, unknown>, keys: string[]): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   for (const k of keys) if (params[k] !== undefined) out[k] = params[k];
   return out;
@@ -60,13 +60,14 @@ export function siteTools(config: Record<string, string>): PluginMcpTool[] {
     {
       name: 'get_site',
       description:
-        'Show the active profile\'s site: address, name, tagline, about, logo, cover, review status, and publication settings (default audience, auto-paywall, double opt-in, welcome page and email, comments, mailing address).',
+        'Show the active profile\'s site: address, name, tagline, about, logo, cover, review status, and publication settings (default audience, auto-paywall, double opt-in, welcome page and email, comments, mailing address), ' +
+        'and payments: whether Stripe is connected, the 7-day trial, and the paid plans (amounts in cents).',
       inputSchema: { type: 'object', properties: {} },
       handler: async () => {
         const res = await publishFetch(config, '/sites');
         if (!res.ok) return apiError(res, 'Could not load the site');
-        const { site } = (await res.json()) as { site: any };
-        return { address: site.slug ? `https://${site.slug}.openwriter.io` : null, site };
+        const { site, payments } = (await res.json()) as { site: any; payments: unknown };
+        return { address: site.slug ? `https://${site.slug}.openwriter.io` : null, site, payments };
       },
     },
 
@@ -148,6 +149,10 @@ export function siteTools(config: Record<string, string>): PluginMcpTool[] {
           comments_audience: { type: 'string', enum: COMMENTS, description: 'Who may comment, or off.' },
           publish_at: { type: 'string', description: 'ISO date-time in the future to schedule the post instead of publishing now.' },
           send_email: { type: 'boolean', description: 'Also email the post to subscribers when it publishes. Each audience gets its own version.' },
+          send_free_preview: {
+            type: 'boolean',
+            description: 'With send_email on a paid or founding post: also email free subscribers the preview above the paywall.',
+          },
         },
       },
       handler: async (params) => {
@@ -206,12 +211,18 @@ export function siteTools(config: Record<string, string>): PluginMcpTool[] {
         }
 
         if (params.send_email) {
-          const send = await publishFetch(config, `/sites/posts/${post.id}/send`, { method: 'POST' });
+          const send = await publishFetch(config, `/sites/posts/${post.id}/send`, {
+            method: 'POST',
+            body: JSON.stringify(pick(params, ['send_free_preview'])),
+          });
           if (!send.ok) {
             result.email = (await apiError(send, 'Post saved, but the email was not sent')).error;
           } else {
-            const s = (await send.json()) as { scheduled?: boolean; recipients?: number; issue_id?: string };
-            result.email = s.scheduled ? 'Will be emailed when the post publishes.' : `Sending to ${s.recipients} subscribers.`;
+            const s = (await send.json()) as {
+              scheduled?: boolean; recipients?: number; issue_id?: string; free_preview?: boolean; send_free_preview?: boolean;
+            };
+            const preview = s.free_preview || s.send_free_preview ? ' Free subscribers get the preview.' : '';
+            result.email = (s.scheduled ? 'Will be emailed when the post publishes.' : `Sending to ${s.recipients} subscribers.`) + preview;
             if (s.issue_id) result.issue_id = s.issue_id;
           }
         }
@@ -248,7 +259,9 @@ export function siteTools(config: Record<string, string>): PluginMcpTool[] {
     {
       name: 'get_site_stats',
       description:
-        'Site numbers: subscriber counts by type and status, site totals, and stats (views, recipients, opens, clicks, subscribers gained) for the active document\'s post if it has one.',
+        'Site numbers: subscriber counts by type and status, site totals, revenue, and stats (views, recipients, opens, clicks, subscribers gained) for the active document\'s post if it has one. ' +
+        'Revenue (site.revenue) gives paid members by plan, how many are in a free trial, comps, monthly recurring revenue, ' +
+        'OpenWriter\'s 5% fee and what the writer keeps, in cents of the plans\' currency.',
       inputSchema: { type: 'object', properties: {} },
       handler: async () => {
         const server = await getServerModules();
