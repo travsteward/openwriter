@@ -27,9 +27,9 @@ export function setActiveProfile(name: string): void {
 let profilePinned = false;
 
 /**
- * `--profile <name>`: this process serves only `name`, creating it if needed. The choice is never
- * written to the shared config, so a second OpenWriter (a test profile on another port) can never
- * change which profile the main one opens with.
+ * `--profile <name>`: this process serves only `name`, creating it if needed. From then on it never
+ * writes the shared config (see saveConfig), so a second OpenWriter (a test profile on another port)
+ * can never change how the main one starts.
  */
 export function pinProfile(name: string): void {
   if (!listProfiles().includes(name)) createProfile(name);
@@ -252,6 +252,10 @@ export function readConfig(): OpenWriterConfig {
 }
 
 export function saveConfig(updates: Partial<OpenWriterConfig>): void {
+  // A pinned process (--profile) never writes the shared config: its profile, plugin and other
+  // choices stay in memory, so it cannot change how the main OpenWriter starts.
+  // adr: adr/pinned-profile.md
+  if (profilePinned) return;
   ensureDataDir();
   const current = readConfig();
   const merged = { ...current, ...updates };
