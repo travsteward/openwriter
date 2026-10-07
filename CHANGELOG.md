@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ## [Unreleased]
 
+## [0.46.1] - 2026-10-07
+
+This release includes everything in 0.46.0, which was tagged but never published to npm.
+
+### Changed
+- Installing and updating from source is faster: plugins build in one pass and skip plugins that have not changed.
+
 ## [0.46.0] - 2026-10-06
 
 ### Added
