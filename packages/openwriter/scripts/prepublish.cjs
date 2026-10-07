@@ -62,6 +62,8 @@ if (!fs.existsSync(pluginsRoot)) {
 // Build all plugins FRESH before bundling. `npm publish` runs prepublishOnly but
 // NOT `npm run build`, so without this we would bundle whatever stale dist/ already
 // exists (the stale-bundle class). build-plugins.cjs is the single source of truth.
+// Plugins unchanged since the release's own `npm run build` are skipped (tsc -b),
+// so this pass costs well under a second.
 execSync('node scripts/build-plugins.cjs', { stdio: 'inherit' });
 
 function copyDirSync(src, dest) {

@@ -10,10 +10,17 @@
  *
  * Run from packages/openwriter (npm sets cwd there). Wired into the `build`
  * script and called by scripts/prepublish.cjs before it bundles.
+ *
+ * Plugins whose build script is plain `tsc` compile in ONE `tsc -b` run: one
+ * process instead of an `npm run build` per plugin (~1.5s of npm startup each
+ * on Windows), and build mode skips a plugin whose sources have not changed
+ * since its last build. A release builds, then prepublish builds again; the
+ * second pass costs ~0.3s instead of a full recompile, and still catches a
+ * stale dist/. Any other build script runs as before.
  */
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
+const { execSync, execFileSync } = require('child_process');
 
 const pluginsRoot = path.resolve('../../plugins');
 if (!fs.existsSync(pluginsRoot)) {
@@ -21,7 +28,8 @@ if (!fs.existsSync(pluginsRoot)) {
   process.exit(0);
 }
 
-let built = 0;
+const tscProjects = [];
+const custom = [];
 for (const dir of fs.readdirSync(pluginsRoot, { withFileTypes: true })) {
   if (!dir.isDirectory()) continue;
   const pluginDir = path.join(pluginsRoot, dir.name);
@@ -29,8 +37,16 @@ for (const dir of fs.readdirSync(pluginsRoot, { withFileTypes: true })) {
   if (!fs.existsSync(pkgPath)) continue;
   const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
   if (!pkg.scripts || !pkg.scripts.build) continue;
-  console.log(`[build-plugins] building ${dir.name}`);
-  execSync('npm run build', { cwd: pluginDir, stdio: 'inherit' });
-  built++;
+  (pkg.scripts.build.trim() === 'tsc' ? tscProjects : custom).push({ name: dir.name, pluginDir });
 }
-console.log(`[build-plugins] built ${built} plugin(s)`);
+
+if (tscProjects.length > 0) {
+  console.log(`[build-plugins] building ${tscProjects.map((p) => p.name).join(', ')}`);
+  const tsc = require.resolve('typescript/bin/tsc', { paths: [process.cwd()] });
+  execFileSync(process.execPath, [tsc, '-b', ...tscProjects.map((p) => p.pluginDir)], { stdio: 'inherit' });
+}
+for (const { name, pluginDir } of custom) {
+  console.log(`[build-plugins] building ${name}`);
+  execSync('npm run build', { cwd: pluginDir, stdio: 'inherit' });
+}
+console.log(`[build-plugins] built ${tscProjects.length + custom.length} plugin(s)`);
