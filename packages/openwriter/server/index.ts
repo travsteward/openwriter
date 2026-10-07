@@ -27,7 +27,7 @@ import { importGoogleDoc } from './gdoc-import.js';
 import { createVersionRouter } from './version-routes.js';
 import { clearVersionsCache } from './versions.js';
 import { removeDocFromAllWorkspaces } from './workspaces.js';
-import { resolveDocPath, getActiveProfile, setActiveProfile, listProfiles, createProfile, deleteProfile, listTrashedProfiles, restoreProfile, saveConfig, readConfig } from './helpers.js';
+import { resolveDocPath, getActiveProfile, setActiveProfile, isProfilePinned, listProfiles, createProfile, deleteProfile, listTrashedProfiles, restoreProfile, saveConfig, readConfig } from './helpers.js';
 import { createImageRouter } from './image-upload.js';
 import { createExportRouter } from './export-routes.js';
 import { createReadingRouter } from './reading-routes.js';
@@ -1200,6 +1200,8 @@ export async function startHttpServer(options: { server: HttpServer; port?: numb
       if (!name?.trim()) { res.status(400).json({ error: 'name is required' }); return; }
       const profiles = listProfiles();
       if (!profiles.includes(name)) { res.status(404).json({ error: `Profile "${name}" not found` }); return; }
+      // adr: adr/pinned-profile.md
+      if (isProfilePinned()) { res.status(409).json({ error: `This OpenWriter was started with --profile ${getActiveProfile()} and stays on it.` }); return; }
 
       // Flush current doc
       cancelDebouncedSave();

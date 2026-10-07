@@ -48,3 +48,8 @@ split-brain state (server without port) rather than guarding its writes.
 Rejected alternatives: a write guard on the stray process (the stray still
 serves stale reads and publishes), and per-call re-probing inside a primary
 (a process that has already loaded state can still act on it).
+
+### 2026-10-06 — `--profile` pins a second instance to one profile
+`bin/pad.ts` gained `--profile <name>`, which pins the process to that profile without writing the
+shared config, so an isolated test instance can run on its own port beside the main one. Port
+ownership is unchanged. Details: `adr/pinned-profile.md`.

@@ -259,6 +259,7 @@ Options:
   --api-key <key>       Author's Voice API key
   --av-url <url>        Author's Voice backend URL
   --plugins <names>     Comma-separated plugin names
+  --profile <name>      Run on this profile only, without changing the one OpenWriter normally opens
 
 Subcommands:
   install-skill         Install Claude Code companion skill to ~/.claude/skills/openwriter/

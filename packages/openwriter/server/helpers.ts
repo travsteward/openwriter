@@ -23,6 +23,24 @@ export function setActiveProfile(name: string): void {
   activeProfile = name;
 }
 
+// adr: adr/pinned-profile.md
+let profilePinned = false;
+
+/**
+ * `--profile <name>`: this process serves only `name`, creating it if needed. The choice is never
+ * written to the shared config, so a second OpenWriter (a test profile on another port) can never
+ * change which profile the main one opens with.
+ */
+export function pinProfile(name: string): void {
+  if (!listProfiles().includes(name)) createProfile(name);
+  activeProfile = name;
+  profilePinned = true;
+}
+
+export function isProfilePinned(): boolean {
+  return profilePinned;
+}
+
 // ---- Profile-aware path getters ----
 
 export function getDataDir(): string {

@@ -2,7 +2,7 @@
 
 /**
  * CLI entry point for OpenWriter.
- * Usage: openwriter [--api-key av_live_xxx] [--port 5050] [--no-open] [--av-url URL] [--plugins name1,name2]
+ * Usage: openwriter [--api-key av_live_xxx] [--port 5050] [--no-open] [--av-url URL] [--plugins name1,name2] [--profile name]
  *
  * API key resolution (first wins):
  *   1. --api-key CLI flag
@@ -69,6 +69,7 @@ if (args[0] === 'setup' || args[0] === 'install-skill') {
   let cliApiKey: string | undefined;
   let cliAvUrl: string | undefined;
   let plugins: string[] = [];
+  let cliProfile: string | undefined;
 
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--port' && args[i + 1]) {
@@ -90,14 +91,19 @@ if (args[0] === 'setup' || args[0] === 'install-skill') {
       plugins = args[i + 1].split(',').map((s) => s.trim()).filter(Boolean);
       i++;
     }
+    if (args[i] === '--profile' && args[i + 1]) {
+      cliProfile = args[i + 1].trim();
+      i++;
+    }
   }
 
   // Resolve API key: CLI flag → env var → saved config
   const config = readConfig();
 
-  // Restore active profile from config
-  const { setActiveProfile } = await import('../server/helpers.js');
-  setActiveProfile(config.activeProfile || 'Default');
+  // --profile pins this process to one profile (never saved); otherwise restore it from config
+  const { setActiveProfile, pinProfile } = await import('../server/helpers.js');
+  if (cliProfile) pinProfile(cliProfile);
+  else setActiveProfile(config.activeProfile || 'Default');
 
   const avApiKey = cliApiKey || process.env.AV_API_KEY || config.avApiKey || '';
   const avBackendUrl = cliAvUrl || process.env.AV_BACKEND_URL || config.avBackendUrl;

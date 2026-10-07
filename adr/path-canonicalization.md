@@ -127,3 +127,7 @@ form, mis-classifying it as external.
     handling.
 - Verification: full unit suite green (24 files, 549 assertions).
   Live integration test pending.
+
+### 2026-10-06 — unrelated addition in helpers.ts
+`pinProfile` / `isProfilePinned` were added next to the profile state in `server/helpers.ts` for the
+`--profile` flag (`adr/pinned-profile.md`). Path canonicalization is unchanged.
