@@ -53,3 +53,22 @@ serves stale reads and publishes), and per-call re-probing inside a primary
 `bin/pad.ts` gained `--profile <name>`, which pins the process to that profile without writing the
 shared config, so an isolated test instance can run on its own port beside the main one. Port
 ownership is unchanged. Details: `adr/pinned-profile.md`.
+
+### 2026-10-06 — one server per profile, not just per port
+
+Holding the port only decided who serves that port. Two servers on different
+ports could still serve the same profile: each held its own live doc, autosaved
+it, and took the other's saves for external writes. Seen live: test servers on
+5071 and 5072 beside the real one on 5050, all on Default, wrote one doc's
+pending content into another doc's file. After winning the port, a process now
+takes `server.lock` (pid and port, exclusive create) in its profile folder
+before `load()`. If a live server already holds it, the process releases its
+port and runs as a client of that server's port. A running server switching
+profile takes the target's lock first and refuses (409) when another server
+holds it. A lock is live when its pid exists and its port answers (the owner
+binds before locking, so a loading server answers 503); a crashed owner's lock
+is stale and taken over. Released on normal exit. Per profile, not per data
+folder, so a `--profile` test instance on its own profile still runs beside the
+main one. Tested on an isolated home: a second server on another port went
+client mode and left its port free; after the first was killed, the next start
+took over.

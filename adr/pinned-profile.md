@@ -37,3 +37,9 @@ The first test run found the publish plugin off in the shared config; enabling i
 instance (UI or `--plugins`) persists `enabled` to the shared config and would switch it on in the
 main OpenWriter. Guarding only `activeProfile` left that and every other shared write open, so the
 guard moved into `saveConfig`, the one writer of the file.
+
+### 2026-10-06 — a profile has one server
+A server now holds `server.lock` in its profile folder (adr/single-server-ownership.md). A pinned
+test instance on its own profile is unaffected; one started on a profile another server already
+serves becomes that server's client, and the main server refuses to switch into a profile a test
+instance holds.

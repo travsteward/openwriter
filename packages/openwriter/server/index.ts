@@ -27,7 +27,8 @@ import { importGoogleDoc } from './gdoc-import.js';
 import { createVersionRouter } from './version-routes.js';
 import { clearVersionsCache } from './versions.js';
 import { removeDocFromAllWorkspaces } from './workspaces.js';
-import { resolveDocPath, getActiveProfile, setActiveProfile, isProfilePinned, listProfiles, createProfile, deleteProfile, listTrashedProfiles, restoreProfile, saveConfig, readConfig } from './helpers.js';
+import { resolveDocPath, getDataDir, getActiveProfile, setActiveProfile, isProfilePinned, listProfiles, createProfile, deleteProfile, listTrashedProfiles, restoreProfile, saveConfig, readConfig } from './helpers.js';
+import { claimDataLock, releaseDataLock } from './server-lock.js';
 import { createImageRouter } from './image-upload.js';
 import { createExportRouter } from './export-routes.js';
 import { createReadingRouter } from './reading-routes.js';
@@ -1203,12 +1204,20 @@ export async function startHttpServer(options: { server: HttpServer; port?: numb
       // adr: adr/pinned-profile.md
       if (isProfilePinned()) { res.status(409).json({ error: `This OpenWriter was started with --profile ${getActiveProfile()} and stays on it.` }); return; }
 
+      // Another OpenWriter (a test instance on its own port) may serve that
+      // profile; two servers on one profile overwrite each other's saves.
+      // adr: adr/single-server-ownership.md
+      const fromDir = getDataDir();
+      const owner = await claimDataLock(port, join(dirname(fromDir), name));
+      if (owner) { res.status(409).json({ error: `Profile "${name}" is open in another OpenWriter (port ${owner.port}).` }); return; }
+
       // Flush current doc
       cancelDebouncedSave();
       save();
 
       // Switch profile
       setActiveProfile(name);
+      if (getDataDir() !== fromDir) releaseDataLock(fromDir);
       saveConfig({ activeProfile: name });
 
       // Clear caches and reload

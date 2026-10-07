@@ -101,7 +101,7 @@ if (args[0] === 'setup' || args[0] === 'install-skill') {
   const config = readConfig();
 
   // --profile pins this process to one profile (never saved); otherwise restore it from config
-  const { setActiveProfile, pinProfile } = await import('../server/helpers.js');
+  const { setActiveProfile, pinProfile, getActiveProfile } = await import('../server/helpers.js');
   if (cliProfile) pinProfile(cliProfile);
   else setActiveProfile(config.activeProfile || 'Default');
 
@@ -151,11 +151,26 @@ if (args[0] === 'setup' || args[0] === 'install-skill') {
     owned = await claimPort();
   }
 
+  // Holding a port is not enough: a server on another port may already serve
+  // this profile, and two servers on one profile overwrite each other's saves.
+  // Defer to it as a client. adr: adr/single-server-ownership.md
+  let serverPort = port;
+  if (owned) {
+    const { claimDataLock } = await import('../server/server-lock.js');
+    const folderOwner = await claimDataLock(port);
+    if (folderOwner) {
+      owned.close();
+      owned = null;
+      serverPort = folderOwner.port;
+      console.error(`[OpenWriter] Profile ${getActiveProfile()} is served by pid ${folderOwner.pid} on port ${serverPort} — entering client mode`);
+    }
+  }
+
   if (!owned) {
     // Client mode: proxy every MCP call to whichever process holds the port
-    console.error(`[OpenWriter] Port ${port} held by another server — entering client mode`);
+    if (serverPort === port) console.error(`[OpenWriter] Port ${port} held by another server — entering client mode`);
     const { startMcpClientServer } = await import('../server/mcp-client.js');
-    startMcpClientServer(port).catch((err) => {
+    startMcpClientServer(serverPort).catch((err) => {
       console.error('[MCP-Client] Failed to start:', err);
     });
   } else {
