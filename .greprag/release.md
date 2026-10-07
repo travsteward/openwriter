@@ -41,11 +41,12 @@ link; local runtime deployment uses [deploy.ps1](../scripts/deploy.ps1).
 
 ## Authentication and interruption
 
-Use npm whoami first. If authentication is missing, use npm login --auth-type=web
-and complete the browser approval. Publishing requires its own separate browser
-approval, which only a human at the machine can complete, so run the wrapper in
-a real terminal rather than through a tool that captures its output. Never print
-a token or replace credentials merely to bypass interactive authentication.
+The wrapper checks npm whoami and, if the login has lapsed, runs npm login
+--auth-type=web itself. Login and publishing each need a browser approval that
+only a human at the machine can complete. The wrapper opens each approval page
+in the browser as soon as npm prints it (no ENTER to press), so approve it
+promptly; an approval left unopened times out and stops the run. Never print a
+token or replace credentials merely to bypass interactive authentication.
 
 If a run stops part way — a missed publish approval, a network failure, a closed
 window — nothing needs undoing and nothing needs finishing by hand. Re-run the

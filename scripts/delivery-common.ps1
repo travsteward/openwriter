@@ -22,6 +22,31 @@ function Invoke-DeliveryCommand {
   if ($LASTEXITCODE -ne 0) { throw "$File failed with exit code $LASTEXITCODE" }
 }
 
+# npm's web approval (login, publish) waits for ENTER before opening the
+# browser, and an approval nobody opened times out and fails the run. npm skips
+# that prompt when stdin is not a terminal and only prints the link, so the
+# command runs with stdin closed and the first npmjs.com auth or login link it
+# prints is opened here. Output still streams to the console as it arrives.
+function Invoke-DeliveryNpmWithBrowser {
+  param([string[]]$Arguments)
+  $prior = $ErrorActionPreference
+  $ErrorActionPreference = 'Continue'
+  $opened = $false
+  try {
+    $null | & npm @Arguments 2>&1 | ForEach-Object {
+      $line = "$_"
+      Write-Host $line
+      if (!$opened -and $line -match '^\s*(https://www\.npmjs\.com/(auth|login)/\S+)') {
+        $opened = $true
+        Write-Host 'Opening the approval page in your browser...'
+        Start-Process $Matches[1]
+      }
+    }
+    $code = $LASTEXITCODE
+  } finally { $ErrorActionPreference = $prior }
+  if ($code -ne 0) { throw "npm failed with exit code $code" }
+}
+
 function Get-DeliveryCommandOutput {
   param([string]$File, [string[]]$Arguments)
   $prior = $ErrorActionPreference

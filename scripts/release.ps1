@@ -93,12 +93,15 @@ try {
   }
   $recordPath = Get-DeliveryPublishRecordPath -Directory $artifactDir -Tag $tag
   Invoke-DeliveryStep -Name "publish $spec to npm" -Satisfied $isPublished -Action {
-    Invoke-DeliveryCommand -File npm -Arguments @('whoami')
+    # A lapsed login is renewed here, its approval page opened automatically.
+    if (!(Test-DeliveryCommand -File npm -Arguments @('whoami'))) {
+      Invoke-DeliveryNpmWithBrowser -Arguments @('login', '--auth-type=web')
+    }
     # Written before the call, not after: the registry may accept these bytes
     # and the run still end before the next line, and this record is the only
     # proof of which bytes it was given.
     Write-DeliveryPublishRecord -Path $recordPath -Spec $spec -Sha $sha -Integrity $packed[0].integrity -Tarball $tarball
-    Invoke-DeliveryCommand -File npm -Arguments @('publish', $tarball, '--access', 'public', '--ignore-scripts')
+    Invoke-DeliveryNpmWithBrowser -Arguments @('publish', $tarball, '--access', 'public', '--ignore-scripts')
   }
   # Never skipped: whether this run published or a previous one did, the
   # registry artifact is proven against the tarball that was actually

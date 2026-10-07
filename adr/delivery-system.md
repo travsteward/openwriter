@@ -186,3 +186,16 @@ plugin build acted on the wrong repository. The pre-push hook now clears
 GIT_DIR, GIT_WORK_TREE, GIT_INDEX_FILE and GIT_PREFIX before running the full
 checks. The privacy gate before it keeps the hook's environment, since it
 reads the pushed range through that same repository.
+
+### 2026-10-07 — npm approval pages open themselves
+
+Two release runs stopped because npm's publish approval waited for ENTER before
+opening the browser, nobody pressed it, and the approval timed out. npm skips
+that prompt when stdin is not a terminal and only prints the link, so
+`Invoke-DeliveryNpmWithBrowser` (delivery-common.ps1) runs npm with stdin closed,
+streams its output, and opens the first npmjs.com auth or login link it prints.
+The release uses it for publish, and runs `npm login --auth-type=web` the same
+way when `npm whoami` fails. Approval itself stays a human step in the browser;
+no token replaces it. Tested with a stand-in npm under Windows PowerShell and
+pwsh 7: stdin reached npm as a non-terminal, one link opened, and a non-zero
+exit still failed the step.
