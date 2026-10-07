@@ -1,7 +1,7 @@
 {
   "name": "openwriter",
   "displayName": "OpenWriter",
-  "version": "0.45.0",
+  "version": "0.46.0",
   "description": "A local markdown editor your agent writes in. Claude drafts and edits documents through MCP tools, and you accept or reject each change in your browser. Plain .md files on your disk.",
   "author": {
     "name": "OpenWriter",

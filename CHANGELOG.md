@@ -6,7 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ## [Unreleased]
 
+## [0.46.0] - 2026-10-06
+
+### Added
+- `--profile <name>` starts OpenWriter on one profile without changing which profile your normal start opens, so a test copy can run on its own port beside your main one.
+
 ### Fixed
+- Opening a document from a link is much faster: the document and the sidebar list arrive in a fraction of the time, and the sidebar shows "Loading…" instead of "No documents yet" while it loads.
+- Opening a page no longer shows a "changed in another tab" warning when you haven't typed anything, and a page can no longer save its blank editor or another document's text over the one you opened.
+- Saving a document with links to other documents no longer makes OpenWriter mistake its own save for an outside edit.
+- The Backlinks panel lists the links of the document in your tab, not whatever document the server last opened.
+- Two OpenWriter servers can no longer run on the same profile and overwrite each other's saves; a second one passes its work to the first.
 - Publishing a post to your site now uses the document's cover when you don't pass one.
 - Setting a generated cover on a plain document no longer turns it into an X article or tags it as one.
 
