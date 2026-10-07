@@ -10,7 +10,7 @@
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
-import { postImages } from '../../../plugins/publish/dist/site-tools.js';
+import { docCover, postImages } from '../../../plugins/publish/dist/site-tools.js';
 
 let passed = 0;
 let failed = 0;
@@ -51,6 +51,12 @@ try {
     assert(withCover[0]?.content_type === 'image/jpeg', 'cover content type');
     assert((await postImages('<p>x</p>', 'https://e.x/c.png', dir)).length === 0, 'https cover not uploaded');
     assert((await postImages('<p>x</p>', '', dir)).length === 0, 'cleared cover not uploaded');
+  });
+
+  await test('Test 3: with no cover passed, the post takes the document cover', async () => {
+    assert(docCover({ articleContext: { coverImage: '/_images/cover.jpg' } }) === '/_images/cover.jpg', 'article cover');
+    assert(docCover({ blogContext: { coverImage: '/_images/b.png' }, articleContext: { coverImage: '/_images/a.png' } }) === '/_images/b.png', 'blog cover first');
+    assert(docCover({}) === undefined, 'no cover');
   });
 } finally {
   rmSync(dir, { recursive: true, force: true });

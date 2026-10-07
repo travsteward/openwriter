@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ## [Unreleased]
 
+### Fixed
+- Publishing a post to your site now uses the document's cover when you don't pass one.
+- Setting a generated cover on a plain document no longer turns it into an X article or tags it as one.
+
 ## [0.45.0] - 2026-10-06
 
 ### Added

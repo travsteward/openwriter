@@ -43,6 +43,12 @@ export function postImages(html: string, coverUrl: unknown, dataDir?: string) {
   return extractLocalImages(cover ? `${html} ${cover}` : html, dataDir);
 }
 
+/** The cover the desk shows for the document: the blog cover, else the article cover. */
+export function docCover(meta: Record<string, any>): string | undefined {
+  const cover = meta.blogContext?.coverImage || meta.articleContext?.coverImage;
+  return typeof cover === 'string' && cover ? cover : undefined;
+}
+
 function postUrl(siteSlug: string | null | undefined, postSlug: string): string | null {
   return siteSlug ? `https://${siteSlug}.openwriter.io/p/${postSlug}` : null;
 }
@@ -214,7 +220,9 @@ export function siteTools(config: Record<string, string>): PluginMcpTool[] {
         if (!html.trim()) return { error: 'The document is empty.' };
         const wall = placeWall(html);
         if (!wall.ok) return { error: wall.error };
-        const images = await postImages(wall.html, params.cover_url);
+        // No cover passed: use the document's own cover. An empty string still clears it.
+        const coverUrl = params.cover_url ?? docCover(meta);
+        const images = await postImages(wall.html, coverUrl);
 
         let section: Record<string, unknown> = {};
         if (typeof params.section === 'string') {
@@ -236,7 +244,7 @@ export function siteTools(config: Record<string, string>): PluginMcpTool[] {
           ...(params.title || !existingId ? { title: (params.title as string) || subject } : {}),
           body_html: wall.html,
           wall_at: wall.wall_at,
-          ...pick(params, ['subtitle', 'slug', 'cover_url', 'audience', 'web_only', 'email_only', 'comments_audience', 'tags', 'authors']),
+          ...pick({ ...params, cover_url: coverUrl }, ['subtitle', 'slug', 'cover_url', 'audience', 'web_only', 'email_only', 'comments_audience', 'tags', 'authors']),
           ...section,
           ...(params.publish_at ? { status: 'scheduled', publish_at: params.publish_at } : { status: 'published' }),
           ...(images.length ? { images } : {}),

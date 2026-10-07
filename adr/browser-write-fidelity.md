@@ -143,3 +143,12 @@ Revision is a variant role; content_type still selects the editor. Copies retain
 the source format/context, and manuscript revisions use the full document
 schema. Legacy type inference now matches the editor's body-bearing precedence.
 The separate reader was removed in favor of Focus mode in the same editor.
+
+### 2026-10-06 — A cover never changes the document's type
+
+insert_image set_cover stores the cover in articleContext. On a doc with no
+explicit content_type that blob made the legacy fallback read it as an article,
+and setMetadata auto-tagged any doc gaining articleContext with x + article.
+set_cover now pins the doc's current derived type when none is explicit, and
+setMetadata adds context tags only when the context belongs to the doc's own
+type. X articles and tweets tag as before; removal tagging is unchanged.

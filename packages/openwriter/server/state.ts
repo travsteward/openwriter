@@ -25,6 +25,7 @@ import { harvestSentenceHashes, harvestCharCount, isEnrichmentStale } from './en
 import { clearActivityBuffer } from './activity-log.js';
 import { titleFromDoc, shouldAutoTitle } from './title-from-body.js';
 import { mergeBrowserState } from './browser-state-merge.js';
+import { deriveContentType } from './content-type-meta.js';
 
 /** Read the persisted identity graph (nodes + graveyard) from a file's
  *  frontmatter. The save-time matcher reads previousNodes + graveyard
@@ -1052,15 +1053,22 @@ export function setMetadata(updates: Record<string, any>): void {
   // adr: adr/pending-overlay-model.md
   bumpDocVersion();
 
-  // Auto-tag based on context metadata
+  // Auto-tag based on context metadata. A context only tags a doc of its own
+  // type: a cover stored in articleContext must not make a plain doc an X article.
   const filename = state.filePath
     ? (isExternalDoc(state.filePath) ? state.filePath : state.filePath.split(/[/\\]/).pop() || '')
     : '';
   if (filename) {
+    const type = deriveContentType(state.metadata);
+    const ownsContext: Record<string, boolean> = {
+      tweetContext: type === 'tweet' || type === 'reply' || type === 'quote',
+      articleContext: type === 'article',
+    };
     // tweetContext / articleContext → "x" + mode tag
     for (const key of ['tweetContext', 'articleContext'] as const) {
       if (key in updates) {
         if (updates[key]) {
+          if (!ownsContext[key]) continue;
           addDocTag(filename, 'x');
           const mode = updates[key]?.mode || (key === 'articleContext' ? 'article' : undefined);
           if (mode) addDocTag(filename, mode);
@@ -1077,7 +1085,7 @@ export function setMetadata(updates: Record<string, any>): void {
     };
     for (const [key, tag] of Object.entries(contextTags)) {
       if (key in updates) {
-        if (updates[key]) addDocTag(filename, tag);
+        if (updates[key]) { if (type === tag) addDocTag(filename, tag); }
         else removeDocTag(filename, tag);
       }
     }

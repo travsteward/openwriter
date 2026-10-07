@@ -62,7 +62,7 @@ import { tiptapToBlocks } from './node-blocks.js';
 import { readBlame, summarizeBlame } from './attribution.js';
 import { outline, peek, searchInDoc, truncateRead, type PeekTarget } from './peek-outline.js';
 import { createEnrichmentTools } from './enrichment-tools.js';
-import { resolveTypeMeta } from './content-type-meta.js';
+import { deriveContentType, resolveTypeMeta } from './content-type-meta.js';
 import { listDocuments, switchDocument, createDocument, createDocumentFile, deleteDocument, openFile, getActiveFilename, updateDocumentTitle, promoteTempFile, archiveDocument, unarchiveDocument, resolveDocId, filenameByDocId, searchDocuments, listDirtyDocs, crawlDocs, enrichmentFooter, buildEnrichmentInstructions, listPendingSorts, sortFooter, buildSortInstructions, stagePendingTitle } from './documents.js';
 import { extractForwardLinks, readFrontmatter, writeFrontmatter, computeBacklinksFor, rebuildAllReferences, invalidateBacklinksCache } from './backlinks.js';
 import { logger, generateRequestId, withRequestId } from './logger.js';
@@ -1694,7 +1694,10 @@ export const TOOL_REGISTRY: ToolDef[] = [
           existing.push(src);
           articleContext.coverImage = src;
           articleContext.coverImages = existing;
-          setMetadata({ articleContext });
+          // A doc with no explicit type would read as an article once it has
+          // articleContext, so pin the type it has now. A cover never changes it.
+          const typeNow = liveMeta.content_type || liveMeta.contentType ? {} : { content_type: deriveContentType(liveMeta) || 'document' };
+          setMetadata({ ...typeNow, articleContext });
           save('agent');
           broadcastMetadataChanged(getMetadata());
           return { content: [{ type: 'text', text: JSON.stringify({ success: true, src, coverSet: true }) }] };
