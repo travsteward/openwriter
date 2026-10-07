@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ## [Unreleased]
 
+### Added
+- Site tools for your own domain, sections and tags: point a domain you own at your site (the tool tells you the DNS records to add and checks them), split posts into sections readers can choose, and tag posts.
+- Growth tools for your site: sell gift subscriptions, offer group subscriptions with a discount, run a referral program with rewards, and recommend other OpenWriter sites.
+- Team tools for your site: invite admins, contributors and bylines, accept an invite to someone else's site, and work on any site you are on. A private site lets only readers you approve subscribe.
+- Publishing a post can now put it in a section, tag it, and name its authors.
+
 ## [0.44.0] - 2026-10-06
 
 ### Added

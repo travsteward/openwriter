@@ -1,7 +1,10 @@
 import type { OpenWriterPlugin, PluginMcpTool, PluginRouteContext } from './helpers.js';
 import { getServerModules, publishFetch } from './helpers.js';
 import { newsletterTools } from './newsletter-tools.js';
+import { siteGrowthTools } from './site-growth-tools.js';
 import { siteMoneyTools } from './site-money-tools.js';
+import { siteStructureTools } from './site-structure-tools.js';
+import { siteTeamTools } from './site-team-tools.js';
 import { siteTools } from './site-tools.js';
 import { readFileSync, existsSync } from 'fs';
 import { join, extname } from 'path';
@@ -181,6 +184,15 @@ const plugin: OpenWriterPlugin = {
 
       // Paid plan tools (Stripe connect, plans, comps, offers)
       ...siteMoneyTools(config),
+
+      // Site structure tools (custom domain, sections, tags)
+      ...siteStructureTools(config),
+
+      // Growth tools (gifts, groups, referrals, recommendations)
+      ...siteGrowthTools(config),
+
+      // Team tools (your sites, team, private-site subscribe requests)
+      ...siteTeamTools(config),
 
       // --- Domain tools ---
 

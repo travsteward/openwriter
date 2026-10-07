@@ -16,7 +16,7 @@ description: |
   Requires: OpenWriter MCP server configured. Browser UI at localhost:5050.
 metadata:
   author: travsteward
-  version: "0.26.0"
+  version: "0.27.0"
   repository: https://github.com/travsteward/openwriter
 license: MIT
 ---
@@ -673,8 +673,8 @@ Each profile gets a free site at `<name>.openwriter.io` with posts, subscribers 
 | `claim_site_name` | `name` | Claim `<name>.openwriter.io`, or rename it |
 | `get_site` | *(none)* | Site details, publication settings, and payments (Stripe connected, plans) |
 | `update_site` | `name?`, `tagline?`, `about?`, `logo_url?`, `cover_url?` | Change site details |
-| `update_site_settings` | `default_audience?`, `auto_wall_after_days?`, `double_opt_in?`, `welcome_page?`, `welcome_email?`, `comments_enabled?`, `mailing_address?` | Change publication settings. A mailing address is needed before the first email |
-| `publish_to_site` | `title?`, `subtitle?`, `slug?`, `cover_url?`, `audience?`, `web_only?`, `email_only?`, `comments_audience?`, `publish_at?`, `send_email?`, `send_free_preview?` | Publish the active doc as a post, or update the post it was published as before |
+| `update_site_settings` | `default_audience?`, `auto_wall_after_days?`, `double_opt_in?`, `welcome_page?`, `welcome_email?`, `comments_enabled?`, `mailing_address?`, `private?`, `notify_subscribe_requests?`, `author_name?` | Change publication settings. A mailing address is needed before the first email |
+| `publish_to_site` | `title?`, `subtitle?`, `slug?`, `cover_url?`, `audience?`, `web_only?`, `email_only?`, `comments_audience?`, `publish_at?`, `send_email?`, `send_free_preview?`, `section?`, `tags?`, `authors?` | Publish the active doc as a post, or update the post it was published as before |
 | `unpublish_site_post` | `post_id?` | Take the active doc's post off the site |
 | `get_site_stats` | *(none)* | Subscriber counts, site totals, revenue, and the active doc's post stats |
 
@@ -699,6 +699,32 @@ The writer connects their own Stripe; readers pay through Stripe Checkout to the
 
 - Minimums: 5.00 a month, 30.00 a year; founding must cost more than annual. `set_site_plans` replaces the whole set, so leaving `founding` out removes it.
 - An offer link is `https://<name>.openwriter.io/subscribe?offer=<CODE>`, for monthly and/or annual only.
+
+### Domain, sections, growth and team
+
+Every site tool takes an optional `site` (a site's name or id from `list_my_sites`) to act on a site you are on the team of; leave it out for the active profile's own site.
+
+| Tool | Key Params | Description |
+|------|-----------|-------------|
+| `get_site_domain` / `set_site_domain` / `check_site_domain` | `hostname` | Custom domain: returns the CNAME (to `sites.openwriter.io`) and `_cf-custom-hostname` TXT records to add, and the status |
+| `remove_site_domain` | `confirm` | Back to `<name>.openwriter.io` at once. Owner only, only when the writer asks |
+| `list_site_sections` / `save_site_section` | `section_id?`, `name`, `slug?`, `description?`, `hide_from_home?`, `add_new_by_default?`, `show_in_nav?`, `position?` | Sections: separate streams of posts readers can switch on or off. Without `section_id`, makes one |
+| `delete_site_section` | `section_id`, `confirm` | Its posts move to the main publication |
+| `add_subscribers_to_section` | `section_id` | Signs every current subscriber up, silently |
+| `list_site_tags` / `save_site_tag` / `delete_site_tag` | `tag_id?`, `name`, `slug?`, `show_in_nav?`; delete needs `confirm` | Tags; tagging a post with a new name also makes one |
+| `get_site_gifts` / `set_site_gifts` | `enabled` | Gift subscriptions sold at `/gift` |
+| `get_site_groups` / `set_site_group_discount` | `discount_percent` | Group subscriptions (2+ seats of the annual plan) and the discount new groups get |
+| `get_site_referrals` / `update_site_referrals` | `enabled?`, `show_leaderboard?`, `email_line?`, `tiers?` | Referral program; `tiers` is all three, lowest first: `{ threshold, comp?, reward_text? }` |
+| `list_site_recommendations` / `recommend_site` / `remove_site_recommendation` | `slug`, `blurb?`, `show_on_home?` | Recommend other OpenWriter sites; see who recommends yours |
+| `list_my_sites` | *(none)* | Sites you own or joined, with your role |
+| `list_site_team` / `invite_to_team` / `update_team_member` | `email`, `role`, `name?`, `public?`; `member_id` to change | Team: `admin`, `contributor` (posts only) or `byline` (named on posts, no access) |
+| `remove_team_member` | `member_id`, `confirm` | Takes away access; their posts with no other author become the owner's |
+| `accept_team_invite` | `code` | Join a team with the code from the invite email |
+| `list_subscribe_requests` / `decide_subscribe_request` | `status?`; `request_id`, `decision` | Private site: approve or deny readers who ask to subscribe |
+
+- `publish_to_site`: `section` is a section's name, slug or id (empty string for the main publication); `tags` are tag names; `authors` are ids from `list_site_team`, `"owner"` for the owner. A doc published to a team site keeps going to that site.
+- Referral rewards: on a site selling paid plans each tier's `comp` (`7d`, `30d`, `90d`, `6mo`, `1yr`); otherwise its `reward_text` is emailed. Referrals are off while the site is private.
+- A bare domain (`example.com`, `apex: true`) needs a DNS host that can put a CNAME at the root; otherwise use `www`.
 
 ## Author's Voice Plugin
 
