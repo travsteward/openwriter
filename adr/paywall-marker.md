@@ -51,3 +51,9 @@ Options considered:
 - **2026-10-06 — Marked horizontal rule, HTML comment on disk.** Chip F of the publication platform
   mission. Chosen over a new node type to stay inside the block tables that already exist, and over
   a visible text marker so the `.md` stays clean everywhere else.
+
+- **2026-10-07 — Footnotes publish after the wall.** The publish plugin's markdown-it now runs
+  markdown-it-footnote, so the notes render as one `<section class="footnotes">` after every other
+  block. The marker counts only blocks above it, so `wall_at` is unchanged by footnotes; the notes
+  always fall below the wall, and the site shows them only to readers with access
+  (openwriter-publish `adr/site-post-sanitizer.md`). Test 7 in `scripts/test-paywall.mjs`.

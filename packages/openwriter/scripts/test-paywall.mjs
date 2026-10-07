@@ -90,5 +90,16 @@ test('Test 6: no marker, marker at top, two markers, marker inside a quote', () 
   assert(code.ok && code.wall_at === null, 'marker text in a code block is not a marker');
 });
 
+test('Test 7: footnotes publish as footnote html; the notes come last, after the wall', () => {
+  const html = publishHtml('Free[^a] part.\n\n<!-- paywall -->\n\nPaid[^b] part, again[^a].\n\n[^a]: Note *one*.\n[^b]: Note two.\n');
+  assert(html.includes('<sup class="footnote-ref"><a href="#fn1" id="fnref1">1</a></sup>'), `reference reads as its number:\n${html}`);
+  assert(html.includes('<a href="#fn1" id="fnref1:1">1</a>'), 'a repeated reference keeps its number');
+  assert(/<section class="footnotes">\n<ol class="footnotes-list">\n<li id="fn1" class="footnote-item"><p>Note <em>one<\/em>\./.test(html), 'notes in a footnotes section');
+  assert(!/\[\^|<hr/.test(html), 'no raw [^ text and no rule above the notes');
+  const r = placeWall(html);
+  assert(r.ok && r.wall_at === 1, `wall_at counts the blocks above the marker only (got ${JSON.stringify(r.ok ? r.wall_at : r.error)})`);
+  assert(r.ok && /<\/section>\s*$/.test(r.html), 'the notes section stays at the end');
+});
+
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

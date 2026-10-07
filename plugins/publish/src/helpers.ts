@@ -1,4 +1,5 @@
 import MarkdownIt from 'markdown-it';
+import markdownItFootnote from 'markdown-it-footnote';
 import markdownItIns from 'markdown-it-ins';
 import markdownItMark from 'markdown-it-mark';
 import markdownItSub from 'markdown-it-sub';
@@ -109,6 +110,12 @@ md.use(markdownItIns);
 md.use(markdownItMark);
 md.use(markdownItSub);
 md.use(markdownItSup);
+// Footnotes as standard markdown-it-footnote HTML, which writer sites accept and render as side notes
+// (openwriter-publish adr/site-post-sanitizer.md). Two changes from the plugin's defaults: a reference
+// reads as its plain number (not "[1]" or "[1:1]"), and no rule is drawn above the notes.
+md.use(markdownItFootnote);
+md.renderer.rules.footnote_caption = (tokens, idx) => String(Number(tokens[idx].meta.id) + 1);
+md.renderer.rules.footnote_block_open = () => '<section class="footnotes">\n<ol class="footnotes-list">\n';
 
 /** Strip YAML frontmatter and TipTap empty markers from markdown output */
 export function stripFrontmatter(markdown: string): string {
