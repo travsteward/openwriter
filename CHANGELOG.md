@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ## [Unreleased]
 
+## [0.45.0] - 2026-10-06
+
 ### Added
 - Site tools for your own domain, sections and tags: point a domain you own at your site (the tool tells you the DNS records to add and checks them), split posts into sections readers can choose, and tag posts.
 - Growth tools for your site: sell gift subscriptions, offer group subscriptions with a discount, run a referral program with rewards, and recommend other OpenWriter sites.

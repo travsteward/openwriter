@@ -4,7 +4,7 @@
       "command": "npx",
       "args": [
         "-y",
-        "openwriter@0.44.0",
+        "openwriter@0.45.0",
         "--no-open"
       ]
     }
