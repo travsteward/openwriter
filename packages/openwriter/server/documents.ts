@@ -5,7 +5,7 @@
  */
 
 import { existsSync, readFileSync, writeFileSync, readdirSync, statSync, mkdirSync, renameSync } from 'fs';
-import { join } from 'path';
+import { join, basename } from 'path';
 import matter from 'gray-matter';
 import trash from 'trash';
 import { tiptapToMarkdownChecked, markdownToTiptap } from './markdown.js';
@@ -34,33 +34,39 @@ import { getDocId as getActiveDocId } from './state.js';
 
 function getDocOrderFile(): string { return join(getDataDir(), '_doc-order.json'); }
 
-/** Scan files for matching docId. Checks active doc first (free), then getDataDir(), then external docs. */
+/** Find the file holding docId: the active doc first (free), then getDataDir(), then
+ *  external docs. Reads through the listing cache, so an unchanged file costs one stat
+ *  instead of a read and parse. */
 export function filenameByDocId(docId: string): string | null {
   // Fast path: check active document (no disk read)
   if (getActiveDocId() === docId) {
     return getActiveFilename();
   }
 
-  // Scan getDataDir() files
   ensureDataDir();
+  const external = getExternalDocs();
+  const nameFor = (fullPath: string): string | null => {
+    if (external.includes(fullPath)) return fullPath;
+    const f = basename(fullPath);
+    return join(getDataDir(), f) === fullPath ? f : null;
+  };
+  const holds = (fullPath: string): boolean => {
+    try { return existsSync(fullPath) && readListingParse(fullPath).data.docId === docId; } catch { return false; }
+  };
+
+  // A cached parse names the likely file; re-check it, since it may have changed.
+  for (const [fullPath, cached] of listingCache) {
+    if (cached.data.docId !== docId) continue;
+    const name = nameFor(fullPath);
+    if (name && holds(fullPath)) return name;
+  }
+
   for (const f of readdirSync(getDataDir()).filter(f => f.endsWith('.md'))) {
-    try {
-      const raw = readFileSync(join(getDataDir(), f), 'utf-8');
-      const { data } = matter(raw);
-      if (data.docId === docId) return f;
-    } catch { /* skip */ }
+    if (holds(join(getDataDir(), f))) return f;
   }
-
-  // Scan external docs
-  for (const extPath of getExternalDocs()) {
-    try {
-      if (!existsSync(extPath)) continue;
-      const raw = readFileSync(extPath, 'utf-8');
-      const { data } = matter(raw);
-      if (data.docId === docId) return extPath;
-    } catch { /* skip */ }
+  for (const extPath of external) {
+    if (holds(extPath)) return extPath;
   }
-
   return null;
 }
 
@@ -92,7 +98,7 @@ export function reorderDocs(orderedFilenames: string[]): void {
 interface ListingParse { mtimeMs: number; size: number; data: Record<string, any>; content: string; wordCount: number }
 const listingCache = new Map<string, ListingParse>();
 
-function readListingParse(fullPath: string): ListingParse & { mtime: Date } {
+export function readListingParse(fullPath: string): ListingParse & { mtime: Date } {
   const stat = statSync(fullPath);
   const cached = listingCache.get(fullPath);
   if (cached && cached.mtimeMs === stat.mtimeMs && cached.size === stat.size) return { ...cached, mtime: stat.mtime };
@@ -111,6 +117,25 @@ export function warmListingCache(): void {
   for (const p of [...paths, ...getExternalDocs()]) {
     try { readListingParse(p); } catch { /* listing skips unreadable files too */ }
   }
+}
+
+/** Each doc's filename, docId and title as of its last listing read, without
+ *  re-checking the disk. listDocuments stats every file (about 0.4 ms each on
+ *  Windows), which display-only lookups such as activity headlines don't need. */
+export function cachedDocIndex(): Array<{ filename: string; docId?: string; title: string }> {
+  if (listingCache.size === 0) return listDocuments();
+  const wsTitles = getWorkspaceTitleMap();
+  const external = getExternalDocs();
+  const out: Array<{ filename: string; docId?: string; title: string }> = [];
+  for (const [fullPath, { data, content }] of listingCache) {
+    if (data.archivedAt) continue;
+    const name = external.includes(fullPath) ? fullPath
+      : join(getDataDir(), basename(fullPath)) === fullPath ? basename(fullPath) : null;
+    if (!name) continue;
+    const title = resolveListingTitle({ fmTitle: data.title, workspaceTitle: wsTitles.get(name), content, filename: name });
+    out.push({ filename: name, title, ...(data.docId ? { docId: data.docId as string } : {}) });
+  }
+  return out;
 }
 
 export function listDocuments(): DocumentInfo[] {

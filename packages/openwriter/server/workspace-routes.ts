@@ -41,8 +41,14 @@ interface BroadcastFn {
 export function createWorkspaceRouter(b: BroadcastFn): Router {
   const router = Router();
 
-  router.get('/api/workspaces', (_req, res) => {
-    res.json(listWorkspaces());
+  router.get('/api/workspaces', (req, res) => {
+    const list = listWorkspaces();
+    // ?full=1 inlines each workspace's tree, so a client needs one request
+    // instead of one per workspace.
+    if (req.query.full !== '1') return res.json(list);
+    res.json(list.map((w) => {
+      try { return { ...w, workspace: getWorkspace(w.filename) }; } catch { return w; }
+    }));
   });
 
   router.post('/api/workspaces', (req, res) => {

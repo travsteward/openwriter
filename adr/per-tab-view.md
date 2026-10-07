@@ -147,3 +147,19 @@ the user's tab showed one doc while its sidebar highlighted a scratch doc a
 second tab had opened. Sidebar now derives isActive from the tab's own
 activeFilename on every render (plus the clicked doc until the switch
 lands) and ignores the server's flag.
+
+### 2026-10-06 — Nothing is written before the tab's first document
+
+A page on a doc link showed a "changed in another tab" toast with no edit made.
+The editor mounts on a blank placeholder; that counted as an edit, and its 1s
+autosave fired before the socket's first `document-switched` arrived, stamped
+with revision 0. The server refused it because the doc's revision belonged to
+this tab's previous socket. When the doc had no revision yet, the same write
+was accepted against the live doc. The client now holds every doc write until
+the page's first `document-switched` (edits are dropped, review actions wait),
+and the app ignores editor updates while it has no filename. The mount-time
+HTTP fetch of `/api/document` is gone: it returned the server's live doc, not
+this tab's, and could land after the socket's copy and replace it. The deep
+link no longer fetches the doc list to find its filename; it takes it from the
+first `document-switched` whose docId matches. The Backlinks tab reads outbound
+links from this tab's metadata instead of `/api/document`, for the same reason.

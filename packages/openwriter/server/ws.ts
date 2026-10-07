@@ -40,7 +40,7 @@ import {
   type ExternalWriteConflict,
   type DocumentReloaded,
 } from './state.js';
-import { switchDocument, createDocument, deleteDocument, getActiveFilename, promoteTempFile, listDocuments, acceptPendingTitle, rejectPendingTitle, getPendingTitle, resolveDocId } from './documents.js';
+import { switchDocument, createDocument, deleteDocument, getActiveFilename, promoteTempFile, cachedDocIndex, acceptPendingTitle, rejectPendingTitle, getPendingTitle, resolveDocId } from './documents.js';
 import { removeDocFromAllWorkspaces } from './workspaces.js';
 import { commitFromFile } from './commits.js';
 import { canonicalizeIdentifier } from './helpers.js';
@@ -1055,7 +1055,8 @@ function backfillActivityFilenames(entries: ActivityEvent[]): ActivityEvent[] {
   let filenameToDocId: Map<string, string> | null = null;
   let docIdToTitle: Map<string, string> | null = null;
   try {
-    const docs = listDocuments();
+    // Display-only: the cached listing is enough, and a fresh one stats every file.
+    const docs = cachedDocIndex();
     titleToDoc = new Map();
     filenameToDocId = new Map();
     docIdToTitle = new Map();

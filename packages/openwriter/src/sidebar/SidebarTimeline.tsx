@@ -7,7 +7,7 @@ import DocContextMenu, { docMenuTarget, useSidebarPlugins, type DocMenuTarget } 
 import './SidebarTimeline.css';
 import { sidebarRowProps } from './sidebar-keyboard';
 
-export default function SidebarTimeline({ docs, workspaces, assignedFiles, pendingDocs, onSwitchDocument, onCreateDocument, actions, scrollRef, searchQuery, searchResults, searchLoading, searchError }: SidebarModeProps) {
+export default function SidebarTimeline({ docs, docsLoaded, workspaces, assignedFiles, pendingDocs, onSwitchDocument, onCreateDocument, actions, scrollRef, searchQuery, searchResults, searchLoading, searchError }: SidebarModeProps) {
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   // Right-click offers the same doc menu as the file tree.
   const [menu, setMenu] = useState<DocMenuTarget | null>(null);
@@ -111,7 +111,7 @@ export default function SidebarTimeline({ docs, workspaces, assignedFiles, pendi
         </div>
       ))}
 
-      {docs.length === 0 && <div className="sidebar-empty">No documents yet</div>}
+      {docs.length === 0 && <div className="sidebar-empty">{docsLoaded ? 'No documents yet' : 'Loading…'}</div>}
 
       <DocContextMenu
         menu={menu}

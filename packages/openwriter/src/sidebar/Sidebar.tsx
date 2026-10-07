@@ -55,7 +55,7 @@ export const SIDEBAR_DEFAULT_WIDTH = 260;
 export default function Sidebar({ open, onSwitchDocument, onCreateDocument, refreshKey, docTagsRefreshKey, workspacesRefreshKey, pendingDocs, writingTitle, writingTarget, pendingWriteFilenames, activeFilename, onClose, width, onWidthChange, floating }: SidebarProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   usePanelVisibility(panelRef, open, '[title="Open sidebar"]');
-  const { docs: fetchedDocs, workspaces, assignedFiles, fetchDocs, fetchWorkspaces, scrollRef } = useSidebarData(refreshKey, workspacesRefreshKey);
+  const { docs: fetchedDocs, docsLoaded, workspaces, assignedFiles, fetchDocs, fetchWorkspaces, scrollRef } = useSidebarData(refreshKey, workspacesRefreshKey);
 
   // The highlighted doc is the one THIS tab shows. The server's isActive
   // marks its single live doc, which another tab (or an agent) can move, so
@@ -191,7 +191,7 @@ export default function Sidebar({ open, onSwitchDocument, onCreateDocument, refr
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   const modeProps = {
-    docs, archivedDocs: [] as DocumentInfo[], workspaces, assignedFiles, pendingDocs, writingTitle, writingTarget,
+    docs, docsLoaded, archivedDocs: [] as DocumentInfo[], workspaces, assignedFiles, pendingDocs, writingTitle, writingTarget,
     pendingWriteFilenames,
     onSwitchDocument: optimisticSwitchDocument, onCreateDocument, actions, scrollRef,
     searchQuery, searchResults, searchLoading, searchError, onSearchChange,

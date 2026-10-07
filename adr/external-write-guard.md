@@ -97,3 +97,11 @@ There are two independent mechanisms in play, and they must not be confused:
   `save()`, so the guard runs exactly as it does on a real auto-save. 18/0.
   See `adr/pending-overlay-model.md` (2026-06-01 entry) for the shared root
   cause across the three affected tests. Commit: TBD.
+
+### 2026-10-06 — A save writes the file once
+
+`writeToDisk` merged prose `doc:` link targets into `references` with a second,
+frontmatter-only write after the body write. That write landed after
+`loadedMtime` was re-stamped, so the watcher took our own save for an external
+write, reloaded, and the guard then blocked the next save. References are now
+merged into the metadata before serializing, so they ride the one write.

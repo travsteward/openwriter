@@ -1409,3 +1409,10 @@ paragraph. The check now compares each block as it would be saved to disk
 (the serializer's output after stripping ids and pending attrs). Drift is
 drift in what the file holds, nothing else. The reconcile step that detects
 a rewrite stuck in canonical uses the same comparison.
+
+### 2026-10-06 — Diff baseline compares normalized docs
+
+`lastSentDocJson` held raw `JSON.stringify` output. The editor fills unset
+attributes with null and the server omits them, so the gate never matched and
+every editor update was sent as a save. The baseline is now `docKey()` (nulls
+dropped, keys sorted) everywhere it is set or compared.

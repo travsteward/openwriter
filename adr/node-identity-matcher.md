@@ -197,3 +197,10 @@ Editor sessions and canonical document URLs now use stable docId. Filename promo
 ### 2026-10-06 — The paywall rides on horizontalRule identity
 
 - The site paywall marker (`<!-- paywall -->` on disk) parses to a `horizontalRule` with `paywall: true` and serializes back from it (`adr/paywall-marker.md`). It is fingerprinted as an ordinary `hr`: identity tag, slim tuple and matcher rules are unchanged, and the paywall flag comes from the body on every parse.
+
+### 2026-10-06 — References merge before serializing
+
+The references auto-sync no longer re-reads and rewrites the frontmatter after
+the body write; it sets `state.metadata.references` before
+`tiptapToMarkdownChecked`, so `nodes`/`graveyard` and references go out in one
+write (see adr/external-write-guard.md, same date).

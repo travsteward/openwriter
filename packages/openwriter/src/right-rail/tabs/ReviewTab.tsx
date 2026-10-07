@@ -17,7 +17,8 @@ import { usePendingState, derivePendingState } from '../../hooks/usePendingState
 import { setPreviewState, isPreviewActive, getSavedModifiedContent, getPreviewGroupId } from '../../decorations/plugin';
 import { findNodeById, findGroupMembers } from '../../decorations/apply';
 import type { RightRailTabProps } from '../types';
-import type { WorkspaceFull, WorkspaceNode, WorkspaceWithData } from '../../sidebar/sidebar-types';
+import type { WorkspaceNode, WorkspaceWithData } from '../../sidebar/sidebar-types';
+import { loadWorkspaces } from '../../sidebar/sidebar-data';
 import ManuscriptRailSections from './ManuscriptRailSections';
 import BookmarksSection, { BookmarkReturn } from './BookmarksSection';
 import { jumpToBlock } from '../../bookmarks/bookmark-plugin';
@@ -237,17 +238,8 @@ export default function ReviewTab({
     let cancelled = false;
     async function fetchWorkspaces() {
       try {
-        const res = await fetch('/api/workspaces');
-        const wsList: { filename: string; title: string; docCount: number }[] = await res.json();
-        if (!Array.isArray(wsList)) return;
-        const detailed = await Promise.all(wsList.map(async (w) => {
-          try {
-            const r = await fetch(`/api/workspaces/${encodeURIComponent(w.filename)}`);
-            const workspace: WorkspaceFull = await r.json();
-            return { ...w, workspace } as WorkspaceWithData;
-          } catch { return w as WorkspaceWithData; }
-        }));
-        if (!cancelled) setWorkspaces(detailed);
+        const list = await loadWorkspaces();
+        if (list && !cancelled) setWorkspaces(list);
       } catch { /* server unreachable, scope toggle just won't filter */ }
     }
     fetchWorkspaces();

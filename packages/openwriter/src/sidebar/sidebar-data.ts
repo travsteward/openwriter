@@ -1,10 +1,18 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { DocumentInfo, WorkspaceWithData, WorkspaceInfo, WorkspaceFull } from './sidebar-types';
+import type { DocumentInfo, WorkspaceWithData } from './sidebar-types';
 import { collectFiles } from './sidebar-utils';
 import { checkedFetch } from '../utils/request';
 
+/** Every workspace with its tree, in one request. */
+export async function loadWorkspaces(): Promise<WorkspaceWithData[] | null> {
+  const list: WorkspaceWithData[] = await (await checkedFetch('/api/workspaces?full=1')).json();
+  return Array.isArray(list) ? list : null;
+}
+
 export function useSidebarData(refreshKey: number, workspacesRefreshKey: number) {
   const [docs, setDocs] = useState<DocumentInfo[]>([]);
+  // False until the first list arrives, so "loading" never reads as "no documents".
+  const [docsLoaded, setDocsLoaded] = useState(false);
   const [workspaces, setWorkspaces] = useState<WorkspaceWithData[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const docsRequest = useRef(0);
@@ -21,21 +29,19 @@ export function useSidebarData(refreshKey: number, workspacesRefreshKey: number)
   const fetchDocs = useCallback(async () => {
     const request = ++docsRequest.current;
     const data = await (await checkedFetch('/api/documents')).json();
-    if (request === docsRequest.current && Array.isArray(data)) setDocs(data);
+    if (request === docsRequest.current && Array.isArray(data)) {
+      setDocs(data);
+      setDocsLoaded(true);
+    }
   }, []);
 
   const fetchWorkspaces = useCallback(async () => {
     const request = ++workspacesRequest.current;
-    const list: WorkspaceInfo[] = await (await checkedFetch('/api/workspaces')).json();
-    if (!Array.isArray(list)) return;
-    const detailed = await Promise.all(list.map(async w => {
-      const workspace: WorkspaceFull = await (await checkedFetch(`/api/workspaces/${encodeURIComponent(w.filename)}`)).json();
-      return { ...w, workspace };
-    }));
-    if (request === workspacesRequest.current) setWorkspaces(detailed);
+    const list = await loadWorkspaces();
+    if (list && request === workspacesRequest.current) setWorkspaces(list);
   }, []);
 
   useEffect(() => { void fetchDocs().catch(() => {}); }, [fetchDocs, refreshKey]);
   useEffect(() => { void fetchWorkspaces().catch(() => {}); }, [fetchWorkspaces, workspacesRefreshKey]);
-  return { docs, setDocs, workspaces, assignedFiles, fetchDocs, fetchWorkspaces, scrollRef };
+  return { docs, docsLoaded, setDocs, workspaces, assignedFiles, fetchDocs, fetchWorkspaces, scrollRef };
 }

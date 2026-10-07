@@ -8,7 +8,8 @@
  *   - `references:` in frontmatter = source of truth (this doc connects to these).
  *   - Backlinks = computed live (scan all docs' references, return those listing
  *     us). Cached in memory for query-time speed; invalidated on any references
- *     write.
+ *     write. A rebuild re-stats every file but re-parses only the ones whose
+ *     mtime or size changed (sourceLinksCache), sharing the doc listing's read.
  *   - Legacy `doc:` prose links in body keep rendering (TipTap PadLink) AND
  *     auto-populate `references` on save — backward compat.
  *   - Legacy stored `backlinks:` frontmatter field is dropped on any save
@@ -24,7 +25,7 @@ import { readFileSync, existsSync, readdirSync } from 'fs';
 import { join } from 'path';
 import matter from 'gray-matter';
 import { getDataDir, atomicWriteFileSync, resolveDocPath, isExternalDoc } from './helpers.js';
-import { filenameByDocId } from './documents.js';
+import { filenameByDocId, readListingParse } from './documents.js';
 import { markdownToTiptap } from './markdown-parse.js';
 
 const HEX8 = /^[a-f0-9]{8}$/;
@@ -207,19 +208,53 @@ export function writeFrontmatter(filename: string, newData: Record<string, any>)
 /** Inverse index: target docId → list of inbound edges. */
 let backlinksCache: Map<string, Backlink[]> | null = null;
 
-/** Build (or rebuild) the entire inverse index by scanning every .md in the
- *  data dir. Two passes per file: frontmatter references (cheap) + body
- *  paragraph-anchored prose links (parse + walk). For personal corpora of a
- *  few hundred docs this lands in ~1-2 seconds; the cache holds across many
- *  reads, so amortized cost is negligible. */
-function buildBacklinksCache(): Map<string, Backlink[]> {
-  const cache = new Map<string, Backlink[]>();
+/** What one source file contributes, reused until its mtime or size changes.
+ *  The full TipTap parse is the expensive part (seconds across a few hundred
+ *  docs), so a rebuild after a save re-parses only the files that changed, and
+ *  a body with no `doc:` link skips the parse entirely. Frontmatter comes from
+ *  the doc listing's cached read, so the two share one read of each file. The
+ *  disk stays the only source of truth: every rebuild re-stats each file. */
+interface SourceLinks { mtimeMs: number; size: number; data: Record<string, any>; proseLinks: ForwardLink[] }
+const sourceLinksCache = new Map<string, SourceLinks>();
+
+function readSourceLinks(fullPath: string): SourceLinks {
+  const { mtimeMs, size, data, content } = readListingParse(fullPath);
+  const cached = sourceLinksCache.get(fullPath);
+  if (cached && cached.mtimeMs === mtimeMs && cached.size === size) return cached;
+  const docId = data?.docId;
+  let proseLinks: ForwardLink[] = [];
+  if (typeof docId === 'string' && content.includes('doc:')) {
+    // markdownToTiptap can throw on malformed bodies — best-effort skip
+    try { proseLinks = extractForwardLinks(markdownToTiptap(readFileSync(fullPath, 'utf-8')).document, docId); } catch { /* no prose links */ }
+  }
+  const entry = { mtimeMs, size, data: data ?? {}, proseLinks };
+  sourceLinksCache.set(fullPath, entry);
+  return entry;
+}
+
+/** Every data-dir doc's contribution, dropping cached entries for files that are gone. */
+function readAllSourceLinks(): Array<{ filename: string } & SourceLinks> {
   let files: string[] = [];
   try {
     files = readdirSync(getDataDir()).filter((f) => f.endsWith('.md'));
   } catch {
-    return cache;
+    return [];
   }
+  const out: Array<{ filename: string } & SourceLinks> = [];
+  const live = new Set<string>();
+  for (const f of files) {
+    const fullPath = join(getDataDir(), f);
+    live.add(fullPath);
+    try { out.push({ filename: f, ...readSourceLinks(fullPath) }); } catch { /* skip unreadable */ }
+  }
+  for (const p of sourceLinksCache.keys()) if (!live.has(p)) sourceLinksCache.delete(p);
+  return out;
+}
+
+/** Build (or rebuild) the entire inverse index from every .md in the data
+ *  dir: frontmatter references plus paragraph-anchored prose links. */
+function buildBacklinksCache(): Map<string, Backlink[]> {
+  const cache = new Map<string, Backlink[]>();
 
   /** Dedup keys per target: source docs with no `to_node` collapse to one
    *  doc-level entry; paragraph-anchored entries dedup per (from_doc, to_node)
@@ -238,42 +273,30 @@ function buildBacklinksCache(): Map<string, Backlink[]> {
     cache.get(targetDocId)!.push(entry);
   }
 
-  for (const f of files) {
-    try {
-      const raw = readFileSync(join(getDataDir(), f), 'utf-8');
-      const parsed = matter(raw);
-      const sourceDocId = parsed.data?.docId;
-      if (!sourceDocId || typeof sourceDocId !== 'string') continue;
+  for (const { data, proseLinks } of readAllSourceLinks()) {
+    const sourceDocId = data.docId;
+    if (!sourceDocId || typeof sourceDocId !== 'string') continue;
 
-      // Pass 1: structural references (frontmatter). Doc-level only.
-      const refs = parsed.data?.references;
-      if (Array.isArray(refs)) {
-        for (const targetDocId of refs) {
-          if (typeof targetDocId !== 'string') continue;
-          push(targetDocId, { from_doc: sourceDocId });
-        }
+    // Pass 1: structural references (frontmatter). Doc-level only.
+    const refs = data.references;
+    if (Array.isArray(refs)) {
+      for (const targetDocId of refs) {
+        if (typeof targetDocId !== 'string') continue;
+        push(targetDocId, { from_doc: sourceDocId });
       }
+    }
 
-      // Pass 2: paragraph-anchored prose links. Only entries with a #NODEID
-      // anchor in the href contribute — doc-level prose links are already
-      // captured by Pass 1 via the references-auto-sync at save time.
-      try {
-        const tipDoc = markdownToTiptap(raw).document;
-        const proseLinks = extractForwardLinks(tipDoc, sourceDocId);
-        for (const link of proseLinks) {
-          if (!link.to_node) continue; // doc-level — Pass 1 handles it
-          push(link.to_doc, {
-            from_doc: link.from_doc,
-            from_node: link.from_node,
-            to_node: link.to_node,
-            text: link.text,
-          });
-        }
-      } catch {
-        // markdownToTiptap can throw on malformed bodies — best-effort skip
-      }
-    } catch {
-      // skip unreadable
+    // Pass 2: paragraph-anchored prose links. Only entries with a #NODEID
+    // anchor in the href contribute — doc-level prose links are already
+    // captured by Pass 1 via the references-auto-sync at save time.
+    for (const link of proseLinks) {
+      if (!link.to_node) continue; // doc-level — Pass 1 handles it
+      push(link.to_doc, {
+        from_doc: link.from_doc,
+        from_node: link.from_node,
+        to_node: link.to_node,
+        text: link.text,
+      });
     }
   }
   return cache;
@@ -354,32 +377,6 @@ export function syncReferencesFromProse(
 // ============================================================================
 
 /**
- * Read all docs in the data dir, return their parsed frontmatter + tiptap doc.
- * Used by the migration rebuild.
- */
-function loadAllDocsForRebuild(): Array<{ docId: string; filename: string; doc: any; metadata: Record<string, any> }> {
-  const out: Array<{ docId: string; filename: string; doc: any; metadata: Record<string, any> }> = [];
-  let files: string[] = [];
-  try {
-    files = readdirSync(getDataDir()).filter((f) => f.endsWith('.md'));
-  } catch {
-    return out;
-  }
-  for (const f of files) {
-    try {
-      const raw = readFileSync(join(getDataDir(), f), 'utf-8');
-      const parsed = markdownToTiptap(raw);
-      const docId = parsed.metadata?.docId;
-      if (!docId) continue;
-      out.push({ docId, filename: f, doc: parsed.document, metadata: parsed.metadata });
-    } catch {
-      // skip unreadable
-    }
-  }
-  return out;
-}
-
-/**
  * Full rescan: for every doc, extract prose `doc:` links from body and merge
  * their targets into `references:` frontmatter. Also strip any legacy
  * `backlinks:` field. Idempotent — re-running produces no changes if the
@@ -390,16 +387,16 @@ function loadAllDocsForRebuild(): Array<{ docId: string; filename: string; doc: 
  * (with `/api/rebuild-backlinks` kept as a 308 redirect for one release cycle).
  */
 export function rebuildAllReferences(): { scanned: number; updated: number } {
-  const allDocs = loadAllDocsForRebuild();
+  // Shares the backlinks index's per-file parse, so a boot heal leaves that
+  // index warm instead of making the first backlinks request parse every doc.
+  const allDocs = readAllSourceLinks().filter((d) => typeof d.data.docId === 'string' && d.data.docId);
   let updated = 0;
 
   for (const d of allDocs) {
-    const fm = readFrontmatter(d.filename);
-    if (!fm) continue;
+    const fm = d;
 
-    // Extract prose links → docIds
-    const proseLinks = extractForwardLinks(d.doc, d.docId);
-    const proseTargets = new Set(proseLinks.map((l) => l.to_doc));
+    // Prose links → docIds
+    const proseTargets = new Set(d.proseLinks.map((l) => l.to_doc));
 
     // Merge with existing references (dedup)
     const existing: string[] = Array.isArray(fm.data.references) ? fm.data.references : [];

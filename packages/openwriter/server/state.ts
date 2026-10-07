@@ -13,7 +13,7 @@ import { getDataDir, TEMP_PREFIX, ensureDataDir, filePathForTitle, tempFilePath,
 import { snapshotIfNeeded, ensureDocId, forceSnapshot } from './versions.js';
 import { captureAttribution, bindBlameToVersion, type Actor } from './attribution.js';
 import { scheduleAgentCommit } from './commits.js';
-import { syncReferencesFromProse, invalidateBacklinksCache, writeFrontmatter, readFrontmatter as readBacklinkFrontmatter } from './backlinks.js';
+import { syncReferencesFromProse, invalidateBacklinksCache } from './backlinks.js';
 import { isAutoAcceptInheritedForDoc } from './workspaces.js';
 import { matchNodes, type NodeEntry } from './node-matcher.js';
 import { tiptapToBlocks, applyIdsToTiptap } from './node-blocks.js';
@@ -2577,6 +2577,21 @@ function writeToDisk(actor: Actor = 'human'): void {
       console.error('[Enrichment] staleness check failed:', err);
     }
 
+    // Auto-sync references from prose: legacy `doc:` prose links still render
+    // (PadLink extension), but the graph/crawl/backlinks-panel read the
+    // structural `references:` field. Merge the body's prose-link targets into
+    // references BEFORE serializing, so they ride the one write below. A second
+    // frontmatter-only write after it left loadedMtime behind the file, and the
+    // watcher then took our own save for an external edit.
+    if (state.docId) {
+      try {
+        const sync = syncReferencesFromProse(state.docId, state.document, state.metadata || {});
+        if (sync && state.metadata) state.metadata.references = sync.newReferences;
+      } catch (err) {
+        console.error('[State] references auto-sync failed:', err);
+      }
+    }
+
     // Pass graveyard through metadata so the serializer can emit it in frontmatter.
     const metaWithGraveyard = nextGraveyard.length > 0
       ? { ...state.metadata, graveyard: nextGraveyard.map((g) => ({ id: g.id, fp: g.fingerprint })) }
@@ -2694,31 +2709,9 @@ function writeToDisk(actor: Actor = 'human'): void {
     try { bindBlameToVersion(state.docId, snapshotTs); } catch { /* best-effort */ }
   }
 
-  // Auto-sync references from prose: legacy `doc:` prose links still render
-  // (PadLink extension), but the graph/crawl/backlinks-panel read the
-  // structural `references:` field. After every save, scan the body for
-  // prose links and merge their targets into references — backward compat
-  // without forcing rewrites. Then invalidate the live-backlinks cache so
-  // the next /api/backlinks/:docId call sees the fresh inverse.
-  // Best-effort — never blocks the save it follows.
-  if (!isExternalDoc(state.filePath) && state.docId) {
-    try {
-      const sync = syncReferencesFromProse(state.docId, state.document, state.metadata || {});
-      if (sync && state.metadata) {
-        state.metadata.references = sync.newReferences;
-        // Second tiny write: re-persist frontmatter only (body already on disk).
-        // Merge onto the frontmatter just written: state.metadata lacks the
-        // serializer's `nodes`/`graveyard`, and replacing with it would erase
-        // the identity graph. adr: adr/node-identity-matcher.md
-        const filename = state.filePath.split(/[/\\]/).pop() || '';
-        const fm = readBacklinkFrontmatter(filename);
-        if (fm) writeFrontmatter(filename, { ...fm.data, references: sync.newReferences });
-      }
-    } catch (err) {
-      console.error('[State] references auto-sync failed:', err);
-    }
-    invalidateBacklinksCache();
-  }
+  // The body (and its references, merged before serializing) changed: the
+  // next /api/backlinks/:docId call re-reads this file.
+  if (!isExternalDoc(state.filePath) && state.docId) invalidateBacklinksCache();
 }
 
 export function save(actor?: Actor): void {

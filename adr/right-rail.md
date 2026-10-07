@@ -251,3 +251,11 @@ Manifest/Preview toggle: an outline offers its manuscript (or Build
 manuscript), a manuscript lists outline chapters it lacks with Add, and the
 Books launcher opens each book's manuscript. Both read one book status
 (GET /api/book) for the doc the tab shows.
+
+### 2026-10-06 — Activity seed reads the cached listing
+
+The on-connect activity backfill built a full `listDocuments()`, which stats
+every file (about 0.4 ms each on Windows), while the tab waited for its doc.
+Headlines are display-only, so it now uses `cachedDocIndex()`, the listing
+cache without re-checking the disk. The Backlinks tab's outbound list comes from
+this tab's metadata (see adr/per-tab-view.md, same date).

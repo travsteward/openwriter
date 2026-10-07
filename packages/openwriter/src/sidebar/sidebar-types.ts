@@ -102,6 +102,8 @@ export interface SearchResult {
 
 export interface SidebarModeProps {
   docs: DocumentInfo[];
+  /** False until the first document list arrives. */
+  docsLoaded: boolean;
   archivedDocs: DocumentInfo[];
   workspaces: WorkspaceWithData[];
   assignedFiles: Set<string>;

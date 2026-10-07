@@ -5,8 +5,8 @@
  * frontmatter array. The /api/backlinks/:docId endpoint already exists for
  * the in-prose decoration system; we reuse it here.
  *
- * Outbound: read from the active doc's `references:` frontmatter — pulled
- * directly from the live metadata broadcast via `metadata-changed`, so it
+ * Outbound: this tab's doc's `references:` frontmatter, passed down from the
+ * metadata App holds for it (kept current by `metadata-changed`), so it
  * stays in sync as the agent (or a paste of a doc: link) updates it.
  *
  * adr: adr/right-rail.md
@@ -34,10 +34,11 @@ interface ResolvedEntry {
   snippet?: string;
 }
 
-export default function BacklinksTab({ docId, currentFilename, onSwitchDocument }: RightRailTabProps) {
+const NO_REFERENCES: string[] = [];
+
+export default function BacklinksTab({ docId, references, onSwitchDocument }: RightRailTabProps) {
   const [docsById, setDocsById] = useState<Map<string, DocSummary>>(new Map());
   const [inbound, setInbound] = useState<InboundEntry[]>([]);
-  const [outboundIds, setOutboundIds] = useState<string[]>([]);
   const [loadingDocs, setLoadingDocs] = useState(true);
   const [loadingLinks, setLoadingLinks] = useState(false);
 
@@ -94,28 +95,10 @@ export default function BacklinksTab({ docId, currentFilename, onSwitchDocument 
     };
   }, [docId]);
 
-  // Outbound: read the active doc's references array. Fetched from /api/document
-  // which returns the live in-memory state with current metadata.
-  useEffect(() => {
-    let cancelled = false;
-    const load = () => {
-      fetch('/api/document')
-        .then((r) => r.json())
-        .then((data) => {
-          if (cancelled) return;
-          const refs = data?.metadata?.references;
-          setOutboundIds(Array.isArray(refs) ? refs : []);
-        })
-        .catch(() => { if (!cancelled) setOutboundIds([]); });
-    };
-    load();
-    const onMeta = () => load();
-    window.addEventListener('ow-metadata-changed', onMeta);
-    return () => {
-      cancelled = true;
-      window.removeEventListener('ow-metadata-changed', onMeta);
-    };
-  }, [currentFilename, docId]);
+  // Outbound: this tab's doc's references array, from the metadata App holds
+  // for it. /api/document returned the server's live doc, which another tab
+  // or an agent may have moved to a different doc. adr: adr/per-tab-view.md
+  const outboundIds = references ?? NO_REFERENCES;
 
   const inboundResolved = useMemo<ResolvedEntry[]>(() => {
     return inbound

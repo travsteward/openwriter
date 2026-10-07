@@ -1,5 +1,5 @@
 import { useFocusMode } from './hooks/useFocusMode';
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { Editor } from '@tiptap/react';
 
 import PadEditor from './editor/PadEditor';
@@ -23,7 +23,6 @@ import { setBacklinksData, forceBacklinkRefresh } from './decorations/backlinks-
 import { setAttributionData, setAttributionEnabled, forceAttributionRefresh, type Origin } from './decorations/attribution-plugin';
 import { getSidebarMode } from './themes/appearance-store';
 
-import TweetComposeView from './tweet-compose/TweetComposeView';
 import ArticleComposeView from './article-compose/ArticleComposeView';
 import BlogComposeView from './blog-compose/BlogComposeView';
 import { TextNewsletterView } from './newsletter-compose/NewsletterComposeView';
@@ -31,6 +30,9 @@ import { articleExtensions } from './editor/extensions';
 import type { ParsedLinkHref } from './editor/link-href';
 import { useReadingSpot, isSpotRestored } from './editor/useReadingSpot';
 import './decorations/styles.css';
+
+// Loaded on first use: it carries twitter-text, which no other view needs.
+const TweetComposeView = lazy(() => import('./tweet-compose/TweetComposeView'));
 
 /** Responsive overlay layout: below this editor-area width (container width
  *  minus any docked panels) the panels stop pushing the doc and float over it
@@ -244,7 +246,9 @@ export default function App() {
   } | null>(null);
   const docUpdateTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastDocJson = useRef<any>(null); // Latest merged doc JSON (covers tweet compose where editorRef is only first tweet)
-  // Diff-gate: stringified JSON of what we last successfully synced with the server.
+  // Diff-gate: docKey() of what we last successfully synced with the server (the
+  // editor fills unset attributes with null and the server omits them, so raw
+  // JSON never matched and every onUpdate was sent).
   // The autosave timer compares the current editor state to this and SKIPS the send
   // when they're equal. Without this, any TipTap onUpdate (server broadcasts, reconnect
   // rehydration, decoration refreshes, React re-renders that pass new initialContent)
@@ -316,27 +320,11 @@ export default function App() {
     return () => window.removeEventListener('ow-sidebar-mode-change', handler);
   }, []);
 
+  // The doc this tab shows and the pending-docs state both arrive on the
+  // WebSocket's first messages. An HTTP fetch of /api/document here returned
+  // the server's live doc, not this tab's, and could land after the socket's
+  // copy and replace it. adr: adr/per-tab-view.md
   useEffect(() => {
-    fetch('/api/document', { cache: 'no-store' })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.document) {
-          setInitialContent(data.document);
-          lastDocJson.current = data.document;
-        }
-        if (data.title) setTitle(data.title);
-        if (data.metadata) setMetadata(data.metadata);
-      })
-      .catch(() => {
-        setInitialContent(undefined);
-      });
-
-    // Fetch pending docs state
-    fetch('/api/pending-docs')
-      .then((res) => res.json())
-      .then((data) => setPendingDocs(data))
-      .catch(() => {});
-
     // Fetch initial sync status
     fetch('/api/sync/status')
       .then((res) => res.json())
@@ -403,12 +391,12 @@ export default function App() {
     // send it now. Otherwise the newer copy wins, and the user is told rather
     // than losing the edits silently. adr: adr/per-tab-view.md
     const hasUnsent = isSameDoc && !wasEmpty && (!!payload.onReconnect || payload.navigation === 'refresh')
-      && lastDocJson.current != null && JSON.stringify(lastDocJson.current) !== lastSentDocJson.current;
+      && lastDocJson.current != null && docKey(lastDocJson.current) !== lastSentDocJson.current;
     // Proof of "unchanged" is the server's copy matching what this tab last
     // sent. Versions cannot prove it: a server restart resets them while the
     // file may have changed on disk.
     const keepUnsent = hasUnsent && !!payload.onReconnect && lastSentDocJson.current != null
-      && docKey(payload.document) === docKey(JSON.parse(lastSentDocJson.current));
+      && docKey(payload.document) === lastSentDocJson.current;
     if (hasUnsent && !keepUnsent) {
       showToast('This document changed elsewhere, so your last edits here could not be saved.', 'error', 9000);
     }
@@ -425,14 +413,14 @@ export default function App() {
       }
       lastDocJson.current = payload.document;
       // Authoritative state from the server — diff-gate baseline resets to this.
-      lastSentDocJson.current = JSON.stringify(payload.document);
+      lastSentDocJson.current = docKey(payload.document);
     }
     currentFilename.current = payload.filename;
     currentDocId.current = payload.docId ?? '';
     setActiveFilename(payload.filename);
     if (!keepContent) setInitialContent(payload.document);
     if (keepUnsent) {
-      const docStr = JSON.stringify(lastDocJson.current);
+      const docStr = docKey(lastDocJson.current);
       if (sendMessage({ type: 'doc-update', document: lastDocJson.current, filename: payload.filename, version: docVersionRef.current })) {
         lastSentDocJson.current = docStr;
       }
@@ -549,7 +537,7 @@ export default function App() {
     }
     lastDocJson.current = payload.document;
     // Authoritative state from disk — diff-gate baseline resets to this.
-    lastSentDocJson.current = JSON.stringify(payload.document);
+    lastSentDocJson.current = docKey(payload.document);
     setInitialContent(payload.document);
     setTitle(payload.title);
     setMetadata(payload.metadata || {});
@@ -583,10 +571,15 @@ export default function App() {
     setWorkspacesRefreshKey((k) => k + 1);
   }, []);
 
+  // The socket's first message on a page is a seed of the current state, which
+  // the sidebar's own first fetch already reflects; refetching on it threw that
+  // fetch away and left the list empty until a second one finished.
+  const pendingDocsSeeded = useRef(false);
   const handlePendingDocsChanged = useCallback((data: PendingDocsPayload) => {
     setPendingDocs(data);
     // Pending changes count as doc activity, so the listing's order can move.
-    setSidebarRefreshKey((k) => k + 1);
+    if (pendingDocsSeeded.current) setSidebarRefreshKey((k) => k + 1);
+    pendingDocsSeeded.current = true;
   }, []);
 
   const { connected, sendMessage, docVersionRef } = useWebSocket({
@@ -682,7 +675,7 @@ export default function App() {
     if (!doc) return;
     // Diff-gate applies to flush too — no point shipping a duplicate state right
     // before switch_document does its own save.
-    const docStr = JSON.stringify(doc);
+    const docStr = docKey(doc);
     if (docStr === lastSentDocJson.current) return;
     if (sendMessage({ type: 'doc-update', document: doc, filename: currentFilename.current, version: docVersionRef.current })) {
       lastSentDocJson.current = docStr;
@@ -781,7 +774,33 @@ export default function App() {
    *   2. filename → direct switch (legacy fallback)
    *   3. nodeId / quote scroll: stashed in pendingScroll, consumed on editor ready
    */
-  const handleLinkClick = useCallback(async (target: ParsedLinkHref, openedOnConnect = false) => {
+  /** Stash where the doc about to show should scroll, and reveal it in the sidebar. */
+  const aimAtDoc = useCallback((filename: string, target: ParsedLinkHref) => {
+    // Stash scroll target — consumed when the new doc finishes loading.
+    // A doc-level link (`doc:DOCID` with no #nodeId and no ?q=quote) defaults
+    // to scroll-to-top. Without this the editor would keep whatever scrollTop
+    // the prior doc left behind, which lands the user mid-doc or at the bottom.
+    if (target.nodeId || target.quote) {
+      pendingScroll.current = {
+        filename,
+        nodeId: target.nodeId || undefined,
+        quote: target.quote || undefined,
+      };
+    } else {
+      pendingScroll.current = { filename, toTop: true };
+    }
+    setScrollRequest(n => n + 1);
+    // Directed open (deep link / backlink / wikilink) — relocate the filetree to
+    // this doc. The sidebar hook holds this intent until the doc is active and
+    // the tree has loaded, so firing now (even before the switch lands, or when
+    // it's already the active doc) is safe. setTimeout, not rAF: rAF is paused in
+    // a backgrounded tab, where deep links commonly open.
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('ow-reveal-active-doc', { detail: { filename } }));
+    }, 0);
+  }, []);
+
+  const handleLinkClick = useCallback(async (target: ParsedLinkHref) => {
     let filename: string | null = null;
     if (target.docId) {
       try {
@@ -799,30 +818,9 @@ export default function App() {
       console.warn('[link] could not resolve doc: target', target);
       return;
     }
-    // Stash scroll target — consumed when the new doc finishes loading.
-    // A doc-level link (`doc:DOCID` with no #nodeId and no ?q=quote) defaults
-    // to scroll-to-top. Without this the editor would keep whatever scrollTop
-    // the prior doc left behind, which lands the user mid-doc or at the bottom.
-    if (target.nodeId || target.quote) {
-      pendingScroll.current = {
-        filename,
-        nodeId: target.nodeId || undefined,
-        quote: target.quote || undefined,
-      };
-    } else {
-      pendingScroll.current = { filename, toTop: true };
-    }
-    setScrollRequest(n => n + 1);
-    if (!openedOnConnect) handleSwitchDocument(filename);
-    // Directed open (deep link / backlink / wikilink) — relocate the filetree to
-    // this doc. The sidebar hook holds this intent until the doc is active and
-    // the tree has loaded, so firing now (even before the switch lands, or when
-    // it's already the active doc) is safe. setTimeout, not rAF: rAF is paused in
-    // a backgrounded tab, where deep links commonly open.
-    setTimeout(() => {
-      window.dispatchEvent(new CustomEvent('ow-reveal-active-doc', { detail: { filename } }));
-    }, 0);
-  }, [handleSwitchDocument]);
+    aimAtDoc(filename, target);
+    handleSwitchDocument(filename);
+  }, [aimAtDoc, handleSwitchDocument]);
 
   // Listen for backlinks-panel "navigate to source" events from ContextMenu.
   useEffect(() => {
@@ -837,22 +835,24 @@ export default function App() {
   // Deep-link boot: /d/{docId} or /d/{docId}#node={nodeId}.
   // The WebSocket handshake carries the docId (?open=), so the server opens
   // the linked doc as this tab's first document; a switch sent from here would
-  // race the socket opening and be dropped. This effect only resolves the
-  // filename, stashes the scroll target, and reveals the doc in the sidebar.
-  // The URL bar then flips to the
-  // canonical `#{filename}` form on successful load — the /d/{docId} URL is
-  // an entry point, not a persistent state.
-  const deepLinkBootRef = useRef(false);
-  useEffect(() => {
-    if (deepLinkBootRef.current) return;
-    deepLinkBootRef.current = true;
+  // race the socket opening and be dropped. The server's first document names
+  // the filename, so this only waits for it, then stashes the scroll target and
+  // reveals the doc in the sidebar. An unknown docId falls back to the live
+  // doc, which the link did not ask for, so nothing is aimed. The URL bar then
+  // flips to the canonical `#{filename}` form — the /d/{docId} URL is an entry
+  // point, not a persistent state. adr: adr/per-tab-view.md
+  const deepLinkTarget = useRef<ParsedLinkHref | null | undefined>(undefined);
+  if (deepLinkTarget.current === undefined) {
     const pathMatch = window.location.pathname.match(/^\/d\/([a-f0-9]{8})\/?$/);
-    if (!pathMatch) return;
-    const docId = pathMatch[1];
     const nodeMatch = window.location.hash.match(/^#node=([a-f0-9]{8})$/);
-    const nodeId = nodeMatch ? nodeMatch[1] : null;
-    handleLinkClick({ docId, filename: null, nodeId, quote: null }, true);
-  }, [handleLinkClick]);
+    deepLinkTarget.current = pathMatch ? { docId: pathMatch[1], filename: null, nodeId: nodeMatch ? nodeMatch[1] : null, quote: null } : null;
+  }
+  useEffect(() => {
+    const target = deepLinkTarget.current;
+    if (!target || !activeFilename) return;
+    deepLinkTarget.current = null;
+    if (currentDocId.current === target.docId) aimAtDoc(activeFilename, target);
+  }, [activeFilename, aimAtDoc]);
 
   // A page refresh returns to the same spot, cursor and focus.
   useReadingSpot(editorInstance, metadata?.docId);
@@ -1093,6 +1093,9 @@ export default function App() {
   // during the debounce window.
   // adr: adr/node-identity-matcher.md
   const handleDocUpdate = useCallback((json: any) => {
+    // Before the server's first document lands, the editor holds a blank
+    // placeholder, not this tab's doc: there is nothing to save. adr: adr/per-tab-view.md
+    if (currentFilename.current === '') return;
     lastDocJson.current = json;
     if (docUpdateTimer.current) clearTimeout(docUpdateTimer.current);
     docUpdateTimer.current = setTimeout(() => {
@@ -1103,7 +1106,7 @@ export default function App() {
       // pass new initialContent. Without this gate, those events round-trip
       // back to the server and can resurrect overlay entries the server
       // already resolved, or burn save cycles on docs that haven't changed.
-      const freshStr = JSON.stringify(fresh);
+      const freshStr = docKey(fresh);
       if (freshStr === lastSentDocJson.current) return;
       if (sendMessage({ type: 'doc-update', document: fresh, filename: currentFilename.current, version: docVersionRef.current })) {
         lastSentDocJson.current = freshStr;
@@ -1297,18 +1300,20 @@ export default function App() {
               />
             </TextNewsletterView>
           ) : (isTweet && metadata?.tweetContext) ? (
-            <TweetComposeView
-              key={activeDocKey}
-              tweetContext={metadata.tweetContext}
-              initialContent={initialContent}
-              onUpdate={handleDocUpdate}
-              onEditorReady={handleEditorReady}
-              onEditorsChange={handleEditorsChange}
-              onActiveEditorChange={setActiveEditor}
-              filename={activeFilename}
-              title={title}
-              autoplug={metadata?.autoplug as boolean | undefined}
-            />
+            <Suspense fallback={null}>
+              <TweetComposeView
+                key={activeDocKey}
+                tweetContext={metadata.tweetContext}
+                initialContent={initialContent}
+                onUpdate={handleDocUpdate}
+                onEditorReady={handleEditorReady}
+                onEditorsChange={handleEditorsChange}
+                onActiveEditorChange={setActiveEditor}
+                filename={activeFilename}
+                title={title}
+                autoplug={metadata?.autoplug as boolean | undefined}
+              />
+            </Suspense>
           ) : (
             <PadEditor
               documentId={(metadata?.docId as string) || activeFilename}
@@ -1332,6 +1337,7 @@ export default function App() {
         pendingDocs={pendingDocs}
         currentFilename={activeFilename}
         docId={(metadata?.docId as string) || null}
+        references={Array.isArray(metadata?.references) ? metadata.references as string[] : undefined}
         manuscriptStyle={metadata?.manuscriptContext?.paragraphStyle as string | undefined}
         pendingTitle={pendingTitle}
         onSwitchDocument={handleSwitchDocument}

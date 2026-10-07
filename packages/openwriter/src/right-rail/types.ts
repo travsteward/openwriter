@@ -30,6 +30,8 @@ export interface RightRailTabProps {
   pendingDocs: PendingDocsPayload;
   currentFilename: string;
   docId: string | null;
+  /** The docIds this tab's doc links to (its `references` frontmatter). */
+  references?: string[];
   /** Agent-staged title rename for the active doc, or null if none staged.
    *  Owned by App so the value is consistent across surfaces (article title,
    *  Review panel). adr: adr/pending-overlay-model.md */

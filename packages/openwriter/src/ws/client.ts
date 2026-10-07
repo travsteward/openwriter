@@ -127,6 +127,9 @@ export function useWebSocket({ onNodeChanges, onAgentStatus, onDocumentSwitched,
   const reconnectingRef = useRef(false);
   // The server's revision of the doc this tab shows, as of its last copy.
   const revRef = useRef(0);
+  // False until this page's first document-switched: before it, revRef names
+  // no revision this tab was given, so a write could not be checked.
+  const seededRef = useRef(false);
   const getViewFilenameRef = useRef(getViewFilename);
   getViewFilenameRef.current = getViewFilename;
   // Document version counter — tracks last version seen from agent writes
@@ -227,6 +230,7 @@ export function useWebSocket({ onNodeChanges, onAgentStatus, onDocumentSwitched,
 
           if (msg.type === 'document-switched') {
             revRef.current = typeof msg.rev === 'number' ? msg.rev : 0;
+            seededRef.current = true;
             // Deliver navigation intent before React adopts the new active doc.
             // A refresh is not navigation. adr: adr/sidebar-navigation-intent.md
             if (msg.navigation !== 'refresh') {
@@ -434,6 +438,13 @@ export function useWebSocket({ onNodeChanges, onAgentStatus, onDocumentSwitched,
   /** Returns true only when the message went out. A message sent while the
    *  socket is closed waits in the outbox, except edits (see outboxRef). */
   const sendMessage = useCallback((msg: Record<string, any>): boolean => {
+    // A write before this page's first document is built on nothing the server
+    // sent: an edit is dropped, anything else waits for the document.
+    // adr: adr/per-tab-view.md
+    if (DOC_WRITES.has(msg.type) && !seededRef.current) {
+      if (msg.type !== 'doc-update') outboxRef.current.push(msg);
+      return false;
+    }
     // Stamped once, when first sent: a queued write keeps the revision it was built on.
     if (DOC_WRITES.has(msg.type) && msg.rev === undefined) msg = { ...msg, rev: revRef.current };
     if (wsRef.current?.readyState === WebSocket.OPEN) {
