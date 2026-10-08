@@ -12,7 +12,7 @@ import { tiptapToMarkdownChecked, markdownToTiptap } from './markdown.js';
 import { deriveContentType } from './content-type-meta.js';
 import { parseMarkdownContent } from './compact.js';
 import {
-  getDocument, getTitle, getFilePath, getIsTemp, getMetadata, save, cancelDebouncedSave, setActiveDocument,
+  getDocument, getTitle, getLastModified, getFilePath, getIsTemp, getMetadata, save, cancelDebouncedSave, setActiveDocument,
   registerExternalDoc, unregisterExternalDoc, getExternalDocs,
   cacheActiveDocument, getCachedDocument, invalidateDocCache, removePendingCacheEntry, setPendingCacheEntry,
   resetDocVersion, markAsAgentStub, unmarkAgentStub, isAgentStub, updateDocument, writeResolvedDocFile,
@@ -209,15 +209,20 @@ export function listDocuments(): DocumentInfo[] {
       }
       const { data, content, wordCount, mtime } = readListingParse(extPath);
       const stat = { mtime };
-      const title = resolveListingTitle({ fmTitle: data.title, workspaceTitle: wsTitles.get(extPath), content, filename: extPath });
+      // External files never get OpenWriter frontmatter, so the open doc's title
+      // and latest edit live only in memory; list those rather than the file's.
+      const isActive = extPath === currentPath;
+      const title = isActive && getTitle() ? getTitle() : resolveListingTitle({ fmTitle: data.title, workspaceTitle: wsTitles.get(extPath), content, filename: extPath });
+      const lastActivity = isActive && getLastModified() > mtime ? getLastModified() : mtime;
 
       files.push({
         filename: extPath, // Full path as identifier
         title,
         path: extPath,
         lastModified: stat.mtime.toISOString(),
+        lastActivity: lastActivity.toISOString(),
         wordCount,
-        isActive: extPath === currentPath,
+        isActive,
         ...(data.docId ? { docId: data.docId as string } : {}),
         ...(data.newsletterContext?.lastSend?.sentAt ? { lastSent: data.newsletterContext.lastSend.sentAt } : data.tweetContext?.lastPost?.postedAt ? { lastSent: data.tweetContext.lastPost.postedAt } : data.blogContext?.lastPublish?.publishedAt ? { lastSent: data.blogContext.lastPublish.publishedAt } : data.articleContext?.lastPost?.postedAt ? { lastSent: data.articleContext.lastPost.postedAt } : {}),
         ...(data.tweetContext?.lastPost?.tweetUrl ? { postedUrl: data.tweetContext.lastPost.tweetUrl } : data.articleContext?.lastPost?.tweetUrl ? { postedUrl: data.articleContext.lastPost.tweetUrl } : data.blogContext?.lastPublish?.publishedUrl ? { postedUrl: data.blogContext.lastPublish.publishedUrl } : {}),

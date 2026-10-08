@@ -1092,6 +1092,10 @@ export function setMetadata(updates: Record<string, any>): void {
   }
 }
 
+export function getLastModified(): Date {
+  return state.lastModified;
+}
+
 export function getStatus() {
   return {
     title: state.title,
