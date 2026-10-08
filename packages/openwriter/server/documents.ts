@@ -212,7 +212,7 @@ export function listDocuments(): DocumentInfo[] {
       // External files never get OpenWriter frontmatter, so the open doc's title
       // and latest edit live only in memory; list those rather than the file's.
       const isActive = extPath === currentPath;
-      const title = isActive && getTitle() ? getTitle() : resolveListingTitle({ fmTitle: data.title, workspaceTitle: wsTitles.get(extPath), content, filename: extPath });
+      const title = resolveListingTitle({ fmTitle: isActive ? getTitle() : data.title, workspaceTitle: wsTitles.get(extPath), content, filename: extPath });
       const lastActivity = isActive && getLastModified() > mtime ? getLastModified() : mtime;
 
       files.push({
