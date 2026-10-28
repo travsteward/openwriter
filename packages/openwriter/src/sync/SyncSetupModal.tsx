@@ -81,6 +81,8 @@ export default function SyncSetupModal({ onClose, onSetupComplete }: SyncSetupMo
     fetch('/api/sync/repos')
       .then(async (r) => {
         const data = await r.json().catch(() => ({}));
+        // An expired sign-in shows the Sign in button with the reason, not a dead end.
+        if (data.signIn) { setSignedIn(false); setDeviceMsg(data.error); return; }
         if (!r.ok) throw new Error(data.error || 'Could not reach GitHub');
         setRepos(data.repos || []);
         setDeviceName((name) => name || data.deviceSuggestion || '');

@@ -317,9 +317,10 @@ function isDocsListing(entries: any[]): boolean {
  */
 export async function findDocsRepos(): Promise<{ login: string; name?: string; repos: DocsRepo[] }> {
   const token = await readToken();
-  if (!token) throw new Error('Sign in with GitHub first');
+  // `signIn` marks the errors the setup window answers with its Sign in button.
+  if (!token) throw Object.assign(new Error('Sign in with GitHub first'), { signIn: true });
   const user = await githubApi('/user', token);
-  if (user.status === 401) throw new Error('GitHub sign-in expired. Sign in again.');
+  if (user.status === 401) throw Object.assign(new Error('GitHub sign-in expired. Sign in again.'), { signIn: true });
   if (user.status !== 200) throw new Error(`GitHub returned ${user.status}`);
   const list = await githubApi('/user/repos?per_page=100&sort=pushed&affiliation=owner', token);
   const all: any[] = Array.isArray(list.body) ? list.body : [];

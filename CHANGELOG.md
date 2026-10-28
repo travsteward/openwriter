@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 - The Workspace type window opens centered with a solid background, and every other pop-up window is centered again.
 - Documents open at once when GitHub sync is on. Opening one used to wait almost a second for GitHub; the check now runs alongside, and a newer copy from GitHub still reloads the document in place.
 - What you type while GitHub sync brings in another device's changes is kept. Those changes used to replace the open document whole, dropping the last few seconds of typing.
+- The Sync with GitHub window follows the dark theme: its notices, buttons and labels no longer show light-theme colors. When the GitHub sign-in has expired, it shows the Sign in button with the reason, instead of a form that cannot work.
 
 ## [0.51.1] - 2026-10-26
 

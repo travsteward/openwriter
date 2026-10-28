@@ -10,6 +10,7 @@
 
 .sync-modal {
   background: var(--bg-surface);
+  border: 1px solid var(--border);
   border-radius: 12px;
   width: 440px;
   max-width: 90vw;
@@ -62,8 +63,8 @@
   transition: all 0.15s;
 }
 
-.sync-tab:hover { background: rgba(0, 0, 0, 0.04); }
-.sync-tab.active { background: var(--accent); color: white; }
+.sync-tab:hover { background: var(--bg-hover); }
+.sync-tab.active { background: var(--accent); color: var(--bg-primary); }
 
 .sync-form {
   display: flex;
@@ -76,7 +77,7 @@
   flex-direction: column;
   gap: 4px;
   font-size: 13px;
-  color: var(--ink-light);
+  color: var(--ink-body);
 }
 
 .sync-form input[type="text"],
@@ -105,9 +106,13 @@
 
 .sync-hint {
   font-size: 13px;
-  color: var(--ink-light);
-  margin-bottom: 4px;
+  line-height: 1.5;
+  color: var(--ink-body);
+  margin: 0 0 4px;
 }
+
+/* The intro line stands apart from the fields under it. */
+.sync-modal-body > .sync-hint:first-child { margin-bottom: 16px; }
 
 .sync-hint a { color: var(--accent); }
 .sync-hint code { font-size: 12px; }
@@ -129,10 +134,11 @@
 }
 
 .sync-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.sync-btn.primary { background: var(--accent); color: white; }
+/* Page-colored text: white on the light theme's slate, near-black on the dark theme's pale blue. */
+.sync-btn.primary { background: var(--accent); color: var(--bg-primary); font-weight: 500; }
 .sync-btn.primary:hover:not(:disabled) { opacity: 0.9; }
-.sync-btn.secondary { background: rgba(0, 0, 0, 0.06); color: var(--ink-dark); }
-.sync-btn.secondary:hover { background: rgba(0, 0, 0, 0.1); }
+.sync-btn.secondary { background: var(--bg-hover); color: var(--ink-dark); }
+.sync-btn.secondary:hover:not(:disabled) { background: var(--border); }
 
 .sync-spinner {
   width: 24px;
@@ -161,10 +167,11 @@
   margin: 0 auto 12px;
 }
 
+/* Notices take the theme's red and amber, so they read in light and dark. */
 .sync-error-msg {
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  color: #dc2626;
+  background: var(--color-pending-delete-bg);
+  border-left: 3px solid var(--color-pending-delete);
+  color: var(--ink-dark);
   padding: 10px 14px;
   border-radius: 6px;
   font-size: 13px;
@@ -172,9 +179,9 @@
 }
 
 .sync-warning {
-  background: #fffbeb;
-  border: 1px solid #fed7aa;
-  color: #92400e;
+  background: var(--color-pending-stale-bg);
+  border-left: 3px solid var(--color-pending-stale);
+  color: var(--ink-dark);
   padding: 10px 14px;
   border-radius: 6px;
   font-size: 13px;
@@ -206,4 +213,4 @@
   text-align: left;
 }
 .sync-other { margin-top: 16px; font-size: 13px; }
-.sync-other summary { cursor: pointer; color: var(--ink-light, #777); margin-bottom: 8px; }
+.sync-other summary { cursor: pointer; color: var(--ink-body); margin-bottom: 8px; }

@@ -99,7 +99,7 @@ const plugin: OpenWriterPlugin = {
         res.json({ repos: found.repos, login: found.login, deviceSuggestion: suggestDeviceName(found.name || found.login) });
       } catch (err: any) {
         console.error('[GitHub Plugin] sync/repos failed:', err?.message || err);
-        res.status(500).json({ error: err?.message || 'Could not reach GitHub' });
+        res.status(err?.signIn ? 401 : 500).json({ error: err?.message || 'Could not reach GitHub', signIn: !!err?.signIn });
       }
     });
 

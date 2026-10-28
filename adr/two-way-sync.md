@@ -300,3 +300,10 @@ file watcher reloads first, as soon as git writes the file. Paragraphs pair by i
 their words, because a file written without ids gets new ones on load; without that the typed
 paragraph came back twice. Reruns kept all 97 characters and took the other copy's edit. Test:
 `test-github-sync.mjs` ("Typing that lands while a pull runs ...").
+
+### 2026-10-28 — an expired sign-in in the setup window leads to Sign in
+The setup window showed "GitHub sign-in expired. Sign in again." above the create-a-repo form,
+with no way to sign in from there. `findDocsRepos` now marks its sign-in errors (`signIn`), the
+repos route answers them with 401 and `signIn: true`, and the window drops back to its signed-out
+view: the Sign in with GitHub button with the reason above it. The window's colors also moved to
+the theme's tokens so it reads in dark mode.
