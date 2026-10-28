@@ -1,6 +1,6 @@
 /**
  * Sync status line in the right-rail topbar: always says where the writer's
- * documents stand ("Synced 2 min ago", "Syncing…", "Offline, will sync") and,
+ * documents stand ("Synced", with when on hover, "Syncing…", "Offline, will sync") and,
  * when something is wrong, the fix ("Sign in to GitHub"), with the reason on
  * hover. It shares a narrow bar, so it stays short and never runs past the
  * edge. Sync runs by itself; a click syncs now, or opens
@@ -60,18 +60,18 @@ export function syncedAgo(iso: string | undefined, now = Date.now()): string {
 }
 
 /** The status line's words for a sync status. */
-export function syncLine(s: SyncStatus, now = Date.now()): string {
+export function syncLine(s: SyncStatus): string {
   switch (s.state) {
     case 'unconfigured': return 'Sync with GitHub';
     case 'syncing': return 'Syncing…';
     case 'offline': return 'Offline, will sync';
     case 'error': return FIX_LABEL[s.fix || 'retry'];
-    default: return s.lastSyncTime ? `Synced ${syncedAgo(s.lastSyncTime, now)}` : 'Saved here, syncing soon';
+    default: return s.lastSyncTime ? 'Synced' : 'Syncing soon';
   }
 }
 
 export default function SyncButton({ syncStatus, onSync }: SyncButtonProps) {
-  // "Synced N min ago" moves on by itself.
+  // The hover text's "Synced N min ago" moves on by itself.
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 30000);
@@ -83,7 +83,8 @@ export default function SyncButton({ syncStatus, onSync }: SyncButtonProps) {
     ? 'Keep your documents the same on every device'
     : state === 'error' ? `${syncStatus.error || 'Could not sync'}. ${FIX_LABEL[syncStatus.fix || 'retry']}.`
     : state === 'offline' ? 'Offline. Your work is saved here and syncs when you are back online.'
-    : 'Sync now';
+    : syncStatus.lastSyncTime ? `Synced ${syncedAgo(syncStatus.lastSyncTime, now)}. Click to sync now.`
+    : 'Saved here. It goes to GitHub on the next sync. Click to sync now.';
 
   return (
     <div className="sync-btn-group">
@@ -98,7 +99,7 @@ export default function SyncButton({ syncStatus, onSync }: SyncButtonProps) {
         {state === 'syncing' && <div className="sync-btn-spinner" />}
         {state === 'offline' && <CloudOffIcon />}
         {state === 'error' && <CloudErrorIcon />}
-        <span className="sync-btn-label">{syncLine(syncStatus, now)}</span>
+        <span className="sync-btn-label">{syncLine(syncStatus)}</span>
       </button>
     </div>
   );

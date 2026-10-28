@@ -465,3 +465,8 @@ to set is no longer listed under Plugins.
 button now shows the fix only ("Sign in to GitHub", "Reconnect GitHub", "Sync failed, retry",
 "Offline, will sync") with the reason in its hover text, and the end group, button and label may
 shrink (min-width 0, label ends in "…"), so no status can overflow the bar at any rail width.
+
+### 2026-10-28 — Synced says only "Synced"
+"Synced just now" was still too long for the bar (operator). The button says "Synced" (or
+"Syncing soon" before the first sync) with the check icon; when it last synced moved to the hover
+text, which still ticks every 30 seconds.
