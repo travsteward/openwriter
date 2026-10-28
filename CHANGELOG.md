@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 ### Fixed
 - The Workspace type window opens centered with a solid background, and every other pop-up window is centered again.
 - When GitHub stops accepting a sign-in on a copy that already syncs, the Sync with GitHub window only asks you to sign in again and then syncs with the same documents. It no longer offers to create a new repo.
+- The sync status at the top of the right panel no longer runs past the edge. It shows what to do ("Sign in to GitHub") with the reason when you hover, and a long message ends in "…".
 - The Workspace type window has room between its help text and its fields, the Versions tab's "On all your devices" section lines up with the rest of the tab, and the publish dashboard's notices are one height with their action as a button on the right.
 - Documents open at once when GitHub sync is on. Opening one used to wait almost a second for GitHub; the check now runs alongside, and a newer copy from GitHub still reloads the document in place.
 - What you type while GitHub sync brings in another device's changes is kept. Those changes used to replace the open document whole, dropping the last few seconds of typing.

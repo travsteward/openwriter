@@ -596,9 +596,14 @@ body {
   align-items: center;
   gap: 6px;
   white-space: nowrap;
+  /* Shrinks with the rail instead of running past its edge; the label ends in "…". */
+  min-width: 0;
+  max-width: 100%;
 }
 
 .sync-btn-state svg { flex-shrink: 0; }
+.sync-btn-label { overflow: hidden; text-overflow: ellipsis; }
+.sync-btn-group { min-width: 0; }
 
 .sync-unconfigured { background: var(--bg-surface); color: var(--ink-dark); border-color: var(--border); }
 .sync-synced { background: var(--bg-surface); color: var(--color-pending-insert); border-color: var(--border); }

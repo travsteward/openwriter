@@ -1,8 +1,9 @@
 /**
  * Sync status line in the right-rail topbar: always says where the writer's
- * documents stand ("Synced 2 min ago", "Syncing…", "Offline, saved here, will
- * sync") and, when something is wrong, the reason and the fix ("GitHub sign-in
- * expired · Sign in again"). Sync runs by itself; a click syncs now, or opens
+ * documents stand ("Synced 2 min ago", "Syncing…", "Offline, will sync") and,
+ * when something is wrong, the fix ("Sign in to GitHub"), with the reason on
+ * hover. It shares a narrow bar, so it stays short and never runs past the
+ * edge. Sync runs by itself; a click syncs now, or opens
  * setup when that is the fix. Never shows file paths.
  *
  * adr: adr/right-rail.md · adr: adr/two-way-sync.md
@@ -43,9 +44,9 @@ const CloudErrorIcon = () => (
 );
 
 const FIX_LABEL: Record<NonNullable<SyncStatus['fix']>, string> = {
-  signin: 'Sign in again',
-  setup: 'Connect again',
-  retry: 'Try again',
+  signin: 'Sign in to GitHub',
+  setup: 'Reconnect GitHub',
+  retry: 'Sync failed, retry',
 };
 
 /** "just now", "4 min ago", "2 h ago", or the date. */
@@ -63,8 +64,8 @@ export function syncLine(s: SyncStatus, now = Date.now()): string {
   switch (s.state) {
     case 'unconfigured': return 'Sync with GitHub';
     case 'syncing': return 'Syncing…';
-    case 'offline': return 'Offline, saved here, will sync';
-    case 'error': return `${s.error || 'Could not sync'} · ${FIX_LABEL[s.fix || 'retry']}`;
+    case 'offline': return 'Offline, will sync';
+    case 'error': return FIX_LABEL[s.fix || 'retry'];
     default: return s.lastSyncTime ? `Synced ${syncedAgo(s.lastSyncTime, now)}` : 'Saved here, syncing soon';
   }
 }
@@ -80,7 +81,9 @@ export default function SyncButton({ syncStatus, onSync }: SyncButtonProps) {
   const { state } = syncStatus;
   const title = state === 'unconfigured'
     ? 'Keep your documents the same on every device'
-    : state === 'error' ? FIX_LABEL[syncStatus.fix || 'retry'] : 'Sync now';
+    : state === 'error' ? `${syncStatus.error || 'Could not sync'}. ${FIX_LABEL[syncStatus.fix || 'retry']}.`
+    : state === 'offline' ? 'Offline. Your work is saved here and syncs when you are back online.'
+    : 'Sync now';
 
   return (
     <div className="sync-btn-group">
@@ -95,7 +98,7 @@ export default function SyncButton({ syncStatus, onSync }: SyncButtonProps) {
         {state === 'syncing' && <div className="sync-btn-spinner" />}
         {state === 'offline' && <CloudOffIcon />}
         {state === 'error' && <CloudErrorIcon />}
-        {syncLine(syncStatus, now)}
+        <span className="sync-btn-label">{syncLine(syncStatus, now)}</span>
       </button>
     </div>
   );

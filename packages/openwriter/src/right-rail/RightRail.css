@@ -79,6 +79,9 @@
   gap: 4px;
 }
 
+/* The sync status side gives up width first, so it never runs past the rail's edge. */
+.right-rail-topbar-actions--end { min-width: 0; }
+
 .right-rail-topbar-btn {
   display: flex;
   align-items: center;

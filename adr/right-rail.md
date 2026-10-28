@@ -459,3 +459,9 @@ cost choice), Accounts (X, LinkedIn) and Plugins. The last tab looked at is reme
 Settings on that tab (`requestSettingsSection` in `right-rail/types.ts`). The balance shows its
 last five charges with See more. A plugin that is part of the embedding program and has nothing
 to set is no longer listed under Plugins.
+
+### 2026-10-28 — The sync status fits the rail's top bar
+"GitHub sign-in expired · Sign in again" ran past the rail's right edge (operator screenshot). The
+button now shows the fix only ("Sign in to GitHub", "Reconnect GitHub", "Sync failed, retry",
+"Offline, will sync") with the reason in its hover text, and the end group, button and label may
+shrink (min-width 0, label ends in "…"), so no status can overflow the bar at any rail width.
