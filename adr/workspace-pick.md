@@ -39,3 +39,7 @@ the agent) settled the shape below.
 One workspace at a time replaced the stacked tree and the "All workspaces" filter (operator). Left
 out: reordering workspaces by drag (they keep their order) and dragging documents between
 workspaces (Move to replaces it).
+
+### 2026-10-28 — Workspace type window spacing
+Not a picker change: the Workspace type window in the same file got room between each help line
+and the field around it (paragraph margin 8px, fields 20px apart).

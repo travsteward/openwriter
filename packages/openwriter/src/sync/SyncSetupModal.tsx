@@ -27,6 +27,8 @@ interface DocsRepo { fullName: string; name: string; documents: number; private:
 interface SyncSetupModalProps {
   onClose: () => void;
   onSetupComplete: () => void;
+  /** This copy already syncs and GitHub refused its sign-in: sign in again, nothing else to choose. */
+  signInAgain?: boolean;
 }
 
 type Phase = 'loading' | 'setup' | 'progress' | 'done' | 'error';
@@ -37,7 +39,7 @@ function documentsLabel(n: number): string {
   return n === 1 ? '1 document' : `${n} documents`;
 }
 
-export default function SyncSetupModal({ onClose, onSetupComplete }: SyncSetupModalProps) {
+export default function SyncSetupModal({ onClose, onSetupComplete, signInAgain }: SyncSetupModalProps) {
   const [phase, setPhase] = useState<Phase>('loading');
   const [caps, setCaps] = useState<SyncCapabilities | null>(null);
   const [signedIn, setSignedIn] = useState(false);
@@ -61,7 +63,8 @@ export default function SyncSetupModal({ onClose, onSetupComplete }: SyncSetupMo
       .then((r) => r.json())
       .then((data: SyncCapabilities) => {
         setCaps(data);
-        setSignedIn(!!data.signedIn);
+        // The stored sign-in is the one GitHub refused, so it does not count.
+        setSignedIn(!signInAgain && !!data.signedIn);
         if (data.deviceName) setDeviceName(data.deviceName);
         setPhase('setup');
       })
@@ -76,6 +79,13 @@ export default function SyncSetupModal({ onClose, onSetupComplete }: SyncSetupMo
   // Once signed in: look for documents already on GitHub, and suggest a name for this device.
   useEffect(() => {
     if (!signedIn) return;
+    if (signInAgain) {
+      // Same documents, same place on GitHub: sync now with the new sign-in.
+      setPhase('progress');
+      setProgressMsg('Syncing your documents...');
+      fetch('/api/sync/push', { method: 'POST' }).catch(() => {}).finally(() => { onSetupComplete(); setPhase('done'); });
+      return;
+    }
     setRepos(null);
     setReposError('');
     fetch('/api/sync/repos')
@@ -88,7 +98,7 @@ export default function SyncSetupModal({ onClose, onSetupComplete }: SyncSetupMo
         setDeviceName((name) => name || data.deviceSuggestion || '');
       })
       .catch((err: Error) => { setReposError(err.message); setRepos([]); });
-  }, [signedIn]);
+  }, [signedIn, signInAgain, onSetupComplete]);
 
   // "Sign in with GitHub": show the code, then ask the server every few
   // seconds whether GitHub has approved it. adr: adr/two-way-sync.md
@@ -165,6 +175,7 @@ export default function SyncSetupModal({ onClose, onSetupComplete }: SyncSetupMo
   );
 
   const found = repos && repos.length > 0 ? repos[0] : null;
+  const connectedTo = caps?.remoteUrl?.replace(/^https:\/\/github\.com\//, '').replace(/\.git$/, '');
 
   return (
     <div className="sync-modal-overlay" onClick={onClose}>
@@ -191,7 +202,9 @@ export default function SyncSetupModal({ onClose, onSetupComplete }: SyncSetupMo
         {phase === 'setup' && caps?.gitInstalled && (
           <div className="sync-modal-body">
             <p className="sync-hint">
-              Your documents are kept on GitHub and stay the same on every device you write on. Changes sync by themselves.
+              {signInAgain
+                ? `This copy syncs with ${connectedTo || 'your documents on GitHub'}, but GitHub stopped accepting its sign-in. Sign in again and syncing carries on. Nothing else changes.`
+                : 'Your documents are kept on GitHub and stay the same on every device you write on. Changes sync by themselves.'}
             </p>
 
             {!signedIn && (
@@ -245,7 +258,7 @@ export default function SyncSetupModal({ onClose, onSetupComplete }: SyncSetupMo
               </div>
             )}
 
-            <details className="sync-other" onToggle={(e) => {
+            {!signInAgain && <details className="sync-other" onToggle={(e) => {
               if (!(e.target as HTMLDetailsElement).open) { setOther(null); return; }
               if (!other) setOther(caps.ghAuthenticated ? 'gh' : 'pat');
               setDeviceName((name) => name || caps.deviceSuggestion || '');
@@ -302,7 +315,7 @@ export default function SyncSetupModal({ onClose, onSetupComplete }: SyncSetupMo
                   </div>
                 </div>
               )}
-            </details>
+            </details>}
           </div>
         )}
 

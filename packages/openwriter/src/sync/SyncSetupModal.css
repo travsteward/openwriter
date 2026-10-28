@@ -167,10 +167,9 @@
   margin: 0 auto 12px;
 }
 
-/* Notices take the theme's red and amber, so they read in light and dark. */
+/* Notices take the theme's red and amber tints, so they read in light and dark. */
 .sync-error-msg {
   background: var(--color-pending-delete-bg);
-  border-left: 3px solid var(--color-pending-delete);
   color: var(--ink-dark);
   padding: 10px 14px;
   border-radius: 6px;
@@ -180,7 +179,6 @@
 
 .sync-warning {
   background: var(--color-pending-stale-bg);
-  border-left: 3px solid var(--color-pending-stale);
   color: var(--ink-dark);
   padding: 10px 14px;
   border-radius: 6px;

@@ -1498,6 +1498,7 @@ export default function App() {
       <DeletedNotice notices={syncStatus.notices} onOpen={handleSwitchDocument} />
       {showSyncSetup && (
         <SyncSetupModal
+          signInAgain={syncStatus.state === 'error' && syncStatus.fix === 'signin'}
           onClose={() => setShowSyncSetup(false)}
           onSetupComplete={() => {
             fetch('/api/sync/status').then((r) => r.json()).then(setSyncStatus).catch(() => {});

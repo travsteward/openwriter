@@ -161,7 +161,8 @@
 .commit-row__restore:disabled { opacity: 0.4; cursor: default; }
 
 /* Synced history from every device, and rolling everything back. adr: adr/two-way-sync.md */
-.sync-history { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border); }
+.sync-history { margin-top: 16px; padding: 12px var(--rail-inset) 16px; border-top: 1px solid var(--border); }
+.sync-history .versions-tab__empty { padding: 4px 0; }
 .sync-history__head { font-size: 12px; font-weight: 600; color: var(--ink-light); margin-bottom: 8px; }
 .sync-history__row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 0; font-size: 13px; }
 .sync-history__row .commit-row__restore { width: auto; flex: none; }

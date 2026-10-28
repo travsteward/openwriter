@@ -307,3 +307,13 @@ with no way to sign in from there. `findDocsRepos` now marks its sign-in errors 
 repos route answers them with 401 and `signIn: true`, and the window drops back to its signed-out
 view: the Sign in with GitHub button with the reason above it. The window's colors also moved to
 the theme's tokens so it reads in dark mode.
+
+### 2026-10-28 — A copy that already syncs only signs in again
+GitHub stopped accepting the web copy's sign-in (made Oct 26 02:26; the security log shows a
+second OpenWriter sign-in for the same account at 16:10 that day and no revoke entry), and the
+setup window offered to create a new repo though the copy was connected. When the sync status
+says the fix is to sign in (`fix: 'signin'`), App opens the window with `signInAgain`: it names
+the repo this copy syncs with, ignores the refused stored sign-in, shows only Sign in with
+GitHub, and once signed in runs a sync and finishes. No repo choice, no "Other ways to connect".
+The warning and error boxes lost their left color bar (the operator reads it as a template
+tell), and the history rail's "On all your devices" section takes the rail's side margins.

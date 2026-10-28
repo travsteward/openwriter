@@ -104,16 +104,19 @@ html.ow-site-open, html.ow-site-open body { overflow: hidden; }
   align-items: center;
   gap: 8px;
   border: 1px solid var(--border);
-  border-left: 3px solid var(--accent);
   border-radius: 6px;
+  /* One height whether or not the notice has a button. */
+  min-height: 54px;
+  box-sizing: border-box;
   padding: 10px 14px;
   margin: 10px 0;
   background: var(--bg-surface);
   color: var(--ink-dark);
 }
 .ows-notice a { color: var(--link-color, var(--accent)); font-weight: 500; text-decoration: underline; text-underline-offset: 3px; }
-.ows-notice--warn { border-left-color: var(--ows-warn); }
-.ows-notice--error { border-left-color: var(--ows-red); }
+/* A notice's action sits at its right edge. */
+.ows-notice > .ows-btn:last-child { margin-left: auto; }
+.ows-notice--error { color: var(--ows-red); }
 
 .ows-empty { color: var(--ink-light); padding: 22px 4px; }
 

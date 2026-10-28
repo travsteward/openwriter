@@ -61,7 +61,7 @@ export default function Home() {
       </>}>
       <Sending />
       {missingAddress && (
-        <Notice kind="warn">Add a mailing address before your first email; the law requires one in every newsletter. <button type="button" className="ows-link" onClick={() => go('settings')}>Add it in Settings</button></Notice>
+        <Notice kind="warn"><span>Add a mailing address before your first email; the law requires one in every newsletter.</span> <Btn kind="quiet" onClick={() => go('settings')}>Add it in Settings</Btn></Notice>
       )}
       {manager && (
         stats.error ? <Failed error={stats.error} retry={stats.reload} /> : (
