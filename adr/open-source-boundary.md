@@ -255,3 +255,9 @@ Core's `imagesHeldElsewhere()` gathers the ones `_images/` lacks; the github plu
 the writer's repo (adr/two-way-sync.md). Generic: any plugin or embedder that keeps images in its
 own storage gets them into GitHub sync without writing them back to disk. Without holdings
 nothing changes.
+
+**2026-10-29: tool labels.** Every MCP tool now carries a title and read-only / destructive
+marks (`server/tool-labels.ts`), worked out from its name and whether a plugin added it, and
+served by the stdio server and `/api/mcp-tools`. `openwriter/server` exports `toolLabels` so an
+embedder serving the tools over MCP itself labels them the same way. Generic: every MCP client
+shows the titles and asks before a destructive call, and agent directories require the marks.

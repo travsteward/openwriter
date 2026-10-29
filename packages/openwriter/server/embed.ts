@@ -24,6 +24,8 @@ export type { OpenWriterPlugin, PluginHost, PluginRouteContext, PluginMcpTool, P
 // that agent's session so it gets the documents' format contracts. adr: adr/in-system-guidance.md
 export { appendDocGuidance } from './mcp.js';
 export { GUIDANCE_NOTICE } from './doc-guidance.js';
+// Each tool's title and read-only / destructive marks, for an embedder serving the tools over MCP itself.
+export { toolLabels, type ToolLabels } from './tool-labels.js';
 // For an embedder that keeps images in its own storage: answer for an image missing from
 // _images/ (and, with holdings, list them so GitHub sync can hand them to the repo), and find
 // the folder it sweeps. adr: adr/open-source-boundary.md

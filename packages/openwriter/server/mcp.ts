@@ -65,6 +65,7 @@ import { outline, peek, searchInDoc, truncateRead, type PeekTarget } from './pee
 import { createEnrichmentTools } from './enrichment-tools.js';
 import { deriveContentType, resolveTypeMeta } from './content-type-meta.js';
 import { LOCAL_AGENT_NOTICE } from './doc-guidance.js';
+import { toolLabels } from './tool-labels.js';
 import { appendDocGuidance } from './mcp-guidance.js';
 export { appendDocGuidance } from './mcp-guidance.js';
 import { listDocuments, switchDocument, createDocument, createDocumentFile, deleteDocument, openFile, getActiveFilename, updateDocumentTitle, promoteTempFile, archiveDocument, unarchiveDocument, resolveDocId, filenameByDocId, searchDocuments, listDirtyDocs, crawlDocs, enrichmentFooter, buildEnrichmentInstructions, listPendingSorts, sortFooter, buildSortInstructions, stagePendingTitle } from './documents.js';
@@ -2241,7 +2242,7 @@ export function registerPluginTools(tools: import('./plugin-types.js').PluginMcp
       if (registered && registered[tool.name]) {
         console.warn(`[PluginManager] registerPluginTools: skipping MCP-duplicate tool "${tool.name}"`);
       } else {
-        mcpServerInstance.tool(tool.name, tool.description, zodShape, toolDef.handler);
+        mcpServerInstance.registerTool(tool.name, { description: tool.description, inputSchema: zodShape, ...toolLabels(toolDef) }, toolDef.handler);
       }
     }
   }
@@ -2318,7 +2319,7 @@ export async function startMcpServer(): Promise<void> {
         }
       });
     };
-    server.tool(tool.name, tool.description, tool.schema, wrappedHandler);
+    server.registerTool(tool.name, { description: tool.description, inputSchema: tool.schema, ...toolLabels(tool) }, wrappedHandler);
   }
 
   mcpServerInstance = server;

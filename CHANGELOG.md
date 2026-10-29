@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 ## [Unreleased]
 
 ### Changed
+- Every tool has a plain title, and tools that only read are marked read-only, so your agent app can show what each one does and ask before one that deletes, sends or publishes.
 - The sidebar shows one workspace at a time. A picker at the top lists Documents (the documents in no workspace) and each workspace, and the file tree, Timeline and Board all follow it. It remembers your pick, and opening a document from another workspace switches to it. A dot marks a workspace where your agent has changes waiting, the + makes the new document in the workspace you're in, right-click Move to moves a document to another workspace, and search results name their workspace.
 
 ### Fixed

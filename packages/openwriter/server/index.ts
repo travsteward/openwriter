@@ -11,6 +11,7 @@ import { dirname, join } from 'path';
 import { existsSync, readFileSync } from 'fs';
 import { setupWebSocket, broadcastAgentStatus, broadcastDocumentSwitched, broadcastDocumentsChanged, broadcastWorkspacesChanged, broadcastMetadataChanged, broadcastPendingDocsChanged, broadcastSyncStatus, broadcastWritingStarted, broadcastWritingFinished, broadcastCommentsChanged, broadcastActivityLogSeed, refreshLiveDocViewers, applyTabFlush } from './ws.js';
 import { TOOL_REGISTRY, appendDocGuidance } from './mcp.js';
+import { toolLabels } from './tool-labels.js';
 import { z } from 'zod';
 import { save, cancelDebouncedSave, load, getDocument, getTitle, getFilePath, getDocId, getMetadata, getStatus, updateDocument, setMetadata, applyTextEdits, isAgentLocked, getPendingDocInfo, getDocTagsByFilename, addDocTag, removeDocTag, updatePendingCacheForActiveDoc, removePendingCacheEntry, clearAllCaches, stripPendingAttrs, stripPendingAttrsFromFile, setAutoAcceptOnFile, setSortRequestOnFile, clearSortRequestOnFile, bumpDocVersion, extractText } from './state.js';
 import { syncPostHistory } from './post-sync.js';
@@ -96,6 +97,7 @@ export async function startHttpServer(options: { server: HttpServer; port?: numb
       name: t.name,
       description: t.description,
       inputSchema: z.toJSONSchema(z.object(t.schema), { unrepresentable: 'any' }),
+      ...toolLabels(t),
     }));
     res.json({ tools });
   });

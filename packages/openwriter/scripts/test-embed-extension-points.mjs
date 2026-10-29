@@ -81,6 +81,11 @@ assert(!available.includes('@openwriter/plugin-x-api') && available.includes('@o
 console.log('\nIn-process plugin:');
 assert((await get('/api/demo')).status === 200, 'its routes are mounted');
 assert(host && host.rootDir === dataDir && host.tools().some((t) => t.name === 'write_to_pad'), 'the host gives rootDir and the live tool list');
+const { toolLabels } = await import('../dist/server/embed.js');
+const read = toolLabels({ name: 'read_pad' });
+assert(read.title === 'Read document' && read.annotations.readOnlyHint && !read.annotations.destructiveHint, 'a reading tool is labelled read-only');
+assert(toolLabels({ name: 'delete_document' }).annotations.destructiveHint && !toolLabels({ name: 'write_to_pad' }).annotations.destructiveHint, 'deleting is destructive, writing a proposal is not');
+assert(toolLabels({ name: 'set_site_plans', plugin: 'p' }).annotations.destructiveHint, 'a plugin tool that changes something is destructive');
 const descriptor = (await (await get('/api/plugins')).json()).plugins.find((p) => p.name === 'demo-plugin');
 assert(/^\/plugin-client\/demo-plugin\/main\.js\?v=\w+$/.test(descriptor?.clientModule ?? ''), 'its client module is listed for the browser, versioned by its build');
 assert((await get(descriptor.clientModule)).status === 200, 'its client module is served');
