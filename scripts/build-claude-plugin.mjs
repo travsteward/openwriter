@@ -7,13 +7,20 @@
 // Copies drift, so every copy is generated here from its one source and `--check` (run by npm test) fails when the
 // committed folder no longer matches. README.md is the only hand-written file.
 //
-// The MCP server runs the npm release pinned to this repo's version, because the
-// directory blocks unpinned launchers. A version bump therefore needs a rebuild.
+// The MCP server runs a pinned npm release, because the directory blocks
+// unpinned launchers, and package.json + package-lock.json beside .mcp.json
+// record that release's exact dependencies and hashes, which the directory
+// asks for. The lockfile can only be made once the release is on npm, so the
+// plugin pins the newest *published* release: write mode pins this repo's
+// version and is run after each publish (.greprag/release.md); --check
+// verifies the folder against the pin it already has.
 //
-// Run:   node scripts/build-claude-plugin.mjs           (write)
+// Run:   node scripts/build-claude-plugin.mjs           (write; needs the version on npm)
 //        node scripts/build-claude-plugin.mjs --check   (exit 1 on drift)
 
-import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { execSync } from 'node:child_process';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -21,10 +28,17 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'claude-plugin');
 const AGENTS = join(ROOT, 'packages', 'openwriter', 'agents');
 const HAND_WRITTEN = new Set(['README.md']);
+// Written by npm, not compared byte for byte: --check verifies the release it pins.
+const LOCK = 'package-lock.json';
+const CHECK = process.argv.includes('--check');
 
 const pkg = JSON.parse(readFileSync(join(ROOT, 'packages', 'openwriter', 'package.json'), 'utf8'));
 const read = (path) => readFileSync(path, 'utf8');
 const json = (value) => JSON.stringify(value, null, 2) + '\n';
+const readJson = (path) => { try { return JSON.parse(read(path)); } catch { return null; } };
+
+// The release the plugin runs: this repo's version when writing, the committed pin when checking.
+const pin = CHECK ? (readJson(join(OUT, 'package.json'))?.dependencies?.openwriter ?? pkg.version) : pkg.version;
 
 const files = new Map();
 
@@ -34,7 +48,7 @@ files.set('logo.png', readFileSync(join(ROOT, 'packages', 'openwriter', 'public'
 files.set('.claude-plugin/plugin.json', json({
   name: 'openwriter',
   displayName: 'OpenWriter',
-  version: pkg.version,
+  version: pin,
   description:
     'A local markdown editor your agent writes in. Claude drafts and edits documents through MCP tools, ' +
     'and you accept or reject each change in your browser. Plain .md files on your disk.',
@@ -49,8 +63,15 @@ files.set('.claude-plugin/plugin.json', json({
 
 files.set('.mcp.json', json({
   mcpServers: {
-    openwriter: { command: 'npx', args: ['-y', `openwriter@${pkg.version}`, '--no-open'] },
+    openwriter: { command: 'npx', args: ['-y', `openwriter@${pin}`, '--no-open'] },
   },
+}));
+
+files.set('package.json', json({
+  name: 'openwriter-claude-plugin',
+  private: true,
+  description: 'The OpenWriter release this plugin runs; package-lock.json records its exact dependencies.',
+  dependencies: { openwriter: pin },
 }));
 
 files.set('LICENSE', read(join(ROOT, 'LICENSE')));
@@ -69,26 +90,47 @@ function listOnDisk(dir) {
   });
 }
 
-const onDisk = listOnDisk(OUT).filter((path) => !HAND_WRITTEN.has(path));
+const onDisk = listOnDisk(OUT).filter((path) => !HAND_WRITTEN.has(path) && path !== LOCK);
 const stale = onDisk.filter((path) => !files.has(path));
 const changed = [...files]
   .filter(([path, body]) => !existsSync(join(OUT, path)) || !readFileSync(join(OUT, path)).equals(Buffer.from(body)))
   .map(([path]) => path);
 
-if (process.argv.includes('--check')) {
-  if (stale.length || changed.length) {
+/** The release the committed lockfile pins, or null when there is none or it disagrees with itself. */
+function lockedRelease() {
+  const lock = readJson(join(OUT, LOCK));
+  const root = lock?.packages?.['']?.dependencies?.openwriter;
+  const installed = lock?.packages?.['node_modules/openwriter']?.version;
+  return root && root === installed ? installed : null;
+}
+
+if (CHECK) {
+  const locked = lockedRelease();
+  if (stale.length || changed.length || locked !== pin) {
     console.error('claude-plugin/ is out of date with its sources.');
     for (const path of changed) console.error(`  - differs: ${path}`);
     for (const path of stale) console.error(`  - no source: ${path}`);
-    console.error('\nTo fix: run  node scripts/build-claude-plugin.mjs  and commit the result.');
+    if (locked !== pin) console.error(`  - ${LOCK} pins ${locked ?? 'nothing'}, not openwriter@${pin}`);
+    console.error('\nTo fix: run  node scripts/build-claude-plugin.mjs  (after the release is on npm) and commit the result.');
     process.exit(1);
   }
-  console.log(`claude-plugin/ is in sync (openwriter@${pkg.version}, ${files.size} generated files).`);
+  console.log(`claude-plugin/ is in sync (openwriter@${pin}, ${files.size} generated files and its lockfile).`);
 } else {
   for (const path of stale) rmSync(join(OUT, path));
   for (const path of changed) {
     mkdirSync(dirname(join(OUT, path)), { recursive: true });
     writeFileSync(join(OUT, path), files.get(path));
   }
-  console.log(`claude-plugin/ built for openwriter@${pkg.version}: ${changed.length} written, ${stale.length} removed.`);
+  // npm resolves the pinned release from the registry, in a scratch folder so nothing is installed here.
+  if (lockedRelease() !== pin) {
+    const scratch = mkdtempSync(join(tmpdir(), 'openwriter-plugin-lock-'));
+    try {
+      writeFileSync(join(scratch, 'package.json'), files.get('package.json'));
+      execSync('npm install --package-lock-only --ignore-scripts --no-audit --no-fund', { cwd: scratch, stdio: 'inherit' });
+      writeFileSync(join(OUT, LOCK), read(join(scratch, LOCK)));
+    } finally {
+      rmSync(scratch, { recursive: true, force: true });
+    }
+  }
+  console.log(`claude-plugin/ built for openwriter@${pin}: ${changed.length} written, ${stale.length} removed, ${LOCK} pins ${lockedRelease()}.`);
 }

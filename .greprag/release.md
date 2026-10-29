@@ -9,11 +9,10 @@ project notes.
 
 1. Resolve [delivery.json](delivery.json). Work from the canonical main checkout
    only after changes have been committed, tested, and merged under its lock.
-2. Update the app version and lock metadata, run
-   node scripts/build-claude-plugin.mjs so the Claude plugin pins the new
-   version (npm test fails until it does), move Unreleased changelog entries
+2. Update the app version and lock metadata, move Unreleased changelog entries
    into that version's section, commit, integrate, and tag the release commit.
-   The Claude directory picks up the plugin from main on its own.
+   The Claude plugin keeps pinning the previous release until this one is on
+   npm (see After release).
 3. Run the release wrapper. It checks the tag, builds, runs the existing privacy
    and plugin bundler, stamps the build, packs one tarball, pushes the
    branch/tag, records and publishes that exact tarball, proves the registry
@@ -84,5 +83,9 @@ waiting, the bound, and the mismatch and missing-record refusals against its own
 temporary records. It contacts no registry and publishes nothing.
 
 After release, verify the registry version/integrity, GitHub tag and release,
-the Claude plugin and all bundled plugins. Deploy the local-app target separately if
-the local linked process also needs the new runtime.
+and all bundled plugins. Then move the Claude plugin to the new release: run
+node scripts/build-claude-plugin.mjs (it pins the version and asks npm for the
+plugin's package-lock.json, so it needs the release on the registry), commit
+claude-plugin/ with its pathspec, integrate under the merge lock and push. The
+Claude directory picks it up from main on its own. Deploy the local-app target
+separately if the local linked process also needs the new runtime.

@@ -1,0 +1,8 @@
+{
+  "name": "openwriter-claude-plugin",
+  "private": true,
+  "description": "The OpenWriter release this plugin runs; package-lock.json records its exact dependencies.",
+  "dependencies": {
+    "openwriter": "0.51.1"
+  }
+}
