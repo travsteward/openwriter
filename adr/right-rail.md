@@ -470,3 +470,7 @@ shrink (min-width 0, label ends in "…"), so no status can overflow the bar at 
 "Synced just now" was still too long for the bar (operator). The button says "Synced" (or
 "Syncing soon" before the first sync) with the check icon; when it last synced moved to the hover
 text, which still ticks every 30 seconds.
+
+### 2026-10-29 — Comment tint (styles.css)
+Comment styles in decorations/styles.css gained a background tint and an active state; the
+decision is logged in adr/bookmarks.md (2026-10-29).

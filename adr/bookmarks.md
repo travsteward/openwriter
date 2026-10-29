@@ -30,7 +30,8 @@ stays until the user removes it.
 - Bookmarks are few, so the rail has no stepping for them: a "Back to
   bookmark" button at the top of the Review tab jumps to the newest one.
   Comments are many, so their rail section steps previous/next with no
-  list; the underline's hover shows each one. Only a reworded (unplaced)
+  list. Commented words carry a soft tint; the comment stepped to gets a
+  stronger tint and its note shows under the arrows. A reworded (unplaced)
   comment shows its note and a Resolve button, since it has no underline.
 - Bookmark and comment jumps share one path (`jumpToBlock`), and its
   highlight is drawn by the bookmark plugin for any block.
@@ -92,3 +93,14 @@ drops the count, the placed comment keeps its underline.
 The Comments section now also shows a collapsed "N resolved" toggle that
 expands to the resolved comments, each with Restore. Collapsed by default so
 the section stays arrows-only. See adr/comment-auto-resolve.md.
+
+### 2026-10-29 — Comments are tinted, and stepping shows which one
+
+On a long book manuscript the operator stepped to comment 1 and saw no
+underline: it sat on a single word, and a thin grey dotted line is
+nearly invisible on the dark theme. Every comment now has a soft accent tint
+behind its words as well as the underline, so a one-word comment is as easy
+to spot as a sentence. The comment stepped to from the Review rail gets a
+stronger tint (`setActiveComment` in `comments-plugin.ts`, cleared when the
+document changes) and its note shows under the comment arrows. Checked on a
+private copy of the manuscript in light and dark.

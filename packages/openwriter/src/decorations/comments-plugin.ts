@@ -33,6 +33,16 @@ export function getCommentsData(): CommentData[] {
   return currentComments;
 }
 
+/** The comment the Review rail last stepped to; its words get the stronger tint. */
+let activeCommentId: string | null = null;
+
+/** Mark one comment as the one stepped to (null clears it) and redraw every editor. */
+export function setActiveComment(id: string | null, views: any[] = []): void {
+  if (activeCommentId === id) return;
+  activeCommentId = id;
+  for (const view of views) if (view && !view.isDestroyed) forceCommentRefresh(view);
+}
+
 function makeDecoAttrs(comment: CommentData): Record<string, string> {
   // No `title` attribute — the OS tooltip is noisy and can't host edit
   // affordances. Hover behavior is owned by <CommentPopover>, which reads
@@ -42,7 +52,7 @@ function makeDecoAttrs(comment: CommentData): Record<string, string> {
   // overwrites the earlier, hiding a comment nested inside another.
   return {
     nodeName: 'span',
-    class: 'ow-comment',
+    class: comment.id === activeCommentId ? 'ow-comment ow-comment--active' : 'ow-comment',
     'data-comment-id': comment.id,
   };
 }

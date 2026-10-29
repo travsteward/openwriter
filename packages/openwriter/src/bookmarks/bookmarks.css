@@ -67,6 +67,19 @@
   text-overflow: ellipsis;
 }
 
+/* The note of the comment stepped to, under the comment arrows. */
+.comments-current {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--ink-body);
+  white-space: pre-wrap;
+  display: -webkit-box;
+  -webkit-line-clamp: 6;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
 /* Shown under the comment arrows only when the current comment's words were
  * reworded (no underline to hover): its note plus a Resolve button. */
 .comments-stale {

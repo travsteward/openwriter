@@ -1,17 +1,18 @@
 /**
  * Comments in the Review tab: previous/next stepping through the active doc's
- * open comments in reading order, like pending changes. Deliberately no list —
- * the underline's hover popover shows each comment. The one exception is a
- * comment whose words were reworded: it has no underline, so landing on it
- * shows its note and a Resolve button here. Resolved comments (by hand, or
+ * open comments in reading order, like pending changes. Deliberately no list.
+ * The comment stepped to gets the stronger tint in the editor and its note
+ * shows here, so a one-word comment is never hard to find. A comment whose
+ * words were reworded has no underline, so landing on it shows its note and
+ * a Resolve button here. Resolved comments (by hand, or
  * by accepting the fix that covered them) sit behind a collapsed "N resolved"
  * toggle, each with Restore.
  * adr: adr/bookmarks.md, adr/comment-auto-resolve.md
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Editor } from '@tiptap/react';
-import { locateComment, type CommentData } from '../../decorations/comments-plugin';
+import { locateComment, setActiveComment, type CommentData } from '../../decorations/comments-plugin';
 import { findBlock } from '../../bookmarks/bookmarks-store';
 import { jumpToBlock } from '../../bookmarks/bookmark-plugin';
 
@@ -51,6 +52,12 @@ export default function CommentsSection({ editors, filename }: Props) {
     return () => { cancelled = true; window.removeEventListener('ow-comments-changed', handler); };
   }, [filename]);
 
+  // Another document, or leaving the Review tab, clears the stepped-to comment.
+  const views = editors.filter((e) => e && !e.isDestroyed).map((e) => e.view);
+  const viewsRef = useRef(views);
+  viewsRef.current = views;
+  useEffect(() => () => setActiveComment(null, viewsRef.current), [filename]);
+
   // Reading order: block position, then where the quoted text sits in it.
   // A comment is "placed" exactly when the editor underlines it. One whose
   // words were edited away is stale: it jumps to its paragraph if that still
@@ -84,6 +91,7 @@ export default function CommentsSection({ editors, filename }: Props) {
     const row = rows[index];
     if (!row) return;
     setCurrent(index);
+    setActiveComment(row.comment.id, views);
     jumpToBlock(editors, row.nodeId);
   };
   const step = (delta: number) => {
@@ -104,6 +112,9 @@ export default function CommentsSection({ editors, filename }: Props) {
           <button className="review-panel__btn" onClick={() => step(1)} title="Next comment"><ChevronDown /></button>
           <span className="review-panel__counter">{current >= 0 ? `${current + 1} / ${rows.length}` : `${rows.length}`}</span>
         </div>
+      )}
+      {currentRow && !currentRow.stale && (
+        <p className="comments-current">{currentRow.comment.note || '(no note)'}</p>
       )}
       {currentRow?.stale && (
         <div className="comments-stale">

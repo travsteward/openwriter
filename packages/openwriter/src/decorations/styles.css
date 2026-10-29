@@ -68,17 +68,26 @@ img.pending-stale, pre.pending-stale {
   border-radius: 4px;
 }
 
-/* Comment: dotted underline (formerly "agent mark") */
+/* Comment: a soft tint behind the words plus a dotted underline (formerly
+ * "agent mark"). The tint keeps a one-word comment as easy to spot as a
+ * sentence; the comment stepped to from the Review rail is tinted stronger. */
 .ow-comment {
+  background: color-mix(in srgb, var(--accent, #2563eb) 14%, transparent);
+  border-radius: 2px;
   text-decoration: underline dotted;
   text-decoration-color: var(--ink-light, #94a3b8);
   text-underline-offset: 3px;
   text-decoration-thickness: 1.5px;
   cursor: help;
-  transition: text-decoration-color 0.15s ease;
+  transition: text-decoration-color 0.15s ease, background-color 0.15s ease;
 }
 
 .ow-comment:hover {
+  text-decoration-color: var(--accent, #2563eb);
+}
+
+.ow-comment--active {
+  background: color-mix(in srgb, var(--accent, #2563eb) 34%, transparent);
   text-decoration-color: var(--accent, #2563eb);
 }
 
