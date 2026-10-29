@@ -68,28 +68,30 @@ img.pending-stale, pre.pending-stale {
   border-radius: 4px;
 }
 
-/* Comment: a soft tint behind the words plus a dotted underline (formerly
- * "agent mark"). The tint keeps a one-word comment as easy to spot as a
- * sentence; the comment stepped to from the Review rail is tinted stronger. */
+/* Comment: a quiet dotted underline (formerly "agent mark"). A one-word
+ * comment's underline is too short to notice at that weight, so it is
+ * brighter and thicker; the comment stepped to from the Review rail takes
+ * the accent color. No background: the underline stays discreet. */
 .ow-comment {
-  background: color-mix(in srgb, var(--accent, #2563eb) 14%, transparent);
-  border-radius: 2px;
   text-decoration: underline dotted;
   text-decoration-color: var(--ink-light, #94a3b8);
   text-underline-offset: 3px;
   text-decoration-thickness: 1.5px;
   cursor: help;
-  transition: text-decoration-color 0.15s ease, background-color 0.15s ease;
+  transition: text-decoration-color 0.15s ease;
 }
 
-.ow-comment:hover {
-  text-decoration-color: var(--accent, #2563eb);
+.ow-comment--word {
+  text-decoration-color: var(--ink-body, #475569);
+  text-decoration-thickness: 2px;
 }
 
+.ow-comment:hover,
 .ow-comment--active {
-  background: color-mix(in srgb, var(--accent, #2563eb) 34%, transparent);
   text-decoration-color: var(--accent, #2563eb);
 }
+
+.ow-comment--active { text-decoration-thickness: 2px; }
 
 /* Comment popover: hover-anchored card. View mode shows a stack of comment
  * cards (one per sibling/nested comment), edit/compose mode swaps in a

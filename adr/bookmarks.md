@@ -30,8 +30,9 @@ stays until the user removes it.
 - Bookmarks are few, so the rail has no stepping for them: a "Back to
   bookmark" button at the top of the Review tab jumps to the newest one.
   Comments are many, so their rail section steps previous/next with no
-  list. Commented words carry a soft tint; the comment stepped to gets a
-  stronger tint and its note shows under the arrows. A reworded (unplaced)
+  list. Comments are a quiet dotted underline, brighter on a one-word comment;
+  the comment stepped to takes the accent underline and its note shows under
+  the arrows. No background tint. A reworded (unplaced)
   comment shows its note and a Resolve button, since it has no underline.
 - Bookmark and comment jumps share one path (`jumpToBlock`), and its
   highlight is drawn by the bookmark plugin for any block.
@@ -104,3 +105,11 @@ to spot as a sentence. The comment stepped to from the Review rail gets a
 stronger tint (`setActiveComment` in `comments-plugin.ts`, cleared when the
 document changes) and its note shows under the comment arrows. Checked on a
 private copy of the manuscript in light and dark.
+
+### 2026-10-29 — Brighter underline instead of a tint
+
+The operator rejected the background tint: it ruins the discreet look. Comments
+are an underline only again. A one-word comment (no whitespace in its text)
+gets `ow-comment--word`: the body ink color at 2px instead of the light ink
+at 1.5px. The comment stepped to keeps the accent underline (2px) and its note
+under the arrows.

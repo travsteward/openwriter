@@ -1,7 +1,7 @@
 /**
  * Comments in the Review tab: previous/next stepping through the active doc's
  * open comments in reading order, like pending changes. Deliberately no list.
- * The comment stepped to gets the stronger tint in the editor and its note
+ * The comment stepped to gets the accent underline in the editor and its note
  * shows here, so a one-word comment is never hard to find. A comment whose
  * words were reworded has no underline, so landing on it shows its note and
  * a Resolve button here. Resolved comments (by hand, or

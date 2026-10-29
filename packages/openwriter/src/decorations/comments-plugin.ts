@@ -33,7 +33,7 @@ export function getCommentsData(): CommentData[] {
   return currentComments;
 }
 
-/** The comment the Review rail last stepped to; its words get the stronger tint. */
+/** The comment the Review rail last stepped to; its underline takes the accent color. */
 let activeCommentId: string | null = null;
 
 /** Mark one comment as the one stepped to (null clears it) and redraw every editor. */
@@ -50,9 +50,12 @@ function makeDecoAttrs(comment: CommentData): Record<string, string> {
   // nodeName gives every comment its own span. Without it ProseMirror merges
   // overlapping decorations into one span and the later data-comment-id
   // overwrites the earlier, hiding a comment nested inside another.
+  // A one-word comment gets the brighter underline (--word); the one stepped to, the accent (--active).
+  const word = !/\s/.test(comment.text.trim()) ? ' ow-comment--word' : '';
+  const active = comment.id === activeCommentId ? ' ow-comment--active' : '';
   return {
     nodeName: 'span',
-    class: comment.id === activeCommentId ? 'ow-comment ow-comment--active' : 'ow-comment',
+    class: `ow-comment${word}${active}`,
     'data-comment-id': comment.id,
   };
 }
