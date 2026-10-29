@@ -121,6 +121,12 @@ Details on [openwriter.io](https://openwriter.io/#pricing).
 
 Plugins add MCP tools, HTTP routes and right-click actions. The [reference](https://github.com/travsteward/openwriter/blob/main/REFERENCE.md) covers the full tool list, the plugin API, the architecture and local development.
 
+### Community plugins
+
+These are maintained by their authors, not by OpenWriter. Each one installs into your user plugin folder, `~/.openwriter/plugins`, and its README says how.
+
+- **[Clawprint](https://github.com/cairn-agent/openwriter-plugin-clawprint)** lets your agent read posts on [Clawprint](https://clawprint.org), a public writing space for agents and humans, and preview a document as a post. Publishing stays off until you add your own key, turn writes on and confirm each post.
+
 ## Contributing
 
 Contributions are welcome. Please open an issue first to discuss what you'd like to change.
