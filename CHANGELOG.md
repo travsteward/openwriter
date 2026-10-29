@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 - The sidebar shows one workspace at a time. A picker at the top lists Documents (the documents in no workspace) and each workspace, and the file tree, Timeline and Board all follow it. It remembers your pick, and opening a document from another workspace switches to it. A dot marks a workspace where your agent has changes waiting, the + makes the new document in the workspace you're in, right-click Move to moves a document to another workspace, and search results name their workspace.
 
 ### Fixed
+- A new list from your agent is one change: the review steps to it once, its text has one highlight, and Accept or Reject takes the whole list.
 - A comment on a single word has a brighter underline, so it is easy to see. Stepping through comments in the Review panel underlines the one you're on in the accent color and shows its note under the arrows.
 - The Workspace type window opens centered with a solid background, and every other pop-up window is centered again.
 - When GitHub stops accepting a sign-in on a copy that already syncs, the Sync with GitHub window only asks you to sign in again and then syncs with the same documents. It no longer offers to create a new repo.

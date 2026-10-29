@@ -53,6 +53,13 @@ function acceptInsert(editor: Editor, nodeId: string): boolean {
       pendingStatus: null,
       pendingFeedback: null,
     });
+    // An inserted list, table or quote is one change: accepting it accepts the parts inside.
+    node.descendants((child: any, offset: number) => {
+      if (child.attrs?.pendingStatus === 'insert') {
+        tr.setNodeMarkup(pos + 1 + offset, undefined, { ...child.attrs, pendingStatus: null, pendingFeedback: null });
+      }
+      return true;
+    });
     return true;
   }).run();
 

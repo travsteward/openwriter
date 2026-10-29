@@ -52,6 +52,8 @@ export function derivePendingState(editor: Editor): PendingNodeInfo[] {
       }
 
       nodes.push({ nodeId: node.attrs.id, pos, pendingStatus: status, groupId, feedback: node.attrs?.pendingFeedback || undefined, editor });
+      // An inserted list, table or quote is one change: the parts inside it come with it.
+      if (status === 'insert') return false;
     }
     return true;
   });

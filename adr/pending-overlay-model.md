@@ -1482,3 +1482,13 @@ preview, notes and resolution are shared with the panel. `ow-pending-write-appli
 and `app.showPending` keep their one job: telling the rail a requested change
 landed. Browser-verified on the Test profile: insert and rewrite, Accept,
 Reject, Original/Modified, agent note, Review tab hides the bar, phone width.
+
+### 2026-10-29 — an inserted block is one change
+
+A document filled in one go (populate_document, create_document with content) marks every node
+as an insert: a list, each item and each item's paragraph. The review stepped through each one
+and drew the list's background under the items' own highlight. Now an insert that contains other
+blocks (a list, table or quote) is one change in the browser: review counts and steps to it once
+(`derivePendingState` stops at it), only its text and pictures are highlighted, and Accept clears
+the insert marks inside it too (Reject already removed the whole block). The sidecar keeps its
+per-node entries; nothing about storage changed.

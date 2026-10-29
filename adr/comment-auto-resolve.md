@@ -99,3 +99,8 @@ Comments with no surviving words resolve only when nothing on the
 paragraph can be placed (the old lone rule, generalized). A one-word
 survivor is ignored: single words like "the" match anywhere. An estimate
 can be wrong at the edges; resolve is reversible from the Resolved list.
+
+### 2026-10-29 — accepting an inserted block
+
+`acceptInsert` now also clears the insert marks inside an inserted list, table or quote
+(adr/pending-overlay-model.md). Coverage is unchanged: an insert still covers no comments.

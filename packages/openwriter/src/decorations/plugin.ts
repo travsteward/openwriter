@@ -157,6 +157,7 @@ function buildDecorations(doc: any): DecorationSet {
     if (node.attrs?.pendingOrphan) modifiers.push('pending-orphan');
     if (node.attrs?.pendingStaleBaseline) modifiers.push('pending-stale');
     const className = baseClass + (modifiers.length ? ' ' + modifiers.join(' ') : '');
+    const insertBlock = status === 'insert' && !node.isTextblock && node.childCount > 0;
 
     if (hasSelectionRange && node.isTextblock && className) {
       // Partial-node decoration: highlight only the selection range
@@ -167,6 +168,18 @@ function buildDecorations(doc: any): DecorationSet {
           Decoration.inline(inlineStart, inlineEnd, { class: className })
         );
       }
+    } else if (className && insertBlock) {
+      // An inserted list, table or quote: one highlight on its text and pictures, none on the
+      // block around them, and no separate highlight for the parts inside (they are this change).
+      node.descendants((child: any, offset: number) => {
+        const at = pos + 1 + offset;
+        if (child.isTextblock) {
+          if (child.content.size > 0) decorations.push(Decoration.inline(at + 1, at + child.nodeSize - 1, { class: className }));
+          return false;
+        }
+        if (child.isAtom) decorations.push(Decoration.node(at, at + child.nodeSize, { class: className }));
+        return true;
+      });
     } else if (className) {
       // Full-node decoration
       const canInline = node.isTextblock && (pos + 1) < (pos + node.nodeSize - 1);
@@ -191,7 +204,7 @@ function buildDecorations(doc: any): DecorationSet {
       );
     }
 
-    return true;
+    return !insertBlock;
   });
 
   return DecorationSet.create(doc, decorations);
