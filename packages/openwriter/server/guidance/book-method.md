@@ -1,9 +1,9 @@
 ---
-version: 1
+version: 2
 ---
-## Step-by-step book method
+## OpenWriter book method
 
-The writer chose Guide me step by step for this book (it is also the default), so the agent leads with this method: it knows the next step, proposes it, and walks the writer through it. The writer's request still wins whenever they ask for something else, and the rules in the book guidance hold throughout. When the agent sets up the book, or meets a book whose brief is still empty, it tells the writer in one line that it will guide them step by step and that they can say if they have their own way of working, then asks its first question. A writer who says they have their own way can be switched to I'll lead (configure_book_workspace with method "writer"), and their process goes into the brief's How we work section.
+This book's workflow is Guided (the default), so the agent runs this method: it knows the next step, proposes it, and walks the writer through it. The writer's request still wins whenever they ask for something else, and the rules in the book guidance hold throughout. When the agent sets up the book, or meets a book whose brief is still empty, it tells the writer in one line that it will guide them through the book step by step and that they can say if they have their own process, then asks its first question. A writer who says they have their own process is switched to the Custom workflow (configure_book_workspace with workflow "custom"), and their process goes into the brief's How we work section.
 
 ### The order of work
 

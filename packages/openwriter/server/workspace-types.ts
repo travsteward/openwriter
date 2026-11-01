@@ -44,16 +44,16 @@ export interface WorkspaceContext {
   rules?: string[];
 }
 
-/** Guide me step by step (the agent leads with the book method) or I'll lead (the writer does). */
-export type BookMethod = 'guided' | 'writer';
+/** guided: the agent runs the OpenWriter book method. custom: it follows the writer's own process. */
+export type BookWorkflow = 'guided' | 'custom';
 
 export interface Workspace {
   version: 2;
   title: string;
   /** Explicit user-selected behavior, separate from agent-written schema enrichment. */
   workspaceType?: 'general' | 'book';
-  /** method: how the agent works on the book, the writer's choice; absent means guided. */
-  book?: { outlineDocId?: string; manuscriptDocId?: string; briefDocId?: string; method?: BookMethod };
+  /** workflow: the writer's choice of how the agent works on the book; absent means guided. */
+  book?: { outlineDocId?: string; manuscriptDocId?: string; briefDocId?: string; workflow?: BookWorkflow };
   voiceProfileId?: string | null;
   root: WorkspaceNode[];
   context?: WorkspaceContext;

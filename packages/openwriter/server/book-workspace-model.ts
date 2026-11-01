@@ -1,6 +1,6 @@
 /** Shared, pure book-workspace projection. Pins never move tree nodes.
  * adr: adr/book-workspaces.md */
-import type { BookMethod, Workspace, WorkspaceNode } from './workspace-types.js';
+import type { BookWorkflow, Workspace, WorkspaceNode } from './workspace-types.js';
 
 export interface WorkspaceDocument {
   docId?: string; filename: string; title: string; contentType?: string;
@@ -12,11 +12,11 @@ export interface BookWorkspaceUpdate {
   outlineDocId?: string | null;
   manuscriptDocId?: string | null;
   briefDocId?: string | null;
-  method?: BookMethod;
+  workflow?: BookWorkflow;
 }
 
-/** A book without a choice yet is guided step by step. */
-export const bookMethod = (workspace: Pick<Workspace, 'book'>): BookMethod => workspace.book?.method ?? 'guided';
+/** A book without a choice yet runs the guided workflow. */
+export const bookWorkflow = (workspace: Pick<Workspace, 'book'>): BookWorkflow => workspace.book?.workflow ?? 'guided';
 
 export function workspaceDocuments<T extends WorkspaceDocument>(workspace: BookWorkspace, docs: T[]): T[] {
   const files = new Set<string>();
@@ -63,9 +63,9 @@ export function configureBookModel(workspace: Workspace, update: BookWorkspaceUp
     if (id !== null && (typeof id !== 'string' || !/^[0-9a-f]{8}$/.test(id))) throw new Error(`Choose a valid ${key.replace('DocId', '')} document.`);
     if (id === null) delete book[key]; else book[key] = id;
   }
-  if (update.method !== undefined) {
-    if (!['guided', 'writer'].includes(update.method)) throw new Error('Choose Guide me step by step or I’ll lead.');
-    book.method = update.method;
+  if (update.workflow !== undefined) {
+    if (!['guided', 'custom'].includes(update.workflow)) throw new Error('Choose the Guided or Custom workflow.');
+    book.workflow = update.workflow;
   }
   next.book = book;
   // Turning behavior off must also work when an attachment was archived/deleted.

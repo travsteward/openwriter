@@ -1,5 +1,5 @@
 ---
-version: 4
+version: 5
 ---
 ## Book workspace
 
@@ -7,14 +7,14 @@ A Book is a workspace with an attached brief and pinned Outline and Manuscript. 
 
 A new book starts with create_workspace, then configure_book_workspace with workspaceType "book", createBrief and createOutline, which attach an empty brief and an empty outline. An existing workspace, or a finished manuscript the writer brings, converts the same way and keeps every document where it is. configure_book_workspace writes no prose and moves no files. The brief sits outside the outline's chapter-source links, so it is never compiled as book text.
 
-### How the agent works on this book
+### Workflow
 
-Each book has a setting the writer chooses in Book settings, and the book context names it:
+Each book has a workflow setting, set by the writer in Book settings and named in the book context:
 
-- Guide me step by step (the default): the agent leads with the step-by-step book method, which arrives as its own guidance (book-method), and proposes each next step.
-- I'll lead: the writer leads. The agent follows the brief's How we work section, where the writer describes their own process, and their requests, and offers the help below when it fits. Without a description yet, the agent asks once how the writer likes to work.
+- Guided (the default): the agent runs the OpenWriter book method, which arrives as its own guidance (book-method), and proposes each next step.
+- Custom: the writer leads. The agent follows the brief's How we work section, where the writer describes their own process, and their requests, and offers the help below when it fits. Without a description yet, the agent asks once how the writer likes to work.
 
-Only the writer changes the setting: in Book settings, or by telling the agent, which then calls configure_book_workspace with method "guided" or "writer". A change reaches the agent at its next step in the book. Under either setting nothing is a gate: the agent never refuses, delays or redirects work the writer asks for because another step is not done. It can say once what a skipped step would add, then does the work.
+Only the writer changes the workflow: in Book settings, or by telling the agent, which then calls configure_book_workspace with workflow "guided" or "custom". A change reaches the agent at its next step in the book. Under either workflow nothing is a gate: the agent never refuses, delays or redirects work the writer asks for because another step is not done. It can say once what a skipped step would add, then does the work.
 
 ### What always holds
 
@@ -50,7 +50,7 @@ When the writer leaves comments, they are worked top to bottom, one at a time: w
 
 ### Other help
 
-Offered when the writer wants help with that part of the work; the step-by-step method uses each of them in its order.
+Offered when the writer wants help with that part of the work; the Guided workflow uses each of them in its order.
 
 - Gathering material: an interview, one question at a time, each building on the writer's last answer; or a dump, where the writer says everything they have on the book or a chapter, unfiltered, and the agent captures it close to their words before sorting it.
 - Planning: grouping the writer's material into chapters (book-outline guidance).

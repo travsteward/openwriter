@@ -29,11 +29,11 @@ document tools still create, edit and review the writing. Versioned embedded
 guidance, like X format rules, explains how the book pieces work, the rules that
 always hold, drafting in the writer's voice, an editing menu and other help.
 
-Each book has a method setting, shown under the pins as "Step by step · Change"
-or "Your way · Change" and chosen in Book settings (or by telling the agent,
-which sets method on configure_book_workspace). Guide me step by step, the
-default, adds the step-by-step book method guidance; I'll lead has the agent
-follow the brief's How we work section. The book context names the setting and
+Each book has a Workflow setting, shown under the pins as "Workflow: Guided ·
+Change" or "Workflow: Custom · Change" and set in Book settings (or by telling
+the agent, which sets workflow on configure_book_workspace). Guided, the
+default, adds the OpenWriter book method guidance; Custom has the agent follow
+the brief's How we work section. The book context names the workflow and
 carries the writer's voice status when it changed.
 Drafting reads the voice through get_voice, in the openwriter-ghostwriter
 subagent where the harness has subagents.

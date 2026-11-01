@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { DocumentInfo, WorkspaceWithData } from './sidebar-types';
-import { bookMethod, bookWorkspaceView } from '../../server/book-workspace-model';
-import type { BookMethod } from '../../server/workspace-types';
+import { bookWorkflow, bookWorkspaceView } from '../../server/book-workspace-model';
+import type { BookWorkflow } from '../../server/workspace-types';
 import { checkedFetch, jsonRequest } from '../utils/request';
 import { useUiText } from '../plugins/client-plugins';
 import './BookWorkspace.css';
@@ -15,7 +15,7 @@ export default function WorkspaceTypeDialog({ workspace, docs, onClose, onSaved 
   const [outlineId, setOutlineId] = useState(ws.book?.outlineDocId ?? (view.outlines.length === 1 ? view.outlines[0].docId! : ''));
   const [manuscriptId, setManuscriptId] = useState(ws.book?.manuscriptDocId ?? '');
   const [briefId, setBriefId] = useState(ws.book?.briefDocId ?? '');
-  const [method, setMethod] = useState<BookMethod>(bookMethod(ws));
+  const [workflow, setWorkflow] = useState<BookWorkflow>(bookWorkflow(ws));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const guidanceNote = useUiText('workspace.bookGuidance', 'Agents receive the brief and book guidance when working with this workspace.');
@@ -36,7 +36,7 @@ export default function WorkspaceTypeDialog({ workspace, docs, onClose, onSaved 
     try {
       await checkedFetch(`/api/workspaces/${encodeURIComponent(workspace.filename)}/book`, jsonRequest('PUT', {
         workspaceType: kind,
-        ...(kind === 'book' ? { outlineDocId: outlineId || null, manuscriptDocId: selectedManuscript || null, briefDocId: briefId || null, method } : {}),
+        ...(kind === 'book' ? { outlineDocId: outlineId || null, manuscriptDocId: selectedManuscript || null, briefDocId: briefId || null, workflow } : {}),
       }));
       await onSaved(); onClose();
     } catch (e) { setError(e instanceof Error ? e.message : 'Could not save workspace type.'); }
@@ -49,13 +49,13 @@ export default function WorkspaceTypeDialog({ workspace, docs, onClose, onSaved 
       <label>Type<select autoFocus value={kind} disabled={busy} onChange={e => setKind(e.target.value as 'general' | 'book')}><option value="general">General</option><option value="book">Book</option></select></label>
       {kind === 'book' ? <>
         <fieldset className="book-workspace-method-choice" disabled={busy}>
-          <legend>How your agent works</legend>
-          <label><input type="radio" name="book-method" checked={method === 'guided'} onChange={() => setMethod('guided')} />
-            <span>Guide me step by step</span>
-            <small>Your agent interviews you, plans the chapters with you, drafts in your voice and edits with you in stages. Best for a first book.</small></label>
-          <label><input type="radio" name="book-method" checked={method === 'writer'} onChange={() => setMethod('writer')} />
-            <span>I’ll lead</span>
-            <small>Your agent follows the way you work, described in the brief’s How we work section, and helps where you ask.</small></label>
+          <legend>Workflow</legend>
+          <label><input type="radio" name="book-workflow" checked={workflow === 'guided'} onChange={() => setWorkflow('guided')} />
+            <span>Guided</span>
+            <small>The agent runs the OpenWriter book method: interview, chapter plan, beats, drafts in your voice, staged editing. Recommended for a first book.</small></label>
+          <label><input type="radio" name="book-workflow" checked={workflow === 'custom'} onChange={() => setWorkflow('custom')} />
+            <span>Custom</span>
+            <small>The agent follows the process defined in the brief’s How we work section and assists on request.</small></label>
         </fieldset>
         <p id="book-attachments-help">Outline and Manuscript stay pinned above your folders. Attach existing documents or create them from the pinned entries later.</p>
         <label>Outline<select value={outlineId} disabled={busy} aria-describedby="book-attachments-help" onChange={e => { setOutlineId(e.target.value); setManuscriptId(''); }}>

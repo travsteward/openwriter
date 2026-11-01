@@ -122,7 +122,7 @@ try {
   const made = JSON.parse(setup.content[0].text).book;
   assert(made.briefDocId && made.outlineDocId, 'setup attaches a new brief and outline');
   g = extra(setup);
-  assert.match(g, /## Book workspace/); assert.match(g, /## Step-by-step book method/); assert.match(g, /How the agent works: Guide me step by step/); assert.match(g, /Voice: not learned yet/);
+  assert.match(g, /## Book workspace/); assert.match(g, /## OpenWriter book method/); assert.match(g, /Workflow: Guided/); assert.match(g, /Voice: not learned yet/);
   g = extra(await agent('starter', 'get_metadata', { docId: made.briefDocId }));
   assert.match(g, /## Attached book brief/); assert.match(g, /Learn my voice from this/); assert.doesNotMatch(g, /Voice:/, 'an unchanged voice status is not repeated');
   assert.match((await tool('read_pad').handler({ docId: made.briefDocId })).content[0].text, /How we work/, 'the brief has a place for how the writer wants to work');
@@ -131,15 +131,15 @@ try {
   assert.deepEqual(ws.getWorkspace(fresh).book, { ...ws.getWorkspace(fresh).book, briefDocId: made.briefDocId, outlineDocId: made.outlineDocId }, 'a second setup keeps the attached brief and outline');
   console.log('PASS: an agent starts a book in one call and gets the book method and voice status');
 
-  configureBookWorkspace(fresh, { method: 'writer' });
+  configureBookWorkspace(fresh, { workflow: 'custom' });
   g = extra(await agent('starter', 'get_metadata', { docId: made.briefDocId }));
-  assert.match(g, /context changed/); assert.match(g, /How the agent works: I'll lead/); assert.doesNotMatch(g, /book-method v/, 'the method leaves the guidance list');
+  assert.match(g, /context changed/); assert.match(g, /Workflow: Custom/); assert.doesNotMatch(g, /book-method v/, 'the method leaves the guidance list');
   g = extra(await agent('leader', 'get_metadata', { docId: made.outlineDocId }));
-  assert.match(g, /## Book workspace/); assert.doesNotMatch(g, /## Step-by-step book method/);
-  assert.throws(() => configureBookWorkspace(fresh, { method: 'other' }));
-  configureBookWorkspace(fresh, { method: 'guided' });
-  assert.match(extra(await agent('leader', 'get_metadata', { docId: made.outlineDocId })), /## Step-by-step book method/);
-  console.log('PASS: the writer switches between step by step and leading, and the agent hears it at its next step');
+  assert.match(g, /## Book workspace/); assert.doesNotMatch(g, /## OpenWriter book method/);
+  assert.throws(() => configureBookWorkspace(fresh, { workflow: 'other' }));
+  configureBookWorkspace(fresh, { workflow: 'guided' });
+  assert.match(extra(await agent('leader', 'get_metadata', { docId: made.outlineDocId })), /## OpenWriter book method/);
+  console.log('PASS: the writer switches between the Guided and Custom workflows, and the agent hears it at its next step');
 } finally {
   state.cancelDebouncedSave(); state.clearAllCaches(); rmSync(fixture, { recursive: true, force: true });
 }

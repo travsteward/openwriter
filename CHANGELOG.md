@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ## [Unreleased]
 
+### Changed
+- The book setting is now called Workflow, with two options: Guided (the default; your agent runs the OpenWriter book method) and Custom (your agent follows the process in your brief). The sidebar shows it as "Workflow: Guided" under each book's Outline and Manuscript. A book set to the earlier "I'll lead" option goes back to Guided, so set it to Custom again in Book settings.
+
 ## [0.53.0] - 2026-11-01
 
 ### Added

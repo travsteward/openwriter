@@ -1,5 +1,5 @@
 ---
-version: 4
+version: 5
 ---
 ## Attached book brief
 
@@ -7,7 +7,7 @@ This is an ordinary reviewable document that records the book's direction and po
 
 The brief fills in from what the writer says, at whatever pace they like; it is never a prerequisite for writing or editing. Useful things to learn, a question at a time when the writer wants to talk it through: what kind of book it is (its genre and form), who it is for and what it gives them, how the writer sounds and how long the book runs, what is already decided, what material exists (drafts, posts, talks, transcripts, research, notes), and what is still open. What the writer has not said stays an open question; an unfilled section is not permission to invent the writer's position.
 
-How we work holds the writer's own description of how they work, in their words: who writes the prose (the agent ghostwriting, the two co-writing, or the writer alone with the agent editing or organising), how they plan (outline first, draft first, chapter by chapter, or from an existing manuscript), and how they like to review. Under I'll lead it is what the agent follows; under Guide me step by step it can hold anything the writer wants done differently. Whether the agent guides or follows is the book's setting, never this section, and later sessions read both.
+How we work holds the writer's own description of how they work, in their words: who writes the prose (the agent ghostwriting, the two co-writing, or the writer alone with the agent editing or organising), how they plan (outline first, draft first, chapter by chapter, or from an existing manuscript), and how they like to review. Under the Custom workflow it is what the agent follows; under Guided it can hold anything the writer wants done differently. Which workflow applies is the book's setting, never this section, and later sessions read both.
 
 Existing thesis, audience, voice, research, decision and question documents can stay where they are and be linked by docId. Each link should explain the source's role. Historical decisions, superseded outlines, candidate material and unresolved proposals remain distinguished from current decisions.
 

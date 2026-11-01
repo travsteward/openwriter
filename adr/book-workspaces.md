@@ -25,9 +25,8 @@ product behavior by itself.
   User-book material stays in the private profile; bundled method is generic.
   A live document uses its canonical in-memory text, so a human edit is visible
   before the save timer. Leaving Book explicitly withdraws its earlier context.
-- book.method is the writer's choice of how the agent works: guided (Guide me step by
-  step, the default, also for books saved before it existed) or writer (I'll lead). It is
-  the only switch; the brief's How we work section holds the writer's own description,
+- book.workflow is the writer's choice of how the agent works: guided (the default, also
+  for books saved before it existed) or custom. It is the only switch; the brief's How we work section holds the writer's own description,
   never a second setting. It is part of the book context fingerprint, so a change reaches
   the agent at its next touch. The agent sets it only at the writer's word.
 
@@ -67,3 +66,12 @@ guided so existing books keep the method. The brief's How we work stops being th
 switch (the previous entry) and keeps only the writer's own description. The voice
 status repeats only when it changed for the session, since it was noise on every touch
 for a writer who writes their own prose.
+
+### 2026-11-01 — Workflow: Guided / Custom
+
+Operator: settings are named the way software names options, not as first-person
+phrases. The choice is now a Workflow setting with Guided and Custom, stored as
+book.workflow ('guided' | 'custom') and set through configure_book_workspace workflow.
+It replaces book.method ('guided' | 'writer') from 0.53.0, shipped the same day; a
+stored method is ignored and the book reads as Guided. The pins line reads
+"Workflow: Guided · Change".

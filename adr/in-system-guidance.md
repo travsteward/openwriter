@@ -166,3 +166,7 @@ any longer.
   exists. `book-outline` v4 states the link format and that an outline the agent writes is a
   proposal, so the build waits for the writer to accept it. `book-brief` v4: How we work is the
   writer's description, not the switch.
+
+- **2026-11-01** — The setting is named Workflow, Guided or Custom (operator: software-style
+  option names). `book` v5, `book-method` v2 (headed OpenWriter book method) and `book-brief` v5
+  use those names; the book context line reads "Workflow: Guided" or "Workflow: Custom".
