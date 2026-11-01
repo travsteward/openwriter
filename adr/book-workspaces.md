@@ -35,3 +35,12 @@ outline/manuscript relation instead of creating another book model. The UI offer
 the same type settings from right-click and a visible menu button. Generic book
 method uses the existing versioned guidance envelope; private direction arrives
 from the attached brief, separately from the tool's original result.
+
+### 2026-11-01
+
+configure_book_workspace takes createBrief and createOutline, which call the same
+createWorkspaceBrief and createWorkspaceOutline as the Workspace type dialog, so
+an agent starting a book makes the identical scaffold rather than a hand-made
+second format. Book context now ends with the writer's voice status on every
+touch, outside the brief fingerprint, since Learn my voice changes it outside
+the book.

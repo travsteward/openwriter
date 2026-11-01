@@ -180,6 +180,16 @@ assert(sys.includes("AUTHOR'S VOICE EXAMPLES FOR AGENT (RAG)") && /Tag: Human \|
 const topical = rewrite.params.messages[0].content.split('## Topical Voice Examples')[1] ?? '';
 assert(!topical.includes('Simmer the onion skins too'), 'the paragraph being rewritten is not its own example');
 
+console.log('\nThe voice for drafting agents (get_voice):');
+const getVoice = (await import('../dist/server/mcp.js')).TOOL_REGISTRY.find((t) => t.name === 'get_voice');
+calls.length = 0;
+const voiced = (await getVoice.handler({ about: 'Simmer the onion skins for a golden stock', docId: 'ffffffff' })).content[0].text;
+assert(voiced.startsWith('Voice: learned from 1 document') && voiced.includes('medium confidence'), 'the status line says the voice is learned');
+assert(voiced.includes('You write at this exact training-data blend:\n\n- 60% Julia Child') && voiced.includes('TASK:\n\n{TASK}'), 'the built blend leads the writing prompt, which ends in a TASK slot');
+assert(voiced.includes("REFERENCE EXAMPLES OF AUTHOR'S WRITING") && voiced.includes('Simmer the onion skins too'), 'the writer\'s own paragraphs come with it');
+assert(!(await getVoice.handler({ about: 'Simmer the onion skins for a golden stock', docId })).content[0].text.includes('Simmer the onion skins too'), 'the target document\'s own paragraphs are never its examples');
+assert(calls.length === 0, 'reading the voice calls no model');
+
 console.log('\nAdding it again after an edit:');
 calls.length = 0;
 const doc = getDocument();

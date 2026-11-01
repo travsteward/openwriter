@@ -126,3 +126,18 @@ any longer.
   chat appends `GUIDANCE_NOTICE` to its own instructions, and v0.51.0's version told it to link
   documents with get_doc_link, which inside the hosted machine returns a localhost address the
   writer cannot open. The local agent's instructions are unchanged.
+
+- **2026-11-01** — A book carries its whole method (operator: a writer who connects any agent
+  must get a book planned, ghostwritten in their voice and edited with them, with no skill
+  installed). `GUIDANCE_NOTICE` names how a book starts (create_workspace, then
+  configure_book_workspace with createBrief and createOutline), since guidance only arrives once
+  a book exists. `book` v2: who owns what (the author's substance and every lived story; the
+  agent's structure, research and drafting), interviews one question at a time, no deletion
+  without approval, sourced facts, the order of work with when each step is done, the next-step
+  rule, dump to beats, and drafting in a fresh context through get_voice and the
+  `openwriter-ghostwriter` subagent, with an inline fallback. `book-brief` v2: the interview and
+  the voice setup. `book-outline` v2: chapter planning and the compile facts (heading levels,
+  dividers, demoted source headings, {{toc}}, membership by link), checked in
+  `manuscript/assemble.ts` and `parse.ts`. `book-manuscript` v2: the editing stages and the
+  comment pass. Distilled from the operator's /book-writer, /book-editor and /authors-voice
+  skills and made generic; harness orchestration, corpus research and book canon stay there.

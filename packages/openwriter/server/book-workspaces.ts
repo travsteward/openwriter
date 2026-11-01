@@ -13,6 +13,7 @@ import { broadcastDocumentsChanged, broadcastWorkspacesChanged } from './ws.js';
 import { createOutline } from './manuscript/outline-info.js';
 import { bookWorkspaceView, configureBookModel, type BookWorkspaceUpdate } from './book-workspace-model.js';
 import type { ToolDef } from './mcp.js';
+import { voiceStatusLine } from './voice/voice-status.js';
 
 export const bookWorkspaceSchema = z.object({
   workspaceType: z.enum(['general', 'book']).optional(),
@@ -101,7 +102,8 @@ export function bookContextGuidance(session: string, contexts: ReturnType<typeof
   let sent = deliveredBriefs.get(session);
   if (!sent) deliveredBriefs.set(session, sent = new Map());
   const identity = `${context.workspaceFile}:${context.revision}`;
-  if (sent.get(context.workspaceFile) === identity) return `[OpenWriter book: ${context.title}; ${context.role}; brief and source revision ${context.revision.slice(0, 12)} unchanged. The attached book context delivered earlier still applies.]`;
+  // The voice changes outside the book (Learn my voice), so its line is read fresh on every touch.
+  if (sent.get(context.workspaceFile) === identity) return `[OpenWriter book: ${context.title}; ${context.role}; brief and source revision ${context.revision.slice(0, 12)} unchanged. The attached book context delivered earlier still applies.]\n${voiceStatusLine()}`;
   const changed = sent.has(context.workspaceFile);
   sent.set(context.workspaceFile, identity);
   return [
@@ -110,15 +112,24 @@ export function bookContextGuidance(session: string, contexts: ReturnType<typeof
     context.brief ? `Accepted brief:\n${context.briefText.trim() || '(empty; direction is not yet recorded)'}` : 'No brief is attached. Book direction is not yet recorded; existing notes are not automatically approved instructions.',
     context.pendingChanges ? `${context.pendingChanges} proposed brief changes await review and are excluded from this accepted snapshot.` : '',
     context.sources.length ? `Linked source revisions (read the relevant documents before writing; missing or proposed material is not settled direction):\n${JSON.stringify(context.sources)}` : '',
+    voiceStatusLine(),
   ].filter(Boolean).join('\n\n');
 }
 
 export const bookWorkspaceTools: ToolDef[] = [{
   name: 'configure_book_workspace',
-  description: 'Set an existing workspace to Book or General and attach its existing outline, manuscript and brief by docId. Preserves every file, folder, pending change and document placement. An unambiguous existing outline/manuscript is reused on conversion; multiple candidates require explicit IDs. General keeps the attachments for a later return to Book. Creates no prose or documents.',
-  schema: { workspaceFile: z.string(), ...bookWorkspaceSchema.shape },
-  handler: async ({ workspaceFile, ...update }) => {
-    const ws = configureBookWorkspace(workspaceFile, update);
+  description: 'Set an existing workspace to Book or General and attach its existing outline, manuscript and brief by docId. Preserves every file, folder, pending change and document placement. An unambiguous existing outline/manuscript is reused on conversion; multiple candidates require explicit IDs. General keeps the attachments for a later return to Book. createBrief and createOutline add the empty brief scaffold and the empty outline the Workspace type dialog offers, when the book has none; nothing else is created and no prose is written. A new book starts here: create_workspace, then this with workspaceType "book", createBrief and createOutline.',
+  schema: {
+    workspaceFile: z.string(),
+    ...bookWorkspaceSchema.shape,
+    createBrief: z.boolean().optional().describe('Attach a new empty brief (Book type only); an attached brief is kept.'),
+    createOutline: z.boolean().optional().describe('Attach a new empty outline (Book type only); an attached outline is kept.'),
+  },
+  handler: async ({ workspaceFile, createBrief, createOutline, ...update }) => {
+    configureBookWorkspace(workspaceFile, update);
+    if (createOutline) createWorkspaceOutline(workspaceFile);
+    if (createBrief) createWorkspaceBrief(workspaceFile);
+    const ws = getWorkspace(workspaceFile);
     return { content: [{ type: 'text', text: JSON.stringify({ workspaceFile, title: ws.title, workspaceType: ws.workspaceType, book: ws.book }) }] };
   },
 }];

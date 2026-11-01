@@ -78,6 +78,14 @@ The prompts are the refined part and are copied, never paraphrased:
   response shape. Embedders with their own Rewrite UI call `runEditor` from `openwriter/server`.
 - **Transforms** create a new document beside the source (a variant), as before.
 - Usage is logged without text: `<data root>/ai/usage.jsonl`.
+- **Agents read the voice; they never run or change it.** `get_voice` (`agent-voice.ts`) returns
+  the Author's Voice skill's skeleton filled from the same profile and voice files the editor
+  reads, plus the writer's Human paragraphs retrieved for the passage (the target document's own
+  excluded), ending in a TASK slot. No model call. The avoidance rules come from the profile's
+  `avoid` lists, or a hand-kept never-rules.md, which the editor prompt leaves out. Learn my voice
+  stays the writer's right-click. `voice-status.ts` gives the one-line status the book guidance
+  carries; it reads profile.json and the index directly so the book module never loads the voice
+  actions (host.ts reaches the tool registry, which loads the book module).
 
 ## Decision log
 
@@ -157,3 +165,13 @@ The prompts are the refined part and are copied, never paraphrased:
 ### 2026-10-25 — Settings > Claude is now Settings > Billing
 The section became the Billing tab of Settings (adr/right-rail.md). Order: the OpenWriter balance,
 then an embedder's key controls and the key field, then the writing model.
+
+### 2026-11-01 — Drafting agents read the writer's voice
+Operator decision: an agent ghostwriting a book needs the writer's voice in the context that
+writes the prose, the way the /authors-voice skill hands its minion the voice files. Narrows
+2026-10-13's "no agent tools" to: nothing an agent calls runs, bills or changes the voice; one
+read-only tool hands it over, used by the `openwriter-ghostwriter` subagent
+(`packages/openwriter/agents/`). Rejected: delivering the voice once per session with the book
+context (a drafting subagent shares the main agent's session, so it would only see the reminder)
+and an agent tool that writes in the voice (the retired API, and a second prose path beside the
+writer's review).

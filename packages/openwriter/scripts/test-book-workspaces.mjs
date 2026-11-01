@@ -116,6 +116,19 @@ try {
   assert.equal(createWorkspaceBrief(empty).docId, newBrief.docId);
   assert.match(extra(await agent('workspace-read', 'get_workspace_structure', { filename: empty })), /## Book workspace/);
   console.log('PASS: shared-book ambiguity, explicit context, selection flow and idempotent brief scaffold');
+
+  const fresh = ws.createWorkspace({ title: 'Agent-started book' }).filename;
+  const setup = await agent('starter', 'configure_book_workspace', { workspaceFile: fresh, workspaceType: 'book', createBrief: true, createOutline: true });
+  const made = JSON.parse(setup.content[0].text).book;
+  assert(made.briefDocId && made.outlineDocId, 'setup attaches a new brief and outline');
+  g = extra(setup);
+  assert.match(g, /## Book workspace/); assert.match(g, /The order of work/); assert.match(g, /Voice: not learned yet/);
+  g = extra(await agent('starter', 'get_metadata', { docId: made.briefDocId }));
+  assert.match(g, /## Attached book brief/); assert.match(g, /Learn my voice from this/); assert.match(g, /Voice: not learned yet/);
+  assert.match((await tool('get_voice').handler({ about: 'the opening chapter' })).content[0].text, /no voice to write in yet/);
+  await agent('starter', 'configure_book_workspace', { workspaceFile: fresh, createBrief: true, createOutline: true });
+  assert.deepEqual(ws.getWorkspace(fresh).book, { ...ws.getWorkspace(fresh).book, briefDocId: made.briefDocId, outlineDocId: made.outlineDocId }, 'a second setup keeps the attached brief and outline');
+  console.log('PASS: an agent starts a book in one call and gets the book method and voice status');
 } finally {
   state.cancelDebouncedSave(); state.clearAllCaches(); rmSync(fixture, { recursive: true, force: true });
 }

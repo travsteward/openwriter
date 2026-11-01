@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ## [Unreleased]
 
+### Added
+- Your agent knows how to write a book with you. Ask it to start one and it sets up a Book workspace with a brief and an outline, interviews you one question at a time, plans the chapters from what you tell it, drafts each part in your voice, and edits the manuscript in stages you review. It never invents your stories: where one belongs, it leaves a marked gap and asks you. In a new session it works out the next step from the book itself.
+- Drafts sound like you. Once you right-click your own writing and choose Learn my voice from this, your agent can read your voice and draft in it. Every book document tells your agent whether your voice is learned yet. In Claude Code, a new ghostwriter helper writes each passage in a fresh context so your voice stays strong.
+
 ### Changed
 - Every tool has a plain title, and tools that only read are marked read-only, so your agent app can show what each one does and ask before one that deletes, sends or publishes.
 - The sidebar shows one workspace at a time. A picker at the top lists Documents (the documents in no workspace) and each workspace, and the file tree, Timeline and Board all follow it. It remembers your pick, and opening a document from another workspace switches to it. A dot marks a workspace where your agent has changes waiting, the + makes the new document in the workspace you're in, right-click Move to moves a document to another workspace, and search results name their workspace.

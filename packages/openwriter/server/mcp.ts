@@ -13,6 +13,7 @@ import { z } from 'zod';
 import { getDataDir, ensureDataDir, resolveDocPath, generateNodeId, atomicWriteFileSync, readConfig } from './helpers.js';
 import { manuscriptTools } from './manuscript/tools.js';
 import { bookWorkspaceTools } from './book-workspaces.js';
+import { voiceTools } from './voice/agent-voice.js';
 
 import {
   getDocument,
@@ -272,6 +273,7 @@ const AGENT_FORBIDDEN_METADATA_KEYS = new Set(['autoAccept']);
 
 export const TOOL_REGISTRY: ToolDef[] = [
   ...bookWorkspaceTools,
+  ...voiceTools,
   {
     name: 'read_pad',
     description: `Read a document by docId, in compact tagged lines ([type:id] per node). Returns the first ~${READ_PAD_MAX_WORDS} words unless you pass slice or force. When the cap cuts it off, the response gives lastNodeId and how to continue (peek_doc, outline_doc, search_docs or another slice).`,

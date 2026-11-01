@@ -21,7 +21,7 @@ Agents write in markdown or TipTap JSON. The server converts, assigns node IDs, 
 
 An agent needs only OpenWriter's MCP server. There is no skill to install: the tool descriptions, the server's instructions and the guidance that arrives with each document tell the agent how to use OpenWriter as it works.
 
-**Claude Code** — one command installs OpenWriter globally, registers the MCP server, and adds two background subagents (sorting and enrichment) to `~/.claude/agents/`:
+**Claude Code** — one command installs OpenWriter globally, registers the MCP server, and adds three background subagents (sorting, enrichment and the ghostwriter) to `~/.claude/agents/`:
 ```bash
 npx openwriter setup
 ```
