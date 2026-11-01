@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ## [Unreleased]
 
+## [0.52.0] - 2026-11-01
+
 ### Added
 - Your agent knows how to write a book with you. Ask it to start one and it sets up a Book workspace with a brief and an outline, interviews you one question at a time, plans the chapters from what you tell it, drafts each part in your voice, and edits the manuscript in stages you review. It never invents your stories: where one belongs, it leaves a marked gap and asks you. In a new session it works out the next step from the book itself.
 - Drafts sound like you. Once you right-click your own writing and choose Learn my voice from this, your agent can read your voice and draft in it. Every book document tells your agent whether your voice is learned yet. In Claude Code, a new ghostwriter helper writes each passage in a fresh context so your voice stays strong.
