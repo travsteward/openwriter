@@ -43,3 +43,7 @@ workspaces (Move to replaces it).
 ### 2026-10-28 — Workspace type window spacing
 Not a picker change: the Workspace type window in the same file got room between each help line
 and the field around it (paragraph margin 8px, fields 20px apart).
+
+### 2026-11-01 — Book method line and choice
+Not a picker change: the same file styles the book pins' new "Step by step · Change" line and the
+two-choice "How your agent works" fieldset in Book settings.

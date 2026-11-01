@@ -27,9 +27,14 @@ the optional outlineDocId, manuscriptDocId and briefDocId; createBrief and
 createOutline add the same empty brief and outline the dialog creates. Normal
 document tools still create, edit and review the writing. Versioned embedded
 guidance, like X format rules, explains how the book pieces work, the rules that
-always hold, and help the agent can offer (interviews, planning, drafting in the
-writer's voice, an editing menu) however the writer chooses to work, which the
-brief's How we work section records. It arrives with the writer's voice status.
+always hold, drafting in the writer's voice, an editing menu and other help.
+
+Each book has a method setting, shown under the pins as "Step by step · Change"
+or "Your way · Change" and chosen in Book settings (or by telling the agent,
+which sets method on configure_book_workspace). Guide me step by step, the
+default, adds the step-by-step book method guidance; I'll lead has the agent
+follow the brief's How we work section. The book context names the setting and
+carries the writer's voice status when it changed.
 Drafting reads the voice through get_voice, in the openwriter-ghostwriter
 subagent where the harness has subagents.
 The current accepted brief and directly linked source fingerprints arrive with

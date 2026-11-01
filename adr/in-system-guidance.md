@@ -156,3 +156,13 @@ any longer.
   plan-before-drafting, one document per beat, the one-argument/complete-picture classification,
   claim-style chapter names, the teaching-book hook and lay-reader glosses, and the fixed six
   editing stages with their cap.
+
+- **2026-11-01** — The removed method returns as its own contract, `book-method` v1, delivered
+  only when the book's setting is Guide me step by step (the default; `guidanceFor` takes a
+  guided flag from the book context). Switching to I'll lead drops it from the reminder list, and
+  the changed book context says the method no longer applies. `book` v4 names the setting and
+  takes the editing passes and comment pass from `book-manuscript`, because a clean test showed an
+  editing-only writer's agent never received them: that contract only arrives once a manuscript
+  exists. `book-outline` v4 states the link format and that an outline the agent writes is a
+  proposal, so the build waits for the writer to accept it. `book-brief` v4: How we work is the
+  writer's description, not the switch.

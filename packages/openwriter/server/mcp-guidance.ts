@@ -30,7 +30,7 @@ export function appendDocGuidance(session: string, args: unknown, result: ToolRe
   const contexts = bookContexts(docId, workspaceFile);
   const role = contexts.length === 1 ? contexts[0].role : contexts.length ? 'source' : undefined;
   const guidance = metadata || contexts.length
-    ? guidanceFor(session, docId ?? workspaceFile!, metadata ? deriveContentType(metadata) : undefined, role) : null;
+    ? guidanceFor(session, docId ?? workspaceFile!, metadata ? deriveContentType(metadata) : undefined, role, contexts.length === 1 && contexts[0].method === 'guided') : null;
   const book = bookContextGuidance(session, contexts, docId);
   const additions = [guidance, book].filter((text): text is string => !!text).map(text => ({ type: 'text' as const, text }));
   return additions.length ? { ...result, content: [...result.content, ...additions] } : result;

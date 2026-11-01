@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { DocumentInfo, WorkspaceWithData } from './sidebar-types';
-import { bookWorkspaceView } from '../../server/book-workspace-model';
+import { bookMethod, bookWorkspaceView } from '../../server/book-workspace-model';
 import { checkedFetch, jsonRequest } from '../utils/request';
 import { sidebarRowProps } from './sidebar-keyboard';
 import './BookWorkspace.css';
@@ -43,6 +43,10 @@ export default function BookWorkspacePins({ workspace, docs, onOpen, onSettings,
     <div className="book-workspace-links"><button type="button" disabled={!!busy} aria-current={view.brief?.isActive ? 'page' : undefined}
       onClick={() => view.brief ? onOpen(view.brief.filename) : void create('brief')}>{busy === 'brief' ? 'Creating brief…' : view.brief ? 'Brief' : 'Create brief'}</button>
       <button type="button" disabled={!!busy} onClick={onSettings} aria-label={`Book settings for ${workspace.title}`}>Settings</button></div>
+    {!compact && <div className="book-workspace-method" title="How your agent works on this book">
+      <span>{bookMethod(workspace.workspace) === 'writer' ? 'Your way' : 'Step by step'}</span>
+      <button type="button" disabled={!!busy} onClick={onSettings} aria-label={`Change how your agent works on ${workspace.title}`}>Change</button>
+    </div>}
     {error && <p role="alert" className="book-workspace-error">{error}</p>}
   </div>;
 }

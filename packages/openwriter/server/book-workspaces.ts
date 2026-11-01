@@ -11,7 +11,7 @@ import { tiptapToBody } from './markdown.js';
 import { loadOverlay } from './pending-overlay.js';
 import { broadcastDocumentsChanged, broadcastWorkspacesChanged } from './ws.js';
 import { createOutline } from './manuscript/outline-info.js';
-import { bookWorkspaceView, configureBookModel, type BookWorkspaceUpdate } from './book-workspace-model.js';
+import { bookMethod, bookWorkspaceView, configureBookModel, type BookWorkspaceUpdate } from './book-workspace-model.js';
 import type { ToolDef } from './mcp.js';
 import { voiceStatusLine } from './voice/voice-status.js';
 
@@ -20,6 +20,7 @@ export const bookWorkspaceSchema = z.object({
   outlineDocId: z.string().regex(/^[0-9a-f]{8}$/).nullable().optional(),
   manuscriptDocId: z.string().regex(/^[0-9a-f]{8}$/).nullable().optional(),
   briefDocId: z.string().regex(/^[0-9a-f]{8}$/).nullable().optional(),
+  method: z.enum(['guided', 'writer']).optional().describe('How the agent works on this book, as the writer chose it: "guided" (Guide me step by step, the default) or "writer" (I\'ll lead). Set only when the writer says so.'),
 }).strict();
 
 export function configureBookWorkspace(filename: string, input: BookWorkspaceUpdate) {
@@ -83,7 +84,7 @@ export function bookContexts(docId?: string, workspaceFile?: string) {
       return { docId: id, title: doc?.title ?? 'Missing source', revision: source !== null ? digest(source) : 'missing', pendingChanges: doc ? pendingCount(doc) : 0 };
     });
     const compact = (d: typeof view.outline) => d ? { docId: d.docId, title: d.title } : null;
-    const context = { workspaceFile: info.filename, title: ws.title, outline: compact(view.outline), manuscript: compact(view.manuscript), brief: compact(view.brief), briefText: body, sources, pendingChanges: view.brief ? pendingCount(view.brief) : 0 };
+    const context = { workspaceFile: info.filename, title: ws.title, method: bookMethod(ws), outline: compact(view.outline), manuscript: compact(view.manuscript), brief: compact(view.brief), briefText: body, sources, pendingChanges: view.brief ? pendingCount(view.brief) : 0 };
     return [{ ...context, revision: digest(context), role: docId && docId === view.brief?.docId ? 'brief' : docId && docId === view.outline?.docId ? 'outline' : docId && docId === view.manuscript?.docId ? 'manuscript' : 'source' }];
   });
   return candidates;
@@ -102,23 +103,31 @@ export function bookContextGuidance(session: string, contexts: ReturnType<typeof
   let sent = deliveredBriefs.get(session);
   if (!sent) deliveredBriefs.set(session, sent = new Map());
   const identity = `${context.workspaceFile}:${context.revision}`;
-  // The voice changes outside the book (Learn my voice), so its line is read fresh on every touch.
-  if (sent.get(context.workspaceFile) === identity) return `[OpenWriter book: ${context.title}; ${context.role}; brief and source revision ${context.revision.slice(0, 12)} unchanged. The attached book context delivered earlier still applies.]\n${voiceStatusLine()}`;
+  // The voice changes outside the book (Learn my voice), so it is read on every touch but only
+  // repeated when it changed since this session last saw it.
+  const voice = voiceStatusLine();
+  const voiceKey = `voice:${context.workspaceFile}`;
+  const voiceChanged = sent.get(voiceKey) !== voice;
+  sent.set(voiceKey, voice);
+  if (sent.get(context.workspaceFile) === identity) return `[OpenWriter book: ${context.title}; ${context.role}; brief and source revision ${context.revision.slice(0, 12)} unchanged. The attached book context delivered earlier still applies.]${voiceChanged ? `\n${voice}` : ''}`;
   const changed = sent.has(context.workspaceFile);
   sent.set(context.workspaceFile, identity);
   return [
     `[OpenWriter book context${changed ? ' changed; replaces the earlier snapshot' : ''}: ${context.title}. Role: ${context.role}. Revision: ${context.revision.slice(0, 12)}.]`,
+    context.method === 'writer'
+      ? 'How the agent works: I\'ll lead. The writer leads; follow the brief\'s How we work section and their requests. The step-by-step book method does not apply to this book.'
+      : 'How the agent works: Guide me step by step. Lead with the step-by-step book method (book-method guidance).',
     `Workspace: ${context.workspaceFile}\nOutline: ${JSON.stringify(context.outline)}\nManuscript: ${JSON.stringify(context.manuscript)}\nAttached brief: ${JSON.stringify(context.brief)}`,
     context.brief ? `Accepted brief:\n${context.briefText.trim() || '(empty; direction is not yet recorded)'}` : 'No brief is attached. Book direction is not yet recorded; existing notes are not automatically approved instructions.',
     context.pendingChanges ? `${context.pendingChanges} proposed brief changes await review and are excluded from this accepted snapshot.` : '',
     context.sources.length ? `Linked source revisions (read the relevant documents before writing; missing or proposed material is not settled direction):\n${JSON.stringify(context.sources)}` : '',
-    voiceStatusLine(),
+    voice,
   ].filter(Boolean).join('\n\n');
 }
 
 export const bookWorkspaceTools: ToolDef[] = [{
   name: 'configure_book_workspace',
-  description: 'Set an existing workspace to Book or General and attach its existing outline, manuscript and brief by docId. Preserves every file, folder, pending change and document placement. An unambiguous existing outline/manuscript is reused on conversion; multiple candidates require explicit IDs. General keeps the attachments for a later return to Book. createBrief and createOutline add the empty brief scaffold and the empty outline the Workspace type dialog offers, when the book has none; nothing else is created and no prose is written. A new book starts here: create_workspace, then this with workspaceType "book", createBrief and createOutline.',
+  description: 'Set an existing workspace to Book or General and attach its existing outline, manuscript and brief by docId. Preserves every file, folder, pending change and document placement. An unambiguous existing outline/manuscript is reused on conversion; multiple candidates require explicit IDs. General keeps the attachments for a later return to Book. createBrief and createOutline add the empty brief scaffold and the empty outline the Workspace type dialog offers, when the book has none; nothing else is created and no prose is written. method records how the agent works on the book (guided step by step, the default, or the writer leads), changed only at the writer\'s word. A new book starts here: create_workspace, then this with workspaceType "book", createBrief and createOutline.',
   schema: {
     workspaceFile: z.string(),
     ...bookWorkspaceSchema.shape,

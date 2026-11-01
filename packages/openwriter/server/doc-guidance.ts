@@ -20,7 +20,7 @@ const CONTRACTS: Record<string, { names: string[]; noun: string }> = {
 };
 
 /** That documents carry their guidance. Embedders append it to their own agent's instructions. */
-export const GUIDANCE_NOTICE = 'Every document carries editing guidance, including when an optional review note helps. X documents, blog posts and newsletter issues also have format contracts. A book is a workspace set to Book: create_workspace, then configure_book_workspace with workspaceType "book", createBrief and createOutline. Setting one up, or touching any of its documents, delivers the book guidance (how OpenWriter\'s book pieces work, the rules that always hold, and help the agent can offer however the writer chooses to work: ghostwriting in their voice, co-writing, editing their own draft or organising), the attached brief and the writer\'s voice status; changed briefs or linked sources refresh that context. The first touch in an agent session delivers unseen contracts in full; later touches carry a reminder.';
+export const GUIDANCE_NOTICE = 'Every document carries editing guidance, including when an optional review note helps. X documents, blog posts and newsletter issues also have format contracts. A book is a workspace set to Book: create_workspace, then configure_book_workspace with workspaceType "book", createBrief and createOutline. Setting one up, or touching any of its documents, delivers the book guidance (how OpenWriter\'s book pieces work, the rules that always hold, writing in the writer\'s voice, editing and other help), the step-by-step book method unless the writer chose to lead, the attached brief and the writer\'s voice status; changed briefs, linked sources or settings refresh that context. The first touch in an agent session delivers unseen contracts in full; later touches carry a reminder.';
 
 /**
  * The local MCP server's instructions: what an agent on the writer's own computer needs before it
@@ -53,9 +53,9 @@ const delivered = new Map<string, Set<string>>();
  * The guidance for one touch of a document by one agent session: the contracts not yet sent in
  * this session in full, or a one-line reminder when all were. Editing applies to every type.
  */
-export function guidanceFor(session: string, docId: string, contentType: string | undefined, bookRole?: string): string | null {
+export function guidanceFor(session: string, docId: string, contentType: string | undefined, bookRole?: string, guided = false): string | null {
   const entry = (contentType ? CONTRACTS[contentType] : undefined) ?? { names: [], noun: 'a document' };
-  const bookNames = bookRole ? ['book', ...(['brief', 'outline', 'manuscript'].includes(bookRole) ? [`book-${bookRole}`] : [])] : [];
+  const bookNames = bookRole ? ['book', ...(guided ? ['book-method'] : []), ...(['brief', 'outline', 'manuscript'].includes(bookRole) ? [`book-${bookRole}`] : [])] : [];
   const contracts = [...entry.names, ...bookNames, 'editing'].map(contract);
   let sent = delivered.get(session);
   if (!sent) delivered.set(session, sent = new Set());

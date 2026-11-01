@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ## [Unreleased]
 
+### Added
+- Choose how your agent works on each book. Guide me step by step, the default, has your agent lead you through a proven way of making a book: an interview, a chapter plan, beats, drafts in your voice and editing in stages. I'll lead has it follow the process you describe in the brief and help where you ask. The sidebar shows which one a book uses under its Outline and Manuscript, with Change beside it, and you can also just tell your agent.
+
+### Changed
+- Editing help now reaches chapters you have written before there is a manuscript, and your agent learns that an outline it writes has to be accepted before the book is built from it.
+- Your agent hears your voice status only when it changes, instead of on every step.
+
 ## [0.52.1] - 2026-11-01
 
 ### Changed

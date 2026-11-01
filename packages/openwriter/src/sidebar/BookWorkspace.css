@@ -5,6 +5,13 @@
 .book-pin-icon { width: 14px; flex: 0 0 14px; text-align: center; color: var(--ink-body); }
 .book-workspace-links { display: flex; gap: 14px; padding: 3px 6px 2px 28px; }
 .book-workspace-links button { padding: 3px 0; font: inherit; font-size: 11px; background: none; border: 0; color: var(--ink-body); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.book-workspace-method { display: flex; gap: 6px; padding: 1px 6px 2px 28px; font-size: 11px; color: var(--ink-body); }
+.book-workspace-method button { padding: 0; font: inherit; background: none; border: 0; color: var(--ink-body); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.book-workspace-method-choice { display: grid; gap: 10px; margin: 20px 0 0; padding: 0; border: 0; }
+.book-workspace-method-choice legend { padding: 0; font-size: 13px; }
+.book-workspace-dialog .book-workspace-method-choice label { display: grid; grid-template-columns: auto 1fr; gap: 2px 8px; margin: 0; align-items: baseline; }
+.book-workspace-method-choice label span { font-weight: 500; }
+.book-workspace-method-choice label small { grid-column: 2; color: var(--ink-body); font-size: 12px; line-height: 1.5; }
 .book-workspace-pins button:focus-visible, .workspace-menu-button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .book-workspace-pins button:disabled { opacity: .5; cursor: default; }
 .book-workspace-pins--compact { display: flex; align-items: center; padding: 0 6px; margin: 0; border-bottom: 0; border-right: 1px solid var(--border); flex: 0 0 auto; }
