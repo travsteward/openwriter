@@ -298,6 +298,7 @@ export function renameContainer(wsFile: string, containerId: string, name: strin
 }
 
 export function renameWorkspace(wsFile: string, newTitle: string): Workspace {
+  if (typeof newTitle !== 'string' || !newTitle.trim()) throw new Error('A workspace needs a title.');
   const ws = getWorkspace(wsFile);
   ws.title = newTitle;
   writeWorkspace(wsFile, ws);

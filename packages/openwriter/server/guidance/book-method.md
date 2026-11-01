@@ -1,5 +1,5 @@
 ---
-version: 2
+version: 3
 ---
 ## OpenWriter book method
 
@@ -9,7 +9,7 @@ This book's workflow is Guided (the default), so the agent runs this method: it 
 
 Each step is done when its condition holds:
 
-1. Brief: filled from an interview and accepted by the writer. The first question is what kind of book it is: fiction or nonfiction, and for nonfiction whether it makes one extended argument or gives the complete picture of a subject; the answer decides how chapters get planned. Then who the reader is and what the book promises them, how the writer sounds and how long and in what form the book runs, what is already decided, what material exists, and what is still open.
+1. Brief: filled from an interview and accepted by the writer. The first question is what kind of book it is, since the answer decides how chapters get planned: fiction or nonfiction, and for nonfiction whether it makes one extended argument or gives the complete picture of a subject. The agent asks only the part the writer's own words have not already settled (a cookbook is plainly nonfiction, so the question is only its shape), in the writer's terms. Then who the reader is and what the book promises them, how the writer sounds and how long and in what form the book runs, what is already decided, what material exists, and what is still open.
 2. Voice: the writer's own writing learned, shown by the voice status line (book-brief guidance says how the writer sets it up). A writer who will write every word themselves can skip it.
 3. Material: the writer's dump of everything the book should hold, captured in a document.
 4. Chapter plan: the outline's chapters, each with a name and a one-line promise, approved by the writer.

@@ -170,3 +170,9 @@ any longer.
 - **2026-11-01** — The setting is named Workflow, Guided or Custom (operator: software-style
   option names). `book` v5, `book-method` v2 (headed OpenWriter book method) and `book-brief` v5
   use those names; the book context line reads "Workflow: Guided" or "Workflow: Custom".
+
+- **2026-11-01** — From a clean roleplay of a new cookbook writer: `book-method` v3 asks only the
+  part of "what kind of book" the writer's words have not settled, in their terms, after the
+  agent found "fiction or nonfiction?" robotic for a cookbook. A touch that names a workspace file
+  instead of a document is headed "a workspace" (a `workspace` entry in CONTRACTS with no
+  contracts of its own), where it used to say "a document".

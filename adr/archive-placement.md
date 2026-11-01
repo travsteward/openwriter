@@ -30,3 +30,9 @@ and original archive placements remain governed by this lifecycle.
 Extracted the archive lifecycle from documents.ts before changing it. Placement
 capture and restoration use the workspace module's existing path validation and
 tree operations. The browser exposes restoration as an explicit action.
+
+### 2026-11-01
+
+Not an archive change: renameWorkspace in the same module now refuses a missing or
+blank title, since a rename request without one used to save the workspace with no
+title at all.

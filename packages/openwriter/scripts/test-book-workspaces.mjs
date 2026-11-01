@@ -123,6 +123,7 @@ try {
   assert(made.briefDocId && made.outlineDocId, 'setup attaches a new brief and outline');
   g = extra(setup);
   assert.match(g, /## Book workspace/); assert.match(g, /## OpenWriter book method/); assert.match(g, /Workflow: Guided/); assert.match(g, /Voice: not learned yet/);
+  assert.match(g, /\.json, a workspace:/, 'a workspace touch is not called a document');
   g = extra(await agent('starter', 'get_metadata', { docId: made.briefDocId }));
   assert.match(g, /## Attached book brief/); assert.match(g, /Learn my voice from this/); assert.doesNotMatch(g, /Voice:/, 'an unchanged voice status is not repeated');
   assert.match((await tool('read_pad').handler({ docId: made.briefDocId })).content[0].text, /How we work/, 'the brief has a place for how the writer wants to work');
@@ -140,6 +141,11 @@ try {
   configureBookWorkspace(fresh, { workflow: 'guided' });
   assert.match(extra(await agent('leader', 'get_metadata', { docId: made.outlineDocId })), /## OpenWriter book method/);
   console.log('PASS: the writer switches between the Guided and Custom workflows, and the agent hears it at its next step');
+
+  assert.throws(() => ws.renameWorkspace(fresh, undefined), /needs a title/);
+  assert.throws(() => ws.renameWorkspace(fresh, '  '), /needs a title/);
+  assert.equal(ws.getWorkspace(fresh).title, 'Agent-started book');
+  console.log('PASS: a rename without a title is refused and the title is kept');
 } finally {
   state.cancelDebouncedSave(); state.clearAllCaches(); rmSync(fixture, { recursive: true, force: true });
 }

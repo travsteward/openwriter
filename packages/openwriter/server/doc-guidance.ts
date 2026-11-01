@@ -17,6 +17,8 @@ const CONTRACTS: Record<string, { names: string[]; noun: string }> = {
   article: { names: ['article'], noun: 'an X article' },
   blog: { names: ['blog', 'long-form'], noun: 'a blog post' },
   newsletter: { names: ['newsletter', 'long-form'], noun: 'a newsletter issue' },
+  // A touch that names a workspace file rather than a document.
+  workspace: { names: [], noun: 'a workspace' },
 };
 
 /** That documents carry their guidance. Embedders append it to their own agent's instructions. */
