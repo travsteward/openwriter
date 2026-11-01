@@ -122,9 +122,10 @@ try {
   const made = JSON.parse(setup.content[0].text).book;
   assert(made.briefDocId && made.outlineDocId, 'setup attaches a new brief and outline');
   g = extra(setup);
-  assert.match(g, /## Book workspace/); assert.match(g, /The order of work/); assert.match(g, /Voice: not learned yet/);
+  assert.match(g, /## Book workspace/); assert.match(g, /The writer decides how the book gets made/); assert.match(g, /Voice: not learned yet/);
   g = extra(await agent('starter', 'get_metadata', { docId: made.briefDocId }));
   assert.match(g, /## Attached book brief/); assert.match(g, /Learn my voice from this/); assert.match(g, /Voice: not learned yet/);
+  assert.match((await tool('read_pad').handler({ docId: made.briefDocId })).content[0].text, /How we work/, 'the brief has a place for how the writer wants to work');
   assert.match((await tool('get_voice').handler({ about: 'the opening chapter' })).content[0].text, /no voice to write in yet/);
   await agent('starter', 'configure_book_workspace', { workspaceFile: fresh, createBrief: true, createOutline: true });
   assert.deepEqual(ws.getWorkspace(fresh).book, { ...ws.getWorkspace(fresh).book, briefDocId: made.briefDocId, outlineDocId: made.outlineDocId }, 'a second setup keeps the attached brief and outline');

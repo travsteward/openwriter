@@ -141,3 +141,18 @@ any longer.
   `manuscript/assemble.ts` and `parse.ts`. `book-manuscript` v2: the editing stages and the
   comment pass. Distilled from the operator's /book-writer, /book-editor and /authors-voice
   skills and made generic; harness orchestration, corpus research and book canon stay there.
+
+- **2026-11-01** — Book guidance is infrastructure, not a method (operator: it must not lock a
+  writer into one way of making a book; generic, useful, non-blocking). v3 of `book`,
+  `book-brief`, `book-outline` and `book-manuscript` keep three layers apart: how the book
+  pieces work (compile, manuscript, review, versions, voice), the rules that always hold (the
+  writer's substance and life are never invented, approval, no deletion, sourced facts, state
+  read from the book), and ways to help offered when the writer wants them (interview or dump,
+  planning, breaking a chapter into moves, an editing menu). The writer's arrangement
+  (ghostwriting, co-writing, editing their draft, organising; outline-first, draft-first or an
+  existing manuscript) is recorded in the brief's new How we work section, and nothing is a
+  gate: the agent never refuses or delays requested work because another step is not done.
+  Removed from v2 as one operator's method stated as rules: the fixed order of work,
+  plan-before-drafting, one document per beat, the one-argument/complete-picture classification,
+  claim-style chapter names, the teaching-book hook and lay-reader glosses, and the fixed six
+  editing stages with their cap.

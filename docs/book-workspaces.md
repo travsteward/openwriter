@@ -25,11 +25,13 @@ Its links stay outside the outline's chapter-source list.
 Agents can call configure_book_workspace with workspaceFile, workspaceType and
 the optional outlineDocId, manuscriptDocId and briefDocId; createBrief and
 createOutline add the same empty brief and outline the dialog creates. Normal
-document tools still create, edit and review the writing. The book method
-(interviews, the order of work, dump to beats, drafting, the editing stages)
-arrives through versioned embedded guidance, like X format rules, with the
-writer's voice status. Drafting reads the voice through get_voice, in the
-openwriter-ghostwriter subagent where the harness has subagents.
+document tools still create, edit and review the writing. Versioned embedded
+guidance, like X format rules, explains how the book pieces work, the rules that
+always hold, and help the agent can offer (interviews, planning, drafting in the
+writer's voice, an editing menu) however the writer chooses to work, which the
+brief's How we work section records. It arrives with the writer's voice status.
+Drafting reads the voice through get_voice, in the openwriter-ghostwriter
+subagent where the harness has subagents.
 The current accepted brief and directly linked source fingerprints arrive with
 book document access. Changed sources refresh that snapshot. Pending brief
 edits are identified and excluded until accepted. Shared-book membership calls

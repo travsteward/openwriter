@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ## [Unreleased]
 
+### Changed
+- Your agent works on your book the way you want. It asks once how you like to work, whether it should ghostwrite, write with you, edit your own draft or just keep things organized, and whether you plan first, write first or already have a manuscript. It notes your answer in the brief and follows it from then on. Interviews, chapter planning and editing passes are offers it can make, never steps you have to finish first, and it suits fiction, memoir, nonfiction and collections alike.
+
 ## [0.52.0] - 2026-11-01
 
 ### Added

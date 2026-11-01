@@ -1,22 +1,28 @@
 ---
-version: 2
+version: 3
 ---
 ## Book manuscript
 
-This is the independent book text built from its outline. It has variantType manuscript and masterDocId pointing to the outline. Edits to source beats or the outline do not update this text. Editing, author review and book downloads happen here. Downloads use accepted text; pending changes are proposals, not published prose.
+This is the independent book text built from its outline. It has variantType manuscript and masterDocId pointing to the outline. Edits to source documents or the outline do not update this text. Editing, author review and book downloads happen here. Downloads use accepted text; pending changes are proposals, not published prose.
 
-### The editing pass
+### Editing
 
-An editing pass works one chapter at a time, read continuously the way the reader meets it; seams only show in the assembled text. Before any claim is questioned, the chapter's sources are gathered: its links, citations, linked research notes and the brief's evidence sources. The stages run in order, each landing as pending changes; once the author has reviewed a stage, a version is saved (create_checkpoint) before the next begins, so nothing builds on unreviewed edits.
+Editing covers whatever scope the writer asks for, from a full developmental pass to a light proofread of one page, and the passes below are a menu, not a sequence the writer must sit through. A pass reads its scope continuously, the way a reader meets it, since seams only show in assembled text. Each pass lands as pending changes, ideally with a short review note where a choice is not obvious. Once the writer has reviewed a pass, a saved version (create_checkpoint) gives a restore point before the next. Edits keep the writer's words and style; a passage is rewritten rather than edited only when the writer asks.
 
-1. Claims. Each factual claim is checked against sources the agent read. Tightening that keeps the argument is proposed with its source in a review note; an unsupported detail is softened or cut rather than replaced from memory. A finding that breaks the argument goes to the author and changes nothing.
-2. Hook. The chapter opens with why the reader should care about what it is about to teach, before it teaches it. The agent offers two or three openings built from the brief's promise; lived openings come from the author.
-3. Cruft. Material whose removal loses nothing the reader needs: a repeat of a point made better elsewhere, setup nothing later uses, signposting that says what is coming instead of saying it, and over-explanation of what the reader already understood. Examples that make an idea concrete, anything a later passage calls back to, and the author's own stories stay. The list goes to the author, tagged by kind with its word count, before the cuts are proposed.
-4. Sentences. Facts frozen. Repetition inside paragraphs goes, each technical term is explained plainly where it first appears, handoffs between paragraphs are smoothed, and every named person, coined term and experiment is made clear to a lay reader, all in the author's words and style.
-5. Drift. The chapter is compared with the author's original, change by change, and any change that moved the author's meaning (who acts, what causes what, a softened point, an imported framing) is flagged with the original wording to restore.
-6. Weak points. At most eight beats that still sag, each with keep, fix or cut and whether the fix needs new material from the author. The author decides.
+Passes, in the order they usually help when the writer wants several:
 
-The author's comment pass comes last: the author reads the chapter and leaves comments, which are worked top to bottom, one at a time, each with one recommendation and its exact wording, staged only after the author approves it. The author's own suggestions are discussed before anything is staged. A comment is resolved once its fix is accepted or the author agrees no change is needed, never while a question is open.
+- Structure and flow: what each part is for, whether the order works, where the reader loses the thread.
+- Claims: for factual writing, each claim checked against sources the agent read, the chapter's links, research notes and the brief's evidence. Tightening that keeps the point is proposed with its source; an unsupported detail is softened or cut rather than replaced from memory; a finding that undercuts the writer's point goes to the writer.
+- Openings: whether each chapter's start gives the reader a reason to keep going. Options can be offered; openings drawn from the writer's own life come from the writer.
+- Cuts: material whose removal loses nothing the reader needs, such as a repeat of a point made better elsewhere, setup nothing later uses, signposting, and over-explanation. Examples that make an idea concrete, anything a later passage calls back to, and the writer's own stories stay. For more than a few small cuts, the list goes to the writer first, tagged by kind, before cuts are proposed.
+- Line editing: repetition, clarity, terms explained where a reader new to them first meets them, smoother handoffs between paragraphs, in the writer's style.
+- Consistency: names, terms, facts, timeline and continuity across chapters.
+- Drift: the text compared with the writer's original, flagging any edit that moved the writer's meaning, with the original wording to restore.
+- Proofreading: spelling, punctuation and typos only.
+
+### Comments
+
+When the writer leaves comments, they are worked top to bottom, one at a time: what the comment asks, one recommendation with its exact wording, staged once the writer approves. The writer's own suggestions are discussed before anything is staged. A comment is resolved once its fix is accepted or the writer agrees no change is needed, never while a question is open.
 
 ### Building and adding chapters
 

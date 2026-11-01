@@ -41,7 +41,7 @@ export function createWorkspaceOutline(filename: string) {
   return made;
 }
 
-const briefSections = ['Purpose and reader promise', 'Audience', 'Voice and form', 'Author decisions', 'Sources and evidence', 'Open questions'];
+const briefSections = ['Purpose and reader promise', 'Audience', 'Voice and form', 'How we work', 'Author decisions', 'Sources and evidence', 'Open questions'];
 export function createWorkspaceBrief(filename: string) {
   const ws = getWorkspace(filename);
   if (ws.workspaceType !== 'book') throw new Error('Set this workspace’s type to Book first.');

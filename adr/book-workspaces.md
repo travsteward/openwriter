@@ -44,3 +44,8 @@ an agent starting a book makes the identical scaffold rather than a hand-made
 second format. Book context now ends with the writer's voice status on every
 touch, outside the brief fingerprint, since Learn my voice changes it outside
 the book.
+
+The empty brief gains a How we work section between Voice and form and Author
+decisions: the arrangement the writer chose (who writes the prose, how they plan,
+how they review), which later sessions follow. It is the one place that choice
+lives, so the generic guidance can stay non-prescriptive.
