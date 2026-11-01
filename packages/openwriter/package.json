@@ -1,6 +1,6 @@
 {
   "name": "openwriter",
-  "version": "0.53.1",
+  "version": "0.53.2",
   "description": "Write and publish with your agent. A Markdown editor where your agent drafts and you review every change, then publish to your site, newsletter, X and LinkedIn.",
   "type": "module",
   "license": "MIT",

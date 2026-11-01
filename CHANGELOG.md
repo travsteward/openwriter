@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ## [Unreleased]
 
+## [0.53.2] - 2026-11-01
+
 ### Fixed
 - On the Guided workflow, your agent's first question about your book skips what you've already made obvious, so a cookbook isn't asked whether it's fiction.
 - Renaming a workspace without a name is refused instead of leaving the workspace untitled.
