@@ -3,6 +3,6 @@
   "private": true,
   "description": "The OpenWriter release this plugin runs; package-lock.json records its exact dependencies.",
   "dependencies": {
-    "openwriter": "0.52.1"
+    "openwriter": "0.53.0"
   }
 }
