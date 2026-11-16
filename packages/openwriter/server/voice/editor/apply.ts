@@ -22,6 +22,36 @@ import {
 import { chunkKey, emptyRagResult, retrieveVoice, type GrepRAGResult } from '../voice/voice-retrieve.js';
 import { readParagraphs } from '../voice/voice-enrich.js';
 import { voiceIndex } from '../voice/voice-index.js';
+import { tiptapToBody } from '../../markdown-serialize.js';
+
+const START = '[[START_SELECTION]]';
+const END = '[[END_SELECTION]]';
+/** Text for comparing an echo: no Markdown punctuation, one space between words, lower case. */
+const plainOf = (md: string) => md.replace(/[*_`#>\[\]()~\\]/g, '').replace(/\s+/g, ' ').trim().toLowerCase();
+
+/**
+ * The rewrite of a partial selection, with the unselected text around it put back exactly as it
+ * was. The model sees the whole node with the selection marked; some return the whole node, some
+ * only the selection, and taking the second as the first deleted the rest of the paragraph
+ * (2026-11-16). So the text before and after the markers is never the model's to keep: a side
+ * the model already echoed (its opening or ending matches) is taken as given, any other side is
+ * added back. A whole-node selection has no markers and is returned as it came.
+ */
+export function spliceSelection(nodes: any[], rewritten: string): string {
+  const md = tiptapToBody({ type: 'doc', content: nodes }).trim();
+  const s = md.indexOf(START);
+  const e = md.indexOf(END);
+  if (s < 0 || e < s) return rewritten;
+  const before = md.slice(0, s);
+  const after = md.slice(e + END.length);
+  const out = plainOf(rewritten);
+  const head = plainOf(before).slice(0, 40);
+  const tail = plainOf(after).slice(-40);
+  const keepBefore = head !== '' && !out.startsWith(head);
+  const keepAfter = tail !== '' && !out.endsWith(tail);
+  // The sides keep their own spacing ("months. " before, " Then" after) around the trimmed rewrite.
+  return `${keepBefore ? before : ''}${rewritten.trim()}${keepAfter ? after : ''}`;
+}
 
 export const MAX_SELECTION_WORDS = 5000;
 const MAX_INSTRUCTION_CHARS = 2000;
@@ -188,9 +218,10 @@ export async function runEditor(req: EditorRequest): Promise<{
   if (response.stop_reason === 'refusal') throw new VoiceError(422, 'refused', 'Claude declined to rewrite this passage.');
   if (response.stop_reason === 'max_tokens') throw new VoiceError(422, 'too_long', 'The rewrite ran past its length limit. Try a smaller selection.');
 
-  const markdown = stripSelectionMarkersFromText(
+  const answer = stripSelectionMarkersFromText(
     response.content.flatMap((b) => (b.type === 'text' ? [b.text] : [])).join('\n\n'),
   ).trim();
-  if (!markdown) throw new VoiceError(422, 'empty', 'Claude returned no text.');
+  if (!answer) throw new VoiceError(422, 'empty', 'Claude returned no text.');
+  const markdown = spliceSelection(req.nodes, answer);
   return { markdown, model: choice, action, prompts: { systemPrompt: system.prompt, userPrompt: user } };
 }

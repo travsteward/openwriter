@@ -175,3 +175,11 @@ read-only tool hands it over, used by the `openwriter-ghostwriter` subagent
 context (a drafting subagent shares the main agent's session, so it would only see the reminder)
 and an agent tool that writes in the voice (the retired API, and a second prose path beside the
 writer's review).
+
+### 2026-11-16 — A partial selection keeps the text around it
+The editor sends the whole node with the selection marked and asks for "the rewritten content";
+Haiku returned only the selected sentence, and the rewrite replaced the paragraph with it, so
+accepting deleted the unselected sentences. `spliceSelection` (`editor/apply.ts`) now puts the
+text before and after the markers back around the answer unless the answer already echoes that
+side. The copied prompts stay word for word; the app, not the model, owns text the writer did
+not select. Covers every editor action on the web and in the local app.

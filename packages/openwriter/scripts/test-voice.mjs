@@ -180,6 +180,13 @@ assert(sys.includes("AUTHOR'S VOICE EXAMPLES FOR AGENT (RAG)") && /Tag: Human \|
 const topical = rewrite.params.messages[0].content.split('## Topical Voice Examples')[1] ?? '';
 assert(!topical.includes('Simmer the onion skins too'), 'the paragraph being rewritten is not its own example');
 
+console.log('\nA partial selection keeps the text around it:');
+const { spliceSelection } = await import('../dist/server/voice/editor/apply.js');
+const marked = [{ type: 'paragraph', content: [{ type: 'text', text: 'Keep this. [[START_SELECTION]]Change this.[[END_SELECTION]] Keep that too.' }] }];
+assert(spliceSelection(marked, 'Changed it.') === 'Keep this. Changed it. Keep that too.', 'only the selection back: the rest is put back around it');
+assert(spliceSelection(marked, 'Keep this. Changed it. Keep that too.') === 'Keep this. Changed it. Keep that too.', 'the whole paragraph back: nothing doubled');
+assert(spliceSelection([{ type: 'paragraph', content: [{ type: 'text', text: 'All of it.' }] }], 'All new.') === 'All new.', 'a whole-paragraph selection is the rewrite as it came');
+
 console.log('\nThe voice for drafting agents (get_voice):');
 const getVoice = (await import('../dist/server/mcp.js')).TOOL_REGISTRY.find((t) => t.name === 'get_voice');
 calls.length = 0;
