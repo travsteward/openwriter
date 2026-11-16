@@ -3,7 +3,6 @@ import type { Editor } from '@tiptap/react';
 import { NodeSelection } from '@tiptap/pm/state';
 
 import { insertFootnoteAt } from './Footnotes';
-import { useClientPlugins } from '../plugins/client-plugins';
 import './floating-toolbar.css';
 
 function ToolbarButton({
@@ -45,7 +44,6 @@ export default function FloatingToolbar({ editor }: { editor: Editor }) {
   const lastFrom = useRef(-1);
   const lastTo = useRef(-1);
   const dragging = useRef(false);
-  const toolbarPanels = useClientPlugins().menuPanels.filter((p) => p.toolbar);
 
   // Track mouse-down on the editor so we don't show during drag-select. A right-click opens the
   // context menu instead, which the toolbar stays out of the way of until it closes.
@@ -147,26 +145,6 @@ export default function FloatingToolbar({ editor }: { editor: Editor }) {
         zIndex: 1500,
       }}
     >
-      {/* Plugin panels marked `toolbar` (registerMenuPanel), opened in the context menu at the button.
-          A click, not a mousedown, so the menu's outside-click close has already run. */}
-      {toolbarPanels.map((panel) => (
-        <button
-          key={panel.id}
-          className="floating-toolbar__btn floating-toolbar__btn--text"
-          onMouseDown={(e) => e.preventDefault()}
-          onClick={(e) => {
-            const r = e.currentTarget.getBoundingClientRect();
-            setVisible(false);
-            lastFrom.current = -1;
-            lastTo.current = -1;
-            window.dispatchEvent(new CustomEvent('ow-menu-panel-open', { detail: { panelId: panel.id, editor, x: r.left, y: r.bottom + 4 } }));
-          }}
-        >
-          {panel.label}
-        </button>
-      ))}
-      {toolbarPanels.length > 0 && <Divider />}
-
       {/* Inline formatting */}
       <ToolbarButton
         onClick={() => editor.chain().focus().toggleBold().run()}

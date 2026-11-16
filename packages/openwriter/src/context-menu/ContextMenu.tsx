@@ -332,10 +332,15 @@ export default function ContextMenu({ editorRef, allEditors, documentId, docId }
     return items;
   }, [editorRef, isOnLink, pluginItems, menuPanels, selectionHasPending, backlinksMenu, docLinkTarget, bookmarkTarget, bookmarks]);
 
-  // The selection a menu action works on: its blocks, or the cursor's block when nothing is selected.
-  // Uses only refs, so the listeners below can hold it.
-  const captureSelection = (editor: Editor) => {
+  // Open on right-click in editor — capture selection BEFORE the click changes it
+  useEffect(() => {
+    const captureSelectionOnMouseDown = (e: MouseEvent) => {
+      if (e.button !== 2) return; // Only right-click
+      const editor = findEditorForTarget(e.target as Node);
+      if (!editor) return;
       activeEditorRef.current = editor;
+
+      // Capture the current selection state NOW, before ProseMirror handles the mousedown
       const { from, to } = editor.state.selection;
       const nodes: any[] = [];
       const nodeIds: string[] = [];
@@ -361,16 +366,6 @@ export default function ContextMenu({ editorRef, allEditors, documentId, docId }
 
       const text = from !== to ? editor.state.doc.textBetween(from, to, '\n') : '';
       capturedSelection.current = { from, to, nodes, nodeIds, text };
-  };
-
-  // Open on right-click in editor — capture selection BEFORE the click changes it
-  useEffect(() => {
-    const captureSelectionOnMouseDown = (e: MouseEvent) => {
-      if (e.button !== 2) return; // Only right-click
-      const editor = findEditorForTarget(e.target as Node);
-      if (!editor) return;
-      // Capture the current selection state NOW, before ProseMirror handles the mousedown
-      captureSelection(editor);
     };
 
     const handleContextMenu = (e: MouseEvent) => {
@@ -954,32 +949,6 @@ export default function ContextMenu({ editorRef, allEditors, documentId, docId }
     window.addEventListener('ow-bookmark-open', handler);
     return () => window.removeEventListener('ow-bookmark-open', handler);
   }, []);
-
-  // A plugin panel's selection-toolbar button opens that panel here, at the button, on the current selection.
-  useEffect(() => {
-    const handler = (e: Event) => {
-      const { panelId, editor, x, y } = (e as CustomEvent).detail || {};
-      const panel = menuPanels.find((p) => p.id === panelId);
-      if (!panel || !editor) return;
-      captureSelection(editor);
-      const captured = capturedSelection.current;
-      if (!captured) return;
-      setCommentOnlyMenu(null);
-      setBacklinksMenu(null);
-      setDocLinkTarget(null);
-      setBookmarkEditor(null);
-      setShowCommentInput(false);
-      setShowCustom(false);
-      setShowLinkPicker(false);
-      setShowBacklinksPanel(false);
-      setParagraphPicker(null);
-      setPosition({ x, y });
-      setVisible(true);
-      setActivePanel({ panel, ctx: { editor, docId, selection: captured, close: () => setVisible(false) } });
-    };
-    window.addEventListener('ow-menu-panel-open', handler);
-    return () => window.removeEventListener('ow-menu-panel-open', handler);
-  }, [menuPanels, docId]);
 
   const closeBookmarkEditor = useCallback(() => {
     setVisible(false);
