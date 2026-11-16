@@ -97,6 +97,8 @@ export interface PluginMenuPanel {
   label: string;
   /** Offer it only for a text selection, pending changes included. */
   needsSelection?: boolean;
+  /** Also a button labelled `label` on the selection toolbar, which opens the same panel there. */
+  toolbar?: boolean;
   mount(el: HTMLElement, ctx: MenuPanelContext): MountedView<MenuPanelContext>;
 }
 

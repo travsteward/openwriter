@@ -56,7 +56,8 @@ them stay in the public history; that cannot be undone and they hold no secrets.
     `/plugin-client/<plugin>/` and imported by the browser at page load. Its default export
     receives the client plugin API (`src/plugins/client-plugins.tsx`): right-rail tabs
     (optionally with a titlebar toggle, optionally holding the rail open while pending changes
-    arrive), context-menu panels over a text selection, panels in a Settings section,
+    arrive), context-menu panels over a text selection (optionally also a button on the
+    selection toolbar), panels in a Settings section,
     `openRailTab`, `showToast` (one action button or several) and `onConnectionLost`. A client module mounts its own UI into the element it is given.
     A module presenting the app its own way also gets what the app shows (`getApp`,
     `onAppChange`: the editor, the open document, the connection, unsent edits, pending
@@ -261,3 +262,9 @@ marks (`server/tool-labels.ts`), worked out from its name and whether a plugin a
 served by the stdio server and `/api/mcp-tools`. `openwriter/server` exports `toolLabels` so an
 embedder serving the tools over MCP itself labels them the same way. Generic: every MCP client
 shows the titles and asks before a destructive call, and agent directories require the marks.
+
+**2026-11-16: menu panels on the selection toolbar.** A menu panel registered with `toolbar: true`
+also appears as a labelled button on the selection toolbar; the button opens the same panel in the
+context menu, at the button, on the current selection. An action reachable only by right-click is
+one most writers never find. Generic: any plugin's selection action can be offered where the
+writer is already looking; panels without the flag are unchanged.
